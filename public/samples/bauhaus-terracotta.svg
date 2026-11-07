@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1200" viewBox="0 0 1200 1200">
+  <defs>
+    <pattern id="bauhausTile" width="400" height="400" patternUnits="userSpaceOnUse">
+      <!-- Tile Base -->
+      <rect width="400" height="400" fill="#F4EDE2"/>
+      <!-- Top-Left Quadrant -->
+      <rect x="0" y="0" width="200" height="200" fill="#EAE0D0"/>
+      <path d="M 0 200 A 200 200 0 0 1 200 0 L 200 200 Z" fill="#C47D5B"/>
+      <path d="M 80 200 A 120 120 0 0 1 200 80 L 200 200 Z" fill="#292524"/>
+      <!-- Top-Right Quadrant -->
+      <rect x="200" y="0" width="200" height="200" fill="#F4EDE2"/>
+      <circle cx="300" cy="100" r="76" fill="#9A6F44"/>
+      <circle cx="300" cy="100" r="38" fill="#F4EDE2"/>
+      <!-- Bottom-Left Quadrant -->
+      <rect x="0" y="200" width="200" height="200" fill="#DFD2BE"/>
+      <path d="M 0 200 L 200 200 L 200 400 Z" fill="#7D8C78"/>
+      <circle cx="75" cy="325" r="42" fill="#9A6F44"/>
+      <!-- Bottom-Right Quadrant -->
+      <rect x="200" y="200" width="200" height="200" fill="#EAE0D0"/>
+      <path d="M 200 200 A 200 200 0 0 0 400 400 L 200 400 Z" fill="#C47D5B"/>
+      <path d="M 200 400 A 120 120 0 0 1 320 280 L 320 400 Z" fill="#F4EDE2"/>
+      <!-- Architectural Hairline Grid -->
+      <line x1="200" y1="0" x2="200" y2="400" stroke="#1C1917" stroke-width="2" stroke-opacity="0.18"/>
+      <line x1="0" y1="200" x2="400" y2="200" stroke="#1C1917" stroke-width="2" stroke-opacity="0.18"/>
+      <rect x="0" y="0" width="400" height="400" fill="none" stroke="#1C1917" stroke-width="2" stroke-opacity="0.18"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="1200" fill="url(#bauhausTile)"/>
+</svg>
+

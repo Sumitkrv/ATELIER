@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" width="1200" height="900">
+  <defs>
+    <linearGradient id="roomBehindGlass" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FCF6EF" />
+      <stop offset="50%" stop-color="#F3E4D5" />
+      <stop offset="100%" stop-color="#DFC8B2" />
+    </linearGradient>
+    <linearGradient id="glassSheen" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.58" />
+      <stop offset="45%" stop-color="#FCF6EF" stop-opacity="0.18" />
+      <stop offset="100%" stop-color="#C8A88B" stop-opacity="0.32" />
+    </linearGradient>
+  </defs>
+
+  <!-- Interior Studio Space Behind Glass Partition -->
+  <rect width="1200" height="900" fill="url(#roomBehindGlass)" />
+  <circle cx="880" cy="240" r="190" fill="#C8A88B" opacity="0.25" />
+
+  <!-- Architectural Mullion Frame for 3 Glass Partition Panels -->
+  <rect x="90" y="60" width="1020" height="760" fill="url(#glassSheen)" stroke="#32191B" stroke-width="10" />
+  <line x1="430" y1="60" x2="430" y2="820" stroke="#32191B" stroke-width="8" />
+  <line x1="770" y1="60" x2="770" y2="820" stroke="#32191B" stroke-width="8" />
+
+  <!-- Translucent Frosted & Maroon Printed Privacy Bands & Line Art on Glass -->
+  <rect x="95" y="290" width="1010" height="290" fill="#FCF6EF" fill-opacity="0.62" />
+  <path d="M120,560 C280,330 480,310 640,460 C800,610 940,430 1080,320" fill="none" stroke="#681A27" stroke-width="6" />
+  <path d="M120,490 C300,290 520,390 710,510 C860,600 970,390 1080,260" fill="none" stroke="#C8A88B" stroke-width="4" />
+
+  <!-- Printed Geometric Circles Spanning Glass Panels -->
+  <circle cx="430" cy="435" r="115" fill="#791B2C" fill-opacity="0.72" />
+  <circle cx="770" cy="435" r="95" fill="none" stroke="#32191B" stroke-width="3.5" />
+  <circle cx="770" cy="435" r="52" fill="#C8A88B" fill-opacity="0.78" />
+
+  <!-- Diagonal Glass Reflection Highlights -->
+  <polygon points="150,65 230,65 120,815 95,815" fill="#FFFFFF" opacity="0.35" />
+  <polygon points="510,65 570,65 455,815 435,815" fill="#FFFFFF" opacity="0.28" />
+
+  <!-- Caption -->
+  <text x="115" y="865" fill="#32191B" font-family="Georgia, serif" font-size="14" letter-spacing="3">
+    04 • ARCHITECTURAL GLASS PRINTING • PARTITIONS, GLAZING &amp; INTERIORS
+  </text>
+</svg>
+

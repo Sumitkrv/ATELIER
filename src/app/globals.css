@@ -1,0 +1,164 @@
+@import "tailwindcss";
+
+/*
+ * ATELIER — WALL STORY | Official Brand Token System
+ * Primary Brand Color: Crimson #9B1C1C
+ * Main Background:     Warm Beige #E8E2D9
+ * Alternate Surface:   Off White #FAF9F6
+ * Main Text / Dark:    Charcoal #1A1A1A
+ * Preferred Typeface:  Futura Light / Jost (Licensed Geometric Sans-Serif)
+ */
+
+:root {
+  --brand-crimson: #991d20;
+  --brand-crimson-hover: #73171b;
+  --brand-crimson-soft: #b2282c;
+  --brand-beige: #ede4da;
+  --brand-beige-muted: #d9c8b5;
+  --brand-offwhite: #fdf8f3;
+  --brand-ivory: #f8f3ed;
+  --brand-charcoal: #201c1a;
+  --brand-charcoal-soft: #2a2421;
+  --brand-charcoal-card: #332b28;
+  --brand-muted: #756c65;
+  --brand-stone: #ded5cb;
+
+  --bg-primary: var(--brand-ivory);
+  --bg-elevated: var(--brand-offwhite);
+  --bg-muted: var(--brand-beige);
+  --bg-obsidian: var(--brand-charcoal);
+  --bg-obsidian-soft: var(--brand-charcoal-soft);
+  --bg-obsidian-card: var(--brand-charcoal-card);
+
+  --text-primary: var(--brand-charcoal);
+  --text-secondary: #4a433e;
+  --text-muted: var(--brand-muted);
+  --text-on-dark: var(--brand-offwhite);
+  --text-on-dark-muted: var(--brand-beige);
+
+  --border-subtle: #ded5cb;
+  --border-crimson: rgba(153, 29, 32, 0.32);
+
+  /* Centralized Global Header / Navbar Height & Scroll Offset Tokens */
+  --header-height: 74px;
+  --navbar-height: 74px;
+  --scroll-offset: calc(var(--navbar-height, 74px) + 16px);
+}
+
+@theme inline {
+  --color-background: var(--bg-primary);
+  --color-foreground: var(--text-primary);
+
+  /* Explicit Official Brand Palette Tokens */
+  --color-brand-crimson: #991d20;
+  --color-brand-crimson-dark: #73171b;
+  --color-brand-beige: #ede4da;
+  --color-brand-ivory: #f8f3ed;
+  --color-brand-offwhite: #fdf8f3;
+  --color-brand-charcoal: #201c1a;
+  --color-brand-muted: #756c65;
+  --color-brand-stone: #ded5cb;
+  --color-brand-sand: #d9c8b5;
+
+  /* Mapped Architectural Palette Scale */
+  --color-obsidian-950: #201c1a;
+  --color-obsidian-900: #26201d;
+  --color-obsidian-800: #312925;
+  --color-obsidian-700: #403631;
+
+  --color-alabaster-50: #fdf8f3;
+  --color-alabaster-100: #f8f3ed;
+  --color-alabaster-200: #ede4da;
+  --color-alabaster-300: #d9c8b5;
+
+  --color-stone-400: #8c827a;
+  --color-stone-500: #756c65;
+  --color-stone-600: #524b46;
+
+  /* Accent scale mapped to Atelier Crimson & Warm Ivory */
+  --color-bronze-300: #ede4da;
+  --color-bronze-400: #b83336;
+  --color-bronze-500: #991d20;
+  --color-bronze-600: #73171b;
+
+  /* Editorial Display Serif (Cormorant Garamond) + Clean Modern Sans-Serif */
+  --font-display: var(--font-cormorant), "Cormorant Garamond", Georgia, serif;
+  --font-serif: var(--font-cormorant), "Cormorant Garamond", Georgia, serif;
+  --font-sans: var(--font-jakarta), var(--font-jost), -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: var(--font-jakarta), var(--font-jost), sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: var(--scroll-offset);
+  overflow-x: clip;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: var(--brand-ivory);
+  color: var(--brand-charcoal);
+  font-family: var(--font-sans);
+  overflow-x: clip;
+}
+
+/* Global scroll-margin-top for all anchor targets & section headings */
+section[id],
+div[id],
+article[id],
+main[id],
+h1[id],
+h2[id],
+h3[id],
+h4[id] {
+  scroll-margin-top: var(--scroll-offset);
+}
+
+/* Pinned full-viewport GSAP stage already includes internal header top padding */
+#atelier-services-experience {
+  scroll-margin-top: 0;
+}
+
+.font-serif,
+h1,
+h2,
+h3,
+h4 {
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+*:focus-visible {
+  outline: 2px solid var(--brand-crimson);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+::selection {
+  background-color: #9b1c1c;
+  color: #faf9f6;
+}
+
+/* Hide Next.js floating N dev indicator in bottom-left corner */
+nextjs-portal,
+#__next-build-watcher,
+[data-nextjs-toast],
+[data-next-mark],
+[data-nextjs-dev-tools-button] {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}

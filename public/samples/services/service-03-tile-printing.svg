@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" width="1200" height="900">
+  <defs>
+    <linearGradient id="tileBase" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FCF6EF" />
+      <stop offset="100%" stop-color="#F3E4D5" />
+    </linearGradient>
+    <pattern id="tileGrid" width="200" height="200" patternUnits="userSpaceOnUse">
+      <rect width="200" height="200" fill="none" stroke="#C8A88B" stroke-width="2.5" />
+      <circle cx="100" cy="100" r="68" fill="none" stroke="#681A27" stroke-width="1.8" stroke-opacity="0.55" />
+      <path d="M100,0 A100,100 0 0,1 200,100 A100,100 0 0,1 100,200 A100,100 0 0,1 0,100 A100,100 0 0,1 100,0 Z" fill="none" stroke="#791B2C" stroke-width="1.5" stroke-opacity="0.4" />
+      <polygon points="100,48 152,100 100,152 48,100" fill="#681A27" fill-opacity="0.14" stroke="#32191B" stroke-width="1.2" />
+      <circle cx="100" cy="100" r="14" fill="#791B2C" fill-opacity="0.85" />
+    </pattern>
+  </defs>
+
+  <!-- Ceramic Tile Wall Surface -->
+  <rect width="1200" height="900" fill="url(#tileBase)" />
+  <rect x="100" y="80" width="1000" height="680" fill="url(#tileGrid)" stroke="#32191B" stroke-width="3" />
+
+  <!-- Continuous Printed Arch Motif Spanning Across Multiple Tiles -->
+  <path d="M350,760 L350,360 A250,250 0 0,1 850,360 L850,760 Z" fill="#681A27" fill-opacity="0.82" />
+  <path d="M430,760 L430,390 A170,170 0 0,1 770,390 L770,760 Z" fill="#FCF6EF" fill-opacity="0.92" />
+  <circle cx="600" cy="390" r="82" fill="#C8A88B" fill-opacity="0.85" />
+  <circle cx="600" cy="390" r="44" fill="#32191B" />
+
+  <!-- Re-overlay Grout Lines so Tile Joints Remain Authentic -->
+  <g stroke="#C8A88B" stroke-width="2" opacity="0.65">
+    <line x1="300" y1="80" x2="300" y2="760" />
+    <line x1="500" y1="80" x2="500" y2="760" />
+    <line x1="700" y1="80" x2="700" y2="760" />
+    <line x1="900" y1="80" x2="900" y2="760" />
+    <line x1="100" y1="280" x2="1100" y2="280" />
+    <line x1="100" y1="480" x2="1100" y2="480" />
+    <line x1="100" y1="680" x2="1100" y2="680" />
+  </g>
+
+  <!-- Caption Strip -->
+  <rect x="100" y="785" width="1000" height="54" rx="4" fill="#32191B" />
+  <text x="132" y="818" fill="#FCF6EF" font-family="Georgia, serif" font-size="14" letter-spacing="3">
+    03 • CUSTOM TILE PRINTING • CERAMIC, VITRIFIED &amp; STONE ELEVATIONS
+  </text>
+</svg>
+

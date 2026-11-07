@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1200" viewBox="0 0 1600 1200">
+  <defs>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#F6F2EA"/>
+      <stop offset="50%" stop-color="#EDE5D6"/>
+      <stop offset="100%" stop-color="#DFD3BE"/>
+    </linearGradient>
+    <linearGradient id="sunGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#D7B382" stop-opacity="0.65"/>
+      <stop offset="100%" stop-color="#B68954" stop-opacity="0.2"/>
+    </linearGradient>
+    <linearGradient id="hill1" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#9BA896" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#72826E" stop-opacity="0.8"/>
+    </linearGradient>
+    <linearGradient id="hill2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#5B6D59" stop-opacity="0.75"/>
+      <stop offset="100%" stop-color="#3E4D3C" stop-opacity="0.92"/>
+    </linearGradient>
+    <pattern id="linen" width="12" height="12" patternUnits="userSpaceOnUse">
+      <path d="M 0 6 L 12 6 M 6 0 L 6 12" stroke="#8C7A64" stroke-width="0.6" stroke-opacity="0.1"/>
+    </pattern>
+  </defs>
+
+  <!-- Base Warm Silk Ground -->
+  <rect width="1600" height="1200" fill="url(#bgGrad)"/>
+  <rect width="1600" height="1200" fill="url(#linen)"/>
+
+  <!-- Subtle Gold Leaf Sun Disk -->
+  <circle cx="1060" cy="430" r="290" fill="url(#sunGrad)"/>
+  <circle cx="1060" cy="430" r="315" fill="none" stroke="#B68954" stroke-width="1.5" stroke-opacity="0.4"/>
+
+  <!-- Distant Misty Mountains -->
+  <path d="M0,780 Q260,600 540,700 T1120,650 T1600,720 L1600,1200 L0,1200 Z" fill="#C4C9BC" opacity="0.55"/>
+  <path d="M0,860 Q380,680 760,790 T1380,730 T1600,800 L1600,1200 L0,1200 Z" fill="url(#hill1)"/>
+  <path d="M0,980 Q320,830 700,920 T1320,860 T1600,930 L1600,1200 L0,1200 Z" fill="url(#hill2)"/>
+
+  <!-- Left Botanical Branch & Ginkgo Fronds -->
+  <g stroke="#2F3B2F" fill="none" stroke-linecap="round">
+    <path d="M80,1200 C140,940 240,680 430,360 C510,230 610,130 700,70" stroke-width="6"/>
+    <path d="M230,820 C340,730 480,680 620,660" stroke-width="4"/>
+    <path d="M330,540 C460,470 590,440 740,450" stroke-width="3.5"/>
+    <path d="M180,960 C90,850 60,720 70,580" stroke-width="3.5"/>
+  </g>
+
+  <!-- Botanical Leaves Left Cluster -->
+  <g fill="#4A5D48" opacity="0.88">
+    <ellipse cx="430" cy="360" rx="46" ry="18" transform="rotate(-35 430 360)"/>
+    <ellipse cx="505" cy="270" rx="42" ry="16" transform="rotate(-40 505 270)"/>
+    <ellipse cx="585" cy="180" rx="38" ry="15" transform="rotate(-42 585 180)"/>
+    <ellipse cx="660" cy="110" rx="34" ry="14" transform="rotate(-45 660 110)"/>
+    <ellipse cx="370" cy="460" rx="48" ry="19" transform="rotate(-25 370 460)"/>
+    <ellipse cx="300" cy="600" rx="52" ry="20" transform="rotate(-20 300 600)"/>
+    <ellipse cx="470" cy="475" rx="44" ry="16" transform="rotate(15 470 475)"/>
+    <ellipse cx="570" cy="445" rx="46" ry="17" transform="rotate(-12 570 445)"/>
+    <ellipse cx="680" cy="445" rx="40" ry="15" transform="rotate(8 680 445)"/>
+    <ellipse cx="410" cy="725" rx="48" ry="18" transform="rotate(-18 410 725)"/>
+    <ellipse cx="530" cy="680" rx="45" ry="17" transform="rotate(12 530 680)"/>
+  </g>
+
+  <!-- Bronze Accent Blossoms & Berries -->
+  <g fill="#B68954">
+    <circle cx="710" cy="65" r="10"/>
+    <circle cx="635" cy="655" r="9"/>
+    <circle cx="755" cy="448" r="9"/>
+    <circle cx="515" cy="420" r="7"/>
+    <circle cx="385" cy="315" r="8"/>
+    <circle cx="615" cy="245" r="7"/>
+  </g>
+
+  <!-- Right Botanical Stem -->
+  <g stroke="#2F3B2F" fill="none" stroke-linecap="round">
+    <path d="M1380,1200 C1340,950 1240,740 1100,520 C1020,400 940,310 860,250" stroke-width="5"/>
+    <path d="M1260,860 C1150,790 1040,760 930,770" stroke-width="3.5"/>
+    <path d="M1290,760 C1380,660 1450,560 1490,440" stroke-width="3.5"/>
+  </g>
+  <g fill="#3E4F3C" opacity="0.85">
+    <ellipse cx="1100" cy="520" rx="45" ry="17" transform="rotate(35 1100 520)"/>
+    <ellipse cx="1010" cy="400" rx="42" ry="16" transform="rotate(38 1010 400)"/>
+    <ellipse cx="920" cy="310" rx="38" ry="14" transform="rotate(40 920 310)"/>
+    <ellipse cx="1180" cy="660" rx="48" ry="18" transform="rotate(28 1180 660)"/>
+    <ellipse cx="1060" cy="770" rx="44" ry="16" transform="rotate(-15 1060 770)"/>
+    <ellipse cx="950" cy="770" rx="40" ry="15" transform="rotate(10 950 770)"/>
+    <ellipse cx="1390" cy="610" rx="44" ry="17" transform="rotate(-35 1390 610)"/>
+    <ellipse cx="1465" cy="490" rx="40" ry="15" transform="rotate(-40 1465 490)"/>
+  </g>
+
+  <!-- Crane / Minimalist Bird Accents -->
+  <path d="M820,210 Q850,185 880,205 Q910,185 940,210 Q910,200 880,218 Q850,200 820,210 Z" fill="#2F3B2F"/>
+  <path d="M960,150 Q982,132 1004,146 Q1026,132 1048,150 Q1026,142 1004,156 Q982,142 960,150 Z" fill="#2F3B2F" opacity="0.75"/>
+
+  <!-- Subtle Frame Border Line -->
+  <rect x="36" y="36" width="1528" height="1128" fill="none" stroke="#9A6F44" stroke-width="2" stroke-opacity="0.35"/>
+</svg>
+

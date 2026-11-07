@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" width="1200" height="900">
+  <defs>
+    <linearGradient id="muralCanvas" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FCF6EF" />
+      <stop offset="60%" stop-color="#F3E4D5" />
+      <stop offset="100%" stop-color="#E5D1BD" />
+    </linearGradient>
+    <linearGradient id="maroonSun" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#791B2C" />
+      <stop offset="100%" stop-color="#681A27" />
+    </linearGradient>
+  </defs>
+
+  <!-- Full-Wall Mural Interior Elevation -->
+  <rect width="1200" height="760" fill="url(#muralCanvas)" />
+  <rect y="760" width="1200" height="140" fill="#D5BEAA" />
+  <line x1="0" y1="760" x2="1200" y2="760" stroke="#681A27" stroke-width="2" stroke-opacity="0.35" />
+
+  <!-- Organic Layered Mountain & Horizon Waves Printed Across Full Wall -->
+  <path d="M0,520 Q260,390 540,470 T1200,410 L1200,760 L0,760 Z" fill="#C8A88B" opacity="0.45" />
+  <path d="M0,590 Q340,470 690,550 T1200,500 L1200,760 L0,760 Z" fill="#681A27" opacity="0.22" />
+  <path d="M0,650 Q420,560 820,630 T1200,590 L1200,760 L0,760 Z" fill="#32191B" opacity="0.82" />
+
+  <!-- Warm Burgundy Sun & Fine Gold Rings -->
+  <circle cx="760" cy="290" r="145" fill="url(#maroonSun)" opacity="0.92" />
+  <circle cx="760" cy="290" r="185" fill="none" stroke="#C8A88B" stroke-width="2" stroke-dasharray="8 8" />
+  <circle cx="760" cy="290" r="230" fill="none" stroke="#681A27" stroke-width="1.2" stroke-opacity="0.4" />
+
+  <!-- Bespoke Botanical Branches & Leaves -->
+  <g stroke="#32191B" stroke-width="3" fill="none">
+    <path d="M180,760 C210,540 290,360 430,170" />
+    <path d="M245,560 C310,520 365,490 420,475" />
+    <path d="M285,430 C220,380 185,340 150,290" />
+  </g>
+  <g fill="#791B2C" opacity="0.88">
+    <ellipse cx="430" cy="170" rx="28" ry="14" transform="rotate(-35 430 170)" />
+    <ellipse cx="365" cy="255" rx="32" ry="15" transform="rotate(-25 365 255)" />
+    <ellipse cx="420" cy="475" rx="34" ry="15" transform="rotate(-15 420 475)" />
+    <ellipse cx="150" cy="290" rx="30" ry="14" transform="rotate(28 150 290)" />
+    <ellipse cx="235" cy="360" rx="32" ry="14" transform="rotate(20 235 360)" />
+  </g>
+  <g fill="#C8A88B" opacity="0.9">
+    <ellipse cx="395" cy="210" rx="24" ry="11" transform="rotate(-30 395 210)" />
+    <ellipse cx="320" cy="320" rx="28" ry="12" transform="rotate(-18 320 320)" />
+  </g>
+
+  <!-- Editorial Wall Plate Header -->
+  <text x="70" y="88" fill="#681A27" font-family="Georgia, serif" font-size="15" letter-spacing="3.5">
+    02 • BESPOKE CUSTOM MURAL • SEAMLESS DIRECT-TO-WALL ARTWORK
+  </text>
+</svg>
+

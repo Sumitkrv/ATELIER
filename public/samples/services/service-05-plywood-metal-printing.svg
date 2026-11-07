@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" width="1200" height="900">
+  <defs>
+    <linearGradient id="plywoodGrain" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#DFC4A6" />
+      <stop offset="50%" stop-color="#C8A88B" />
+      <stop offset="100%" stop-color="#B08D6E" />
+    </linearGradient>
+    <linearGradient id="brushedMetal" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#584345" />
+      <stop offset="50%" stop-color="#32191B" />
+      <stop offset="100%" stop-color="#241113" />
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="900" fill="#F3E4D5" />
+
+  <!-- Left Panel: Warm Birch Plywood with Direct Printed Geometric & Botanical Artwork -->
+  <g transform="translate(80, 75)">
+    <rect width="500" height="720" rx="4" fill="url(#plywoodGrain)" stroke="#32191B" stroke-width="3" />
+    <!-- Subtle Wood Grain Lines -->
+    <path d="M60,0 Q90,360 50,720 M160,0 Q130,360 175,720 M310,0 Q345,360 295,720 M420,0 Q395,360 435,720" fill="none" stroke="#8C694C" stroke-width="1.5" stroke-opacity="0.35" />
+    <!-- Printed Crimson & Cream Constructivist Arch on Plywood -->
+    <path d="M90,620 L90,260 A160,160 0 0,1 410,260 L410,620 Z" fill="#681A27" fill-opacity="0.88" />
+    <circle cx="250" cy="270" r="85" fill="#FCF6EF" fill-opacity="0.92" />
+    <polygon points="150,620 250,410 350,620" fill="#C8A88B" />
+    <text x="36" y="682" fill="#FCF6EF" font-family="Georgia, serif" font-size="13" letter-spacing="2.5">
+      TIMBER &amp; PLYWOOD SUBSTRATE PRINT
+    </text>
+  </g>
+
+  <!-- Right Panel: Brushed Architectural Metal with Precision Line & Burgundy Print -->
+  <g transform="translate(620, 75)">
+    <rect width="500" height="720" rx="4" fill="url(#brushedMetal)" stroke="#C8A88B" stroke-width="2.5" />
+    <!-- Metallic Linear Grid Print -->
+    <circle cx="250" cy="330" r="165" fill="none" stroke="#C8A88B" stroke-width="3" />
+    <circle cx="250" cy="330" r="115" fill="#791B2C" />
+    <circle cx="250" cy="330" r="56" fill="#FCF6EF" />
+    <line x1="60" y1="330" x2="440" y2="330" stroke="#C8A88B" stroke-width="2" />
+    <line x1="250" y1="140" x2="250" y2="520" stroke="#C8A88B" stroke-width="2" />
+    <rect x="85" y="545" width="330" height="75" fill="none" stroke="#C8A88B" stroke-width="1.5" />
+    <text x="36" y="682" fill="#C8A88B" font-family="Georgia, serif" font-size="13" letter-spacing="2.5">
+      BRUSHED METAL SUBSTRATE PRINT
+    </text>
+  </g>
+
+  <text x="85" y="848" fill="#32191B" font-family="Georgia, serif" font-size="14" letter-spacing="3">
+    05 • PLYWOOD &amp; METAL PRINTING • DIRECT ARCHITECTURAL PANEL ARTWORK
+  </text>
+</svg>
+

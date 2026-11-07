@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" width="1200" height="900">
+  <defs>
+    <linearGradient id="officeWall" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FCF6EF" />
+      <stop offset="100%" stop-color="#E7D4C0" />
+    </linearGradient>
+    <linearGradient id="blindFabric" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FCF6EF" />
+      <stop offset="100%" stop-color="#F3E4D5" />
+    </linearGradient>
+  </defs>
+
+  <!-- Modern Studio Office Wall -->
+  <rect width="1200" height="900" fill="url(#officeWall)" />
+
+  <!-- Three Architectural Window Bays with Custom-Printed Roller Blinds -->
+  <g transform="translate(90, 70)">
+    <!-- Top Pelmet Header -->
+    <rect x="0" y="0" width="1020" height="28" rx="4" fill="#32191B" />
+
+    <!-- Blind 1 -->
+    <rect x="20" y="28" width="305" height="620" fill="url(#blindFabric)" stroke="#C8A88B" stroke-width="2" />
+    <!-- Blind 2 -->
+    <rect x="357" y="28" width="305" height="620" fill="url(#blindFabric)" stroke="#C8A88B" stroke-width="2" />
+    <!-- Blind 3 -->
+    <rect x="695" y="28" width="305" height="620" fill="url(#blindFabric)" stroke="#C8A88B" stroke-width="2" />
+
+    <!-- Continuous Panoramic Artwork Printed Across All 3 Roller Blinds -->
+    <clipPath id="blindsClip">
+      <rect x="20" y="28" width="305" height="620" />
+      <rect x="357" y="28" width="305" height="620" />
+      <rect x="695" y="28" width="305" height="620" />
+    </clipPath>
+
+    <g clip-path="url(#blindsClip)">
+      <circle cx="510" cy="285" r="175" fill="#681A27" opacity="0.9" />
+      <circle cx="510" cy="285" r="110" fill="#C8A88B" opacity="0.88" />
+      <path d="M0,490 Q260,360 520,440 T1020,380 L1020,660 L0,660 Z" fill="#791B2C" opacity="0.85" />
+      <path d="M0,555 Q310,455 640,530 T1020,480 L1020,660 L0,660 Z" fill="#32191B" opacity="0.92" />
+      <!-- Subtle Horizontal Roller Blind Texture Ribs -->
+      <g stroke="#32191B" stroke-width="1" opacity="0.12">
+        <line x1="0" y1="120" x2="1020" y2="120" />
+        <line x1="0" y1="220" x2="1020" y2="220" />
+        <line x1="0" y1="320" x2="1020" y2="320" />
+        <line x1="0" y1="420" x2="1020" y2="420" />
+        <line x1="0" y1="520" x2="1020" y2="520" />
+      </g>
+    </g>
+
+    <!-- Weighted Bottom Hem Bars -->
+    <rect x="16" y="646" width="313" height="12" rx="3" fill="#32191B" />
+    <rect x="353" y="646" width="313" height="12" rx="3" fill="#32191B" />
+    <rect x="691" y="646" width="313" height="12" rx="3" fill="#32191B" />
+  </g>
+
+  <!-- Minimalist Conference Table Silhouette -->
+  <rect x="240" y="785" width="720" height="22" rx="4" fill="#32191B" />
+  <text x="95" y="858" fill="#681A27" font-family="Georgia, serif" font-size="14" letter-spacing="3">
+    06 • OFFICE BLIND PRINTING • BESPOKE COMMERCIAL ROLLER BLINDS
+  </text>
+</svg>
+
