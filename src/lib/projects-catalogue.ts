@@ -358,7 +358,7 @@ export const DEVELOPMENT_PROJECT_FIXTURES: ReadonlyArray<PortfolioProjectRecord>
 
 export function findProjectBySlugOrId(
   identifier?: string | null,
-  source: ReadonlyArray<PortfolioProjectRecord> = DEVELOPMENT_PROJECT_FIXTURES
+  source: ReadonlyArray<PortfolioProjectRecord> = []
 ): PortfolioProjectRecord | null {
   if (!identifier) return null;
   const clean = identifier.trim().toLowerCase();

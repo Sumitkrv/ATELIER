@@ -14,8 +14,6 @@ import {
 import {
   CatalogueCategoryRecord,
   CatalogueDesignItem,
-  DESIGN_CATEGORY_RECORDS,
-  DEVELOPMENT_FIXTURE_DESIGNS,
 } from "@/lib/designs-catalogue";
 import {
   deleteSavedStudioProject,
@@ -687,8 +685,8 @@ export function InteractiveWallVisualizerModal({
   initialMode,
   initialSampleRoomId,
   selectedDesign,
-  catalogueDesigns = DEVELOPMENT_FIXTURE_DESIGNS,
-  catalogueCategories = DESIGN_CATEGORY_RECORDS,
+  catalogueDesigns = [],
+  catalogueCategories = [],
   onSelectDesign,
   onClose,
   presentation = "workstation",

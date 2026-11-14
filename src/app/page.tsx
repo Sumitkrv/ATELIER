@@ -14,7 +14,10 @@ import {
   StaggerContainer,
   StaggerItem,
 } from "@/components/motion/Reveal";
-import { DEFAULT_HOMEPAGE_CONTENT } from "@/lib/homepage-content";
+import { getPublicHomeContent, getPublicProjects, getPublicSiteSettings } from "@/lib/public-cms";
+import { pageMetadata } from "@/lib/public-seo";
+export const dynamic = "force-dynamic";
+export async function generateMetadata() { return pageMetadata("home", "ATELIER — WALL STORY", "Architectural wall and surface art."); }
 import {
   ATELIER_BRAND,
   ATELIER_CONTACTS,
@@ -22,7 +25,6 @@ import {
 } from "@/lib/brand";
 import {
   ArrowRight,
-  FolderKanban,
   MapPin,
   MessageCircle,
   Phone,
@@ -77,8 +79,9 @@ function EditorialSectionHeader({
   );
 }
 
-export default function HomePage() {
-  const content = DEFAULT_HOMEPAGE_CONTENT;
+export default async function HomePage() {
+  const [content, projects, settings] = await Promise.all([getPublicHomeContent(), getPublicProjects(), getPublicSiteSettings()]);
+  const featuredProjects = projects.filter(project => project.featured).slice(0, 4);
 
   return (
     <PublicShell>
@@ -91,6 +94,10 @@ export default function HomePage() {
         headlineLine1={content.hero.headlineLine1}
         headlineLine2={content.hero.headlineLine2}
         subheading={content.hero.subheading}
+        primaryCtaLabel={content.hero.primaryCtaLabel}
+        primaryCtaHref={content.hero.primaryCtaHref}
+        secondaryCtaLabel={content.hero.secondaryCtaLabel}
+        secondaryCtaHref={content.hero.secondaryCtaHref}
       />
 
       {/* =====================================================================
@@ -102,7 +109,7 @@ export default function HomePage() {
       {/* =====================================================================
           SECTION 02 — INTRODUCTION / THE ATELIER PHILOSOPHY
       ===================================================================== */}
-      <PhilosophySection />
+      <PhilosophySection content={content} />
 
       {/* =====================================================================
           SECTION 03 — EXPLORE OUR WALL ART COLLECTION (3D TUMBLE DECK)
@@ -140,10 +147,7 @@ export default function HomePage() {
                 </h2>
 
                 <p className="mt-2 text-[13.5px] leading-[1.55] text-brand-muted sm:text-[14px]">
-                  Unlike pasted paper or vinyl sheets that seam and lift over
-                  time, ATELIER — WALL STORY prints directly onto your vertical
-                  surface—adapting seamlessly to the room&apos;s architecture and
-                  substrate texture.
+                  {content.wallPrintingArt.supportingText}
                 </p>
 
                 <div className="mt-3.5">
@@ -272,97 +276,18 @@ export default function HomePage() {
             </div>
           </FadeUp>
 
-          <StaggerContainer className="mt-12 grid grid-cols-1 gap-6 lg:grid-cols-12">
-            {/* Slot 01 — Featured Wide Architectural Frame */}
-            <StaggerItem className="lg:col-span-7">
-              <div className="group flex h-full flex-col justify-between overflow-hidden rounded-2xl border border-[#DDD2C5] bg-[#FBF8F3] shadow-[0_14px_34px_rgba(33,29,26,0.05)]">
-                <div className="relative aspect-[16/10] overflow-hidden bg-[#EBE3D8]">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src="/images/atelier/home/home-executed-residential-mural.webp"
-                    alt="Double-height villa stair hall with a banyan root and leaf mural printed directly onto the wall"
-                    className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
-                  />
-                  <div className="absolute left-4 top-4 rounded-full border border-[#DDD2C5] bg-[#FBF8F3]/95 px-3.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-[#211D1A] shadow-xs">
-                    Residential &amp; Hospitality Elevations
-                  </div>
-                </div>
-                <div className="flex flex-1 flex-col justify-between p-6 sm:p-8">
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-brand-crimson">
-                      <span>Curated Surface Study</span>
-                      <span>•</span>
-                      <span>Direct-to-Wall &amp; Multi-Surface</span>
-                    </div>
-                    <h3 className="mt-2 font-serif text-2xl font-medium text-brand-charcoal">
-                      Panoramic Botanical &amp; Architectural Wall Installations
-                    </h3>
-                    <p className="mt-2 text-sm leading-relaxed text-brand-muted">
-                      Explore how full-height murals, warm limestone arches, and
-                      sculpted plaster compositions transform residential living
-                      spaces, dining rooms, and commercial lobbies across
-                      Mumbai.
-                    </p>
-                  </div>
-                  <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-brand-stone/35 pt-4">
-                    <span className="text-xs text-brand-muted">
-                      Walls • Tiles • Plywood • Office Blinds • Metals • Glass
-                    </span>
-                    <Link
-                      href="/projects"
-                      className="inline-flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-brand-crimson hover:text-brand-charcoal"
-                    >
-                      <span>Explore Portfolio Studies</span>
-                      <ArrowRight className="h-3.5 w-3.5" />
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            </StaggerItem>
-
-            {/* Slot 02 — Vertical Architectural Frame */}
-            <StaggerItem className="lg:col-span-5">
-              <div className="flex h-full flex-col justify-between rounded-2xl border border-[#DDD2C5] bg-[#F2EBE2] p-7 text-[#211D1A] shadow-[0_14px_34px_rgba(33,29,26,0.05)] sm:p-8">
-                <div>
-                  <div className="flex items-center justify-between border-b border-[#DDD2C5] pb-4">
-                    <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[#9B1C1C]">
-                      Multi-Surface Portfolio
-                    </span>
-                    <FolderKanban className="h-4 w-4 text-[#9B1C1C]" />
-                  </div>
-
-                  <div className="mt-5 relative aspect-[16/9] overflow-hidden rounded-xl border border-[#DDD2C5] bg-[#EBE3D8]">
+          <StaggerContainer className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-2">
+            {featuredProjects.map(project => (
+              <StaggerItem key={project.id}>
+                <Link href={`/projects/${project.slug}`} className="group block overflow-hidden rounded-2xl border border-[#DDD2C5] bg-[#FBF8F3]">
+                  <div className="aspect-[16/10] overflow-hidden">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src="/images/atelier/home/home-executed-glass-partition.webp"
-                      alt="Hotel lobby glass partition printed with a translucent burgundy and gold jaali lattice"
-                      className="h-full w-full object-cover"
-                    />
+                    <img src={project.coverImage.secureUrl} alt={project.coverImage.altText} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.02]" />
                   </div>
-
-                  <h3 className="mt-5 font-serif text-2xl font-medium text-[#211D1A] sm:text-3xl">
-                    Tailored to Your Architecture &amp; Material Palette
-                  </h3>
-
-                  <p className="mt-3 text-sm leading-relaxed text-[#6F665E]">
-                    Every commission is proportioned to your room&apos;s exact
-                    dimensions and lighting—whether printing on plastered
-                    interior walls, ceramic tile elevations, bespoke timber
-                    millwork, office blinds, brushed metal, or glass partitions.
-                  </p>
-                </div>
-
-                <div className="mt-8 flex flex-wrap gap-3 border-t border-[#DDD2C5] pt-5">
-                  <Button href="/projects" variant="primary" size="md">
-                    <span>View All Projects</span>
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
-                  <Button href="/contact" variant="outline" size="md">
-                    <span>Discuss Your Space</span>
-                  </Button>
-                </div>
-              </div>
-            </StaggerItem>
+                  <div className="p-6"><p className="text-xs uppercase tracking-wider text-brand-crimson">{project.surfaceName} · {project.locationNote}</p><h3 className="mt-2 font-serif text-2xl">{project.title}</h3><p className="mt-2 text-sm text-brand-muted">{project.summary}</p></div>
+                </Link>
+              </StaggerItem>
+            ))}
           </StaggerContainer>
         </Container>
       </section>
@@ -370,7 +295,7 @@ export default function HomePage() {
       {/* =====================================================================
           SECTION 09 — WHY ATELIER
       ===================================================================== */}
-      <WhyAtelierSection />
+      <WhyAtelierSection content={content} />
 
       {/* =====================================================================
           SECTION 10 — PREMIUM CONTACT CTA
@@ -479,7 +404,7 @@ export default function HomePage() {
                 <div className="mt-6 border-t border-[#DDD2C5] pt-5">
                   <div className="flex items-start gap-2.5 text-xs leading-relaxed text-[#6F665E]">
                     <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#9B1C1C]" />
-                    <span>{ATELIER_BRAND.address.full}</span>
+                    <span>{settings.contact.studioAddress || ATELIER_BRAND.address.full}</span>
                   </div>
                 </div>
               </div>

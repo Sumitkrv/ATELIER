@@ -1,506 +1,165 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { AdminAuthBanner } from "@/components/admin/AdminChromeClient";
-import {
-  adminButtonClass,
-  adminCardClass,
-  AdminConfirmModal,
-  adminInputClass,
-  AdminPageHeader,
-  adminSelectClass,
-  AdminStatusBadge,
-} from "@/components/admin/AdminUiPrimitives";
-import { StoredEnquiryRecord } from "@/lib/enquiries-store";
-import { EnquiryStatus } from "@/types/models";
-import {
-  Inbox,
-  Mail,
-  MessageCircle,
-  Phone,
-  Search,
-  Send,
-  Sparkles,
-  Trash2,
-} from "lucide-react";
+import { adminButtonClass, adminCardClass, AdminConfirmModal, adminInputClass, adminLabelClass, AdminPageHeader, adminSelectClass, AdminStatusBadge } from "@/components/admin/AdminUiPrimitives";
+import type { StoredEnquiryRecord } from "@/lib/enquiries-store";
+import { Download, Inbox, Mail, MessageCircle, Phone, RefreshCw, Search, Send, Trash2 } from "lucide-react";
 
-const PIPELINE_STATUSES: Array<"All" | EnquiryStatus> = [
-  "All",
-  "New",
-  "Contacted",
-  "In Progress",
-  "Closed",
-];
-
-function formatDate(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+const STATUSES = ["New", "Contacted", "Follow-up", "Qualified", "Converted", "Closed", "In Progress"];
+type Metrics = { statuses: { _id: string; count: number }[]; sources: { _id: string; count: number }[]; overdue: number };
+function formatDate(iso: string | null | undefined) {
+  if (!iso) return "Not set";
+  const value = new Date(iso);
+  return Number.isNaN(value.getTime()) ? "Not set" : value.toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" });
 }
-
+function localDate(iso: string | null | undefined) {
+  if (!iso) return "";
+  const value = new Date(iso);
+  if (Number.isNaN(value.getTime())) return "";
+  return new Date(value.getTime() - value.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+}
+function LeadCard({ item, onUpdate, onDelete, initiallyExpanded }: { item: StoredEnquiryRecord; onUpdate: (id: string, patch: Record<string, unknown>) => Promise<void>; onDelete: () => void; initiallyExpanded: boolean }) {
+  const [expanded, setExpanded] = useState(initiallyExpanded);
+  const [note, setNote] = useState("");
+  const [owner, setOwner] = useState(item.assignedOwner || "");
+  const [followUp, setFollowUp] = useState(localDate(item.followUpAt));
+  const [status, setStatus] = useState(item.status === "new" ? "New" : item.status);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const overdue = Boolean(item.followUpAt && new Date(item.followUpAt).getTime() < Date.now() && !["Closed", "Converted"].includes(item.status));
+  const digits = item.phone?.replace(/\D/g, "");
+  const save = async (patch: Record<string, unknown>) => {
+    setBusy(true); setError(null); setNotice(null);
+    try { await onUpdate(item.id, patch); setNote(""); setNotice("Enquiry updated."); }
+    catch (err) { setError(err instanceof Error ? err.message : "Unable to save. Please try again."); }
+    finally { setBusy(false); }
+  };
+  return <article className={`${adminCardClass} overflow-hidden`}>
+    <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-start sm:justify-between">
+      <div className="min-w-0 space-y-2">
+        <p className="font-mono text-[11px] text-[#9B1C1C]">{item.referenceCode || item.id} · {formatDate(item.createdAt)}</p>
+        <h2 className="font-serif text-2xl text-[#1A1A1A]">{item.fullName}</h2>
+        <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-[#574F49]">
+          <a href={`mailto:${item.email}`} className="inline-flex items-center gap-1 break-all"><Mail className="h-3.5 w-3.5 shrink-0" />{item.email}</a>
+          {item.phone && <a href={`tel:${item.phone}`} className="inline-flex items-center gap-1"><Phone className="h-3.5 w-3.5" />{item.phone}</a>}
+        </div>
+        <p className="text-xs text-[#746B64]">{item.serviceOrDesignInterest} · {item.sourcePage}</p>
+        {(item.assignedOwner || item.followUpAt) && <p className={`text-xs ${overdue ? "font-semibold text-[#9B1C1C]" : "text-[#746B64]"}`}>{item.assignedOwner && `Owner: ${item.assignedOwner} · `}{item.followUpAt && `${overdue ? "Overdue follow-up" : "Follow-up"}: ${formatDate(item.followUpAt)}`}</p>}
+      </div>
+      <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+        <AdminStatusBadge tone={item.status === "new" ? "New" : item.status}>{item.status === "new" ? "New" : item.status}</AdminStatusBadge>
+        <button type="button" aria-expanded={expanded} onClick={() => setExpanded(!expanded)} className={adminButtonClass("secondary", "sm")}>{expanded ? "Close details" : "View enquiry"}</button>
+        <button type="button" aria-label={`Delete enquiry from ${item.fullName}`} onClick={onDelete} className="rounded-xl border border-[#DFD0C0] p-2 text-[#9B1C1C]"><Trash2 className="h-4 w-4" /></button>
+      </div>
+    </div>
+    {expanded && <div className="space-y-5 border-t border-[#E8DED3] bg-[#FAF6F0]/70 p-5">
+      <div className="rounded-xl border border-[#E8DED3] bg-[#FFFDF9] p-4">
+        <p className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-[#746B64]">Customer message</p>
+        <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-[#1A1A1A]">{item.message}</p>
+        {item.selectedDesignReference && <p className="mt-2 text-xs text-[#9B1C1C]">Design reference: {item.selectedDesignReference}</p>}
+        <div className="mt-4 flex flex-wrap gap-2">
+          <a href={`mailto:${item.email}`} className={adminButtonClass("secondary", "sm")}><Mail className="h-3.5 w-3.5" />Reply by email</a>
+          {digits && <a href={`https://wa.me/${digits}?text=${encodeURIComponent(`Hello ${item.fullName}, thank you for contacting ATELIER (${item.referenceCode}).`)}`} target="_blank" rel="noreferrer" className={adminButtonClass("secondary", "sm")}><MessageCircle className="h-3.5 w-3.5" />WhatsApp</a>}
+        </div>
+      </div>
+      <form onSubmit={e => { e.preventDefault(); void save({ status, assignedOwner: owner.trim() || null, followUpAt: followUp ? new Date(followUp).toISOString() : null }); }} className="space-y-3">
+        <div className="grid gap-4 sm:grid-cols-3">
+          <label className={adminLabelClass}>Lead status<select value={status} onChange={e => setStatus(e.target.value as typeof status)} className={`${adminSelectClass} mt-1.5`}>{STATUSES.map(value => <option key={value}>{value}</option>)}</select></label>
+          <label className={adminLabelClass}>Assigned owner<input maxLength={120} value={owner} onChange={e => setOwner(e.target.value)} placeholder="Team member name" className={`${adminInputClass} mt-1.5`} /></label>
+          <label className={adminLabelClass}>Follow-up date and time<input type="datetime-local" value={followUp} onChange={e => setFollowUp(e.target.value)} className={`${adminInputClass} mt-1.5`} /></label>
+        </div>
+        <button disabled={busy} className={adminButtonClass("primary", "sm")}>{busy ? "Saving…" : "Save lead details"}</button>
+      </form>
+      <div className="space-y-3">
+        <h3 className="text-xs font-semibold uppercase tracking-widest text-[#746B64]">Internal notes</h3>
+        {(item.adminNotes || []).map((entry, index) => <div key={index} className="rounded-xl border border-[#E8DED3] bg-[#FFFDF9] p-3 text-xs text-[#574F49]"><p className="mb-1 font-medium text-[#9B1C1C]">{entry.authorName} · {formatDate(entry.createdAt)}</p><p className="whitespace-pre-wrap break-words">{entry.note}</p></div>)}
+        <form onSubmit={e => { e.preventDefault(); if (note.trim()) void save({ note: note.trim() }); }} className="flex flex-col gap-2 sm:flex-row sm:items-end">
+          <label className={`${adminLabelClass} flex-1`}>Add a private note<textarea maxLength={3000} value={note} onChange={e => setNote(e.target.value)} rows={2} className={`${adminInputClass} mt-1.5 h-auto py-3`} /></label>
+          <button disabled={busy || !note.trim()} className={adminButtonClass("primary", "sm")}><Send className="h-3.5 w-3.5" />Save note</button>
+        </form>
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#E8DED3] pt-3 text-xs text-[#746B64]">
+        <p>Notification: {item.emailStatus || (item.emailNotificationSent ? "sent" : "pending")} · Last updated {formatDate(item.updatedAt)}{item.emailLastError ? ` · ${item.emailLastError}` : ""}</p>
+        {item.emailStatus === "failed" && <button type="button" disabled={busy || (item.emailAttempts || 0) >= 5 || Boolean(item.emailProviderId)} onClick={() => void save({ retryEmail: true })} className={adminButtonClass("secondary", "sm")}><RefreshCw className="h-3.5 w-3.5" />Retry notification</button>}
+      </div>
+      {error && <p role="alert" className="text-sm text-[#9B1C1C]">{error}</p>}
+      {notice && <p role="status" className="text-sm text-[#264E32]">{notice}</p>}
+    </div>}
+  </article>;
+}
 export default function AdminEnquiriesPage() {
   const [enquiries, setEnquiries] = useState<StoredEnquiryRecord[]>([]);
   const [authenticated, setAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState<"All" | EnquiryStatus>("All");
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
-  const [pendingDelete, setPendingDelete] =
-    useState<StoredEnquiryRecord | null>(null);
+  const [querySearch, setQuerySearch] = useState("");
+  const [status, setStatus] = useState("All");
+  const [source, setSource] = useState("");
+  const [overdue, setOverdue] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pages, setPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [metrics, setMetrics] = useState<Metrics>({ statuses: [], sources: [], overdue: 0 });
+  const [pendingDelete, setPendingDelete] = useState<StoredEnquiryRecord | null>(null);
   const [deleting, setDeleting] = useState(false);
-
-  const loadAll = useCallback(() => {
-    Promise.all([
-      fetch("/api/enquiries", { cache: "no-store" }).then((r) => r.json()),
-      fetch("/api/admin/auth", { cache: "no-store" }).then((r) => r.json()),
-    ])
-      .then(([enqData, authData]) => {
-        if (enqData?.ok && Array.isArray(enqData.enquiries)) {
-          setEnquiries(enqData.enquiries);
-        }
-        setAuthenticated(Boolean(authData?.authenticated));
-      })
-      .finally(() => setLoading(false));
-  }, []);
-
-  useEffect(() => {
-    loadAll();
-  }, [loadAll]);
-
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return enquiries.filter((item) => {
-      const normalizedStatus = item.status === "new" ? "New" : item.status;
-      if (statusFilter !== "All" && normalizedStatus !== statusFilter) {
-        return false;
-      }
-      if (!q) return true;
-      return (
-        item.fullName.toLowerCase().includes(q) ||
-        item.email.toLowerCase().includes(q) ||
-        item.phone.toLowerCase().includes(q) ||
-        (item.referenceCode || "").toLowerCase().includes(q) ||
-        (item.serviceOrDesignInterest || "").toLowerCase().includes(q)
-      );
-    });
-  }, [enquiries, statusFilter, search]);
-
-  const handleStatusChange = async (id: string, status: EnquiryStatus) => {
-    const res = await fetch("/api/enquiries", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, status }),
-    });
-    if (res.ok) await loadAll();
+  const [selectedId, setSelectedId] = useState("");
+  const params = new URLSearchParams({ search: querySearch, status, source, overdue: String(overdue), page: String(page) });
+  const query = params.toString();
+  useEffect(() => { const timer = setTimeout(() => { setQuerySearch(search); setPage(1); }, 300); return () => clearTimeout(timer); }, [search]);
+  useEffect(() => { setSelectedId(new URLSearchParams(window.location.search).get("enquiry") || ""); }, []);
+  const load = useCallback(async () => {
+    setLoading(true); setError(null);
+    try {
+      const response = await fetch(`/api/admin/enquiries?${query}`, { cache: "no-store" });
+      const data = await response.json();
+      setAuthenticated(response.status !== 401 && response.status !== 403);
+      if (!response.ok || !data.ok) throw new Error(data.error || "Unable to load enquiries.");
+      setEnquiries(data.enquiries); setTotal(data.total); setPages(data.pages); setMetrics(data.metrics);
+    } catch (err) { setError(err instanceof Error ? err.message : "Unable to load enquiries."); }
+    finally { setLoading(false); }
+  }, [query]);
+  useEffect(() => { void load(); }, [load]);
+  const update = async (id: string, patch: Record<string, unknown>) => {
+    const response = await fetch("/api/admin/enquiries", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, ...patch }) });
+    const data = await response.json();
+    if (!response.ok || !data.ok) throw new Error(data.error || "Unable to save enquiry.");
+    setEnquiries(items => items.map(item => item.id === id ? data.enquiry : item));
   };
-
-  const handleAddNote = async (id: string) => {
-    const note = (noteDrafts[id] || "").trim();
-    if (!note) return;
-    const res = await fetch("/api/enquiries", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, note }),
-    });
-    if (res.ok) {
-      setNoteDrafts((prev) => ({ ...prev, [id]: "" }));
-      await loadAll();
-    }
-  };
-
-  const confirmDelete = async () => {
+  const remove = async () => {
     if (!pendingDelete) return;
     setDeleting(true);
     try {
-      const res = await fetch(
-        `/api/enquiries?id=${encodeURIComponent(pendingDelete.id)}`,
-        { method: "DELETE" }
-      );
-      if (res.ok) {
-        setPendingDelete(null);
-        await loadAll();
-      }
-    } finally {
-      setDeleting(false);
-    }
+      const response = await fetch(`/api/admin/enquiries?id=${encodeURIComponent(pendingDelete.id)}`, { method: "DELETE" });
+      const data = await response.json();
+      if (!response.ok || !data.ok) throw new Error(data.error || "Unable to delete enquiry.");
+      setPendingDelete(null); await load();
+    } catch (err) { setError(err instanceof Error ? err.message : "Unable to delete enquiry."); setPendingDelete(null); }
+    finally { setDeleting(false); }
   };
-
-  return (
-    <div className="space-y-6">
-      <AdminAuthBanner authenticated={authenticated} />
-
-      <AdminPageHeader
-        eyebrow="Customer Lead CRM"
-        title={`Enquiry Inbox (${enquiries.length})`}
-        description="Track client leads from Contact, Explore Designs, and the Wall Visualizer with status updates and internal follow-up notes."
-      />
-
-      {/* Filter & Search Bar */}
-      <section className={`${adminCardClass} p-4 sm:p-5 space-y-4`}>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="relative flex-1 max-w-md">
-            <Search className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#746B64]" />
-            <input
-              type="search"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by customer name, email, phone, or code…"
-              className={`${adminInputClass} pl-10 h-10`}
-            />
-          </div>
-
-          <div className="flex flex-wrap gap-1.5">
-            {PIPELINE_STATUSES.map((st) => (
-              <button
-                key={st}
-                type="button"
-                onClick={() => setStatusFilter(st)}
-                className={`px-3.5 py-1.5 rounded-full border font-sans text-xs font-medium cursor-pointer transition-colors ${
-                  statusFilter === st
-                    ? "border-[#9B1C1C] bg-[#9B1C1C] text-[#FFFDF9]"
-                    : "border-[#DFD0C0] bg-[#FAF6F0] text-[#574F49] hover:border-[#9B1C1C]/45"
-                }`}
-              >
-                {st}
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {loading ? (
-        <div className={`${adminCardClass} p-12 text-center font-sans text-sm text-[#746B64]`}>
-          Loading studio enquiries…
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className={`${adminCardClass} p-12 text-center`}>
-          <Inbox className="w-8 h-8 text-[#746B64]/50 mx-auto" />
-          <p className="mt-3 font-serif text-2xl text-[#1A1A1A]">
-            No matching enquiries
-          </p>
-          <p className="mt-1 font-sans text-xs text-[#746B64]">
-            Submissions from the Contact and Wall Visualizer pages appear here.
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {/* Wide Desktop Crisp Table Overview */}
-          <div className={`${adminCardClass} hidden xl:block overflow-x-auto`}>
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-[#E8DED3] bg-[#FAF6F0]/75 font-sans text-[11px] font-semibold uppercase tracking-[0.14em] text-[#746B64]">
-                  <th className="py-3.5 px-5">Customer</th>
-                  <th className="py-3.5 px-4">Contact</th>
-                  <th className="py-3.5 px-4">Interest</th>
-                  <th className="py-3.5 px-4">Date</th>
-                  <th className="py-3.5 px-4">Status</th>
-                  <th className="py-3.5 px-5 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#E8DED3]">
-                {filtered.map((item) => {
-                  const phoneDigits = item.phone.replace(/\D/g, "");
-                  const waHref = phoneDigits
-                    ? `https://wa.me/${phoneDigits}?text=${encodeURIComponent(
-                        `Hello ${item.fullName}, thank you for contacting ATELIER — WALL STORY (${item.referenceCode}).`
-                      )}`
-                    : null;
-                  const normalizedStatus =
-                    item.status === "new" ? "New" : item.status;
-                  const isExpanded = expandedId === item.id;
-
-                  return (
-                    <React.Fragment key={item.id}>
-                      <tr className="hover:bg-[#FAF6F0]/60 transition-colors">
-                        <td className="py-4 px-5 align-top">
-                          <p className="font-serif text-lg font-normal text-[#1A1A1A]">
-                            {item.fullName}
-                          </p>
-                          <p className="mt-0.5 font-mono text-[11px] text-[#746B64]">
-                            {item.referenceCode || item.id} • {item.sourcePage}
-                          </p>
-                        </td>
-
-                        <td className="py-4 px-4 align-top font-sans text-xs text-[#574F49] space-y-1">
-                          <a
-                            href={`mailto:${item.email}`}
-                            className="flex items-center gap-1.5 hover:text-[#9B1C1C]"
-                          >
-                            <Mail className="w-3.5 h-3.5 text-[#9B1C1C] shrink-0" />
-                            <span>{item.email}</span>
-                          </a>
-                          <a
-                            href={`tel:${item.phone}`}
-                            className="flex items-center gap-1.5 hover:text-[#9B1C1C] admin-tabular"
-                          >
-                            <Phone className="w-3.5 h-3.5 text-[#9B1C1C] shrink-0" />
-                            <span>{item.phone}</span>
-                          </a>
-                        </td>
-
-                        <td className="py-4 px-4 align-top font-sans text-xs text-[#574F49] max-w-[220px]">
-                          <p className="line-clamp-2">
-                            {item.serviceOrDesignInterest ||
-                              item.serviceInterest ||
-                              "General Enquiry"}
-                          </p>
-                          {item.selectedDesignReference ? (
-                            <p className="mt-0.5 text-[11px] text-[#9B1C1C]">
-                              Ref: {item.selectedDesignReference}
-                            </p>
-                          ) : null}
-                        </td>
-
-                        <td className="py-4 px-4 align-top font-sans text-xs text-[#746B64] whitespace-nowrap admin-tabular">
-                          {formatDate(item.createdAt)}
-                        </td>
-
-                        <td className="py-4 px-4 align-top">
-                          <select
-                            aria-label={`Status for ${item.fullName}`}
-                            disabled={!authenticated}
-                            value={normalizedStatus}
-                            onChange={(e) =>
-                              handleStatusChange(
-                                item.id,
-                                e.target.value as EnquiryStatus
-                              )
-                            }
-                            className={`${adminSelectClass} h-9 w-36 min-w-[144px] text-xs bg-[#FFFDF9] disabled:opacity-65`}
-                          >
-                            <option value="New">New</option>
-                            <option value="Contacted">Contacted</option>
-                            <option value="In Progress">In Progress</option>
-                            <option value="Closed">Closed</option>
-                          </select>
-                        </td>
-
-                        <td className="py-4 px-5 align-top text-right">
-                          <div className="inline-flex items-center gap-1.5">
-                            {waHref ? (
-                              <a
-                                href={waHref}
-                                target="_blank"
-                                rel="noreferrer"
-                                title="WhatsApp Reply"
-                                className={adminButtonClass("secondary", "sm")}
-                              >
-                                <MessageCircle className="w-3.5 h-3.5 text-[#9B1C1C]" />
-                                <span>WhatsApp</span>
-                              </a>
-                            ) : null}
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setExpandedId(isExpanded ? null : item.id)
-                              }
-                              className={adminButtonClass("secondary", "sm")}
-                            >
-                              {isExpanded ? "Hide Brief" : "View Brief"}
-                            </button>
-                            <button
-                              type="button"
-                              disabled={!authenticated}
-                              onClick={() => setPendingDelete(item)}
-                              aria-label={`Delete enquiry from ${item.fullName}`}
-                              className="p-2 rounded-xl border border-[#DFD0C0] bg-[#FFFDF9] text-[#9B1C1C] hover:bg-[#9B1C1C] hover:text-[#FFFDF9] cursor-pointer disabled:opacity-40 transition-colors"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-
-                      {isExpanded ? (
-                        <tr className="bg-[#FAF6F0]/75">
-                          <td colSpan={6} className="p-5">
-                            <div className="space-y-3">
-                              <div className="rounded-xl border border-[#E8DED3] bg-[#FFFDF9] p-4">
-                                <p className="font-sans text-[11px] font-semibold uppercase tracking-[0.14em] text-[#746B64]">
-                                  Customer Message
-                                </p>
-                                <p className="mt-1.5 font-sans text-sm leading-relaxed text-[#1A1A1A]">
-                                  {item.message}
-                                </p>
-                              </div>
-
-                              {item.adminNotes && item.adminNotes.length > 0 ? (
-                                <div className="space-y-1.5">
-                                  {item.adminNotes.map((n, idx) => (
-                                    <div
-                                      key={`${item.id}-note-${idx}`}
-                                      className="rounded-xl border border-[#E8DED3] bg-[#FFFDF9] px-3.5 py-2 font-sans text-xs text-[#574F49]"
-                                    >
-                                      <span className="font-medium text-[#9B1C1C]">
-                                        {n.authorName} •{" "}
-                                        {formatDate(n.createdAt)}:
-                                      </span>{" "}
-                                      {n.note}
-                                    </div>
-                                  ))}
-                                </div>
-                              ) : null}
-
-                              {authenticated ? (
-                                <div className="flex gap-2">
-                                  <input
-                                    type="text"
-                                    value={noteDrafts[item.id] || ""}
-                                    onChange={(e) =>
-                                      setNoteDrafts((prev) => ({
-                                        ...prev,
-                                        [item.id]: e.target.value,
-                                      }))
-                                    }
-                                    placeholder="Add internal studio follow-up note…"
-                                    className={`${adminInputClass} bg-[#FFFDF9] h-10`}
-                                  />
-                                  <button
-                                    type="button"
-                                    onClick={() => handleAddNote(item.id)}
-                                    className={adminButtonClass("primary", "sm")}
-                                  >
-                                    <Send className="h-3.5 w-3.5" />
-                                    <span>Save Note</span>
-                                  </button>
-                                </div>
-                              ) : null}
-                            </div>
-                          </td>
-                        </tr>
-                      ) : null}
-                    </React.Fragment>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Mobile & Tablet Stacked Enquiry Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 xl:hidden">
-            {filtered.map((item) => {
-              const phoneDigits = item.phone.replace(/\D/g, "");
-              const waHref = phoneDigits
-                ? `https://wa.me/${phoneDigits}?text=${encodeURIComponent(
-                    `Hello ${item.fullName}, thank you for reaching out to ATELIER — WALL STORY (${item.referenceCode}).`
-                  )}`
-                : null;
-              const normalizedStatus =
-                item.status === "new" ? "New" : item.status;
-
-              return (
-                <div
-                  key={item.id}
-                  className={`${adminCardClass} p-5 space-y-3.5`}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <span className="font-mono text-[11px] font-semibold text-[#9B1C1C]">
-                        {item.referenceCode || item.id}
-                      </span>
-                      <h2 className="font-serif text-2xl font-normal text-[#1A1A1A]">
-                        {item.fullName}
-                      </h2>
-                    </div>
-                    <AdminStatusBadge tone={normalizedStatus}>
-                      {normalizedStatus}
-                    </AdminStatusBadge>
-                  </div>
-
-                  <div className="space-y-1.5 font-sans text-xs text-[#574F49]">
-                    <a
-                      href={`mailto:${item.email}`}
-                      className="flex items-center gap-1.5"
-                    >
-                      <Mail className="h-3.5 w-3.5 text-[#9B1C1C]" />
-                      {item.email}
-                    </a>
-                    <a
-                      href={`tel:${item.phone}`}
-                      className="flex items-center gap-1.5 admin-tabular"
-                    >
-                      <Phone className="h-3.5 w-3.5 text-[#9B1C1C]" />
-                      {item.phone}
-                    </a>
-                    {item.serviceOrDesignInterest ? (
-                      <p className="flex items-center gap-1.5">
-                        <Sparkles className="h-3.5 w-3.5 text-[#9B1C1C]" />
-                        {item.serviceOrDesignInterest}
-                      </p>
-                    ) : null}
-                  </div>
-
-                  <p className="rounded-xl border border-[#E8DED3] bg-[#FAF6F0] p-3 font-sans text-xs leading-relaxed text-[#1A1A1A]">
-                    {item.message}
-                  </p>
-
-                  <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#E8DED3]">
-                    <select
-                      aria-label={`Status for ${item.fullName}`}
-                      disabled={!authenticated}
-                      value={normalizedStatus}
-                      onChange={(e) =>
-                        handleStatusChange(
-                          item.id,
-                          e.target.value as EnquiryStatus
-                        )
-                      }
-                      className={`${adminSelectClass} h-9 w-36 text-xs`}
-                    >
-                      <option value="New">New</option>
-                      <option value="Contacted">Contacted</option>
-                      <option value="In Progress">In Progress</option>
-                      <option value="Closed">Closed</option>
-                    </select>
-
-                    <div className="flex items-center gap-2">
-                      {waHref ? (
-                        <a
-                          href={waHref}
-                          target="_blank"
-                          rel="noreferrer"
-                          className={adminButtonClass("secondary", "sm")}
-                        >
-                          <MessageCircle className="h-3.5 w-3.5 text-[#9B1C1C]" />
-                          <span>WhatsApp</span>
-                        </a>
-                      ) : null}
-                      <button
-                        type="button"
-                        disabled={!authenticated}
-                        onClick={() => setPendingDelete(item)}
-                        aria-label={`Delete ${item.fullName}`}
-                        className="p-2 rounded-xl border border-[#DFD0C0] text-[#9B1C1C] cursor-pointer disabled:opacity-40"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      <AdminConfirmModal
-        open={Boolean(pendingDelete)}
-        title="Delete Enquiry"
-        description={
-          pendingDelete
-            ? `Are you sure you want to delete enquiry ${pendingDelete.referenceCode} from ${pendingDelete.fullName}?`
-            : ""
-        }
-        confirmLabel="Delete Enquiry"
-        busy={deleting}
-        onCancel={() => setPendingDelete(null)}
-        onConfirm={confirmDelete}
-      />
-    </div>
-  );
+  const newCount = metrics.statuses.filter(item => ["New", "new"].includes(item._id)).reduce((sum, item) => sum + item.count, 0);
+  const converted = metrics.statuses.find(item => item._id === "Converted")?.count || 0;
+  return <div className="space-y-6">
+    <AdminAuthBanner authenticated={authenticated} />
+    <AdminPageHeader eyebrow="Customer enquiries" title="Enquiry Inbox" description="Review project briefs, assign a team member, and keep every follow-up on track." />
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">{[["Matching enquiries", total], ["New leads", newCount], ["Overdue follow-ups", metrics.overdue], ["Converted", converted]].map(([label, value]) => <div key={label} className={`${adminCardClass} p-4`}><p className="text-xs text-[#746B64]">{label}</p><p className="mt-2 font-serif text-3xl text-[#1A1A1A]">{value}</p></div>)}</div>
+    <section className={`${adminCardClass} space-y-4 p-4 sm:p-5`}>
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <label className="relative flex-1"><span className="sr-only">Search enquiries</span><Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-[#746B64]" /><input type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search name, email, phone, or reference" className={`${adminInputClass} pl-10`} /></label>
+        <a href={`/api/admin/enquiries?${query}&format=csv`} className={adminButtonClass("secondary", "sm")}><Download className="h-4 w-4" />Export matching leads</a>
+      </div>
+      <div className="flex flex-wrap items-end gap-3">
+        <label className={adminLabelClass}>Status<select value={status} onChange={e => { setStatus(e.target.value); setPage(1); }} className={`${adminSelectClass} mt-1.5 w-auto`}><option>All</option>{STATUSES.map(value => <option key={value}>{value}</option>)}</select></label>
+        <label className={adminLabelClass}>Source page<select value={source} onChange={e => { setSource(e.target.value); setPage(1); }} className={`${adminSelectClass} mt-1.5 w-auto`}><option value="">All pages</option>{metrics.sources.map(value => <option key={value._id} value={value._id}>{value._id} ({value.count})</option>)}</select></label>
+        <label className="flex min-h-10 items-center gap-2 text-xs text-[#574F49]"><input type="checkbox" checked={overdue} onChange={e => { setOverdue(e.target.checked); setPage(1); }} />Overdue follow-ups only</label>
+        <button type="button" onClick={() => void load()} className={adminButtonClass("secondary", "sm")}><RefreshCw className="h-3.5 w-3.5" />Refresh</button>
+      </div>
+    </section>
+    {error && <p role="alert" className="rounded-xl border border-[#9B1C1C]/30 p-4 text-sm text-[#9B1C1C]">{error}</p>}
+    {loading ? <p role="status" className={`${adminCardClass} p-10 text-center text-sm text-[#746B64]`}>Loading enquiries…</p> : !error && enquiries.length === 0 ? <div className={`${adminCardClass} p-12 text-center`}><Inbox className="mx-auto h-8 w-8 text-[#746B64]" /><p className="mt-3 font-serif text-2xl">No matching enquiries</p><p className="mt-2 text-xs text-[#746B64]">Customer submissions will appear here. Try changing the filters.</p></div> : <div className="space-y-4">{enquiries.map(item => <LeadCard key={item.id} item={item} onUpdate={update} onDelete={() => setPendingDelete(item)} initiallyExpanded={selectedId === item.id} />)}</div>}
+    <div className="flex items-center justify-between gap-3 text-xs text-[#746B64]"><p>Page {page} of {pages} · {total} matching enquiries</p><div className="flex gap-2"><button disabled={loading || page <= 1} onClick={() => setPage(value => value - 1)} className={adminButtonClass("secondary", "sm")}>Previous</button><button disabled={loading || page >= pages} onClick={() => setPage(value => value + 1)} className={adminButtonClass("secondary", "sm")}>Next</button></div></div>
+    <AdminConfirmModal open={Boolean(pendingDelete)} title="Delete enquiry" description={pendingDelete ? `Permanently delete ${pendingDelete.referenceCode} from ${pendingDelete.fullName}, including its private notes?` : ""} confirmLabel="Delete enquiry" busy={deleting} onCancel={() => setPendingDelete(null)} onConfirm={remove} />
+  </div>;
 }

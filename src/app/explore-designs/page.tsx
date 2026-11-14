@@ -1,5 +1,6 @@
 "use client";
 
+import { usePageContent } from "@/components/layout/PublicContentProvider";
 import React, {
   Suspense,
   useCallback,
@@ -22,8 +23,6 @@ import {
   buildAtelierVaultCategories,
   CatalogueCategoryRecord,
   CatalogueDesignItem,
-  DESIGN_CATEGORY_RECORDS,
-  DEVELOPMENT_FIXTURE_DESIGNS,
   EXPLORE_DESIGNS_HERO_CONTENT,
   findDesignBySlugOrId,
   resolveCategoryFromQuery,
@@ -41,9 +40,20 @@ import {
 } from "lucide-react";
 
 function ExploreDesignsWorkspace() {
+  const pageContent = usePageContent("explore-designs");
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+
+  // Live CMS / API synchronized categories & designs (initialized from canonical registry for zero layout shift)
+  const [catalogueCategories, setCatalogueCategories] = useState<
+    ReadonlyArray<CatalogueCategoryRecord>
+  >([]);
+  const [catalogueDesigns, setCatalogueDesigns] = useState<
+    ReadonlyArray<CatalogueDesignItem>
+  >([]);
+  const [cmsErrorMessage, setCmsErrorMessage] = useState<string | null>(null);
+
 
   // Resolve initial category from ?category=cat-01 or ?slot=1
   const resolvedCategoryFromUrl = useMemo(
@@ -51,8 +61,9 @@ function ExploreDesignsWorkspace() {
       resolveCategoryFromQuery({
         categoryParam: searchParams.get("category"),
         slotParam: searchParams.get("slot"),
+        categories: catalogueCategories,
       }),
-    [searchParams]
+    [searchParams, catalogueCategories]
   );
 
   const initialDesignParam = searchParams.get("design") || "";
@@ -74,15 +85,6 @@ function ExploreDesignsWorkspace() {
     setPopupCategorySlug(urlCategorySlug !== "all" ? urlCategorySlug : null);
   }
 
-  // Live CMS / API synchronized categories & designs (initialized from canonical registry for zero layout shift)
-  const [catalogueCategories, setCatalogueCategories] = useState<
-    ReadonlyArray<CatalogueCategoryRecord>
-  >(DESIGN_CATEGORY_RECORDS);
-  const [catalogueDesigns, setCatalogueDesigns] = useState<
-    ReadonlyArray<CatalogueDesignItem>
-  >(DEVELOPMENT_FIXTURE_DESIGNS);
-  const [cmsErrorMessage, setCmsErrorMessage] = useState<string | null>(null);
-
   const syncCatalogueFromApi = useCallback(async () => {
     try {
       setCmsErrorMessage(null);
@@ -91,7 +93,7 @@ function ExploreDesignsWorkspace() {
         throw new Error(`HTTP ${res.status}`);
       }
       const data = await res.json();
-      if (Array.isArray(data?.categories) && data.categories.length > 0) {
+      if (Array.isArray(data?.categories)) {
         setCatalogueCategories(data.categories);
       }
       const combinedDesigns: CatalogueDesignItem[] = [
@@ -102,12 +104,12 @@ function ExploreDesignsWorkspace() {
           ? data.developmentFixtures
           : []),
       ];
-      if (combinedDesigns.length > 0) {
+      if (Array.isArray(data?.approvedClientDesigns)) {
         setCatalogueDesigns(combinedDesigns);
       }
     } catch {
       setCmsErrorMessage(
-        "Live CMS sync temporarily unavailable — displaying verified studio catalogue."
+        "The design catalogue is temporarily unavailable. Please try again."
       );
     }
   }, []);
@@ -122,7 +124,7 @@ function ExploreDesignsWorkspace() {
         }
         const data = await res.json();
         if (cancelled) return;
-        if (Array.isArray(data?.categories) && data.categories.length > 0) {
+        if (Array.isArray(data?.categories)) {
           setCatalogueCategories(data.categories);
         }
         const combinedDesigns: CatalogueDesignItem[] = [
@@ -133,14 +135,14 @@ function ExploreDesignsWorkspace() {
             ? data.developmentFixtures
             : []),
         ];
-        if (combinedDesigns.length > 0) {
+        if (Array.isArray(data?.approvedClientDesigns)) {
           setCatalogueDesigns(combinedDesigns);
         }
         setCmsErrorMessage(null);
       } catch {
         if (!cancelled) {
           setCmsErrorMessage(
-            "Live CMS sync temporarily unavailable — displaying verified studio catalogue."
+            "The design catalogue is temporarily unavailable. Please try again."
           );
         }
       }
@@ -158,7 +160,7 @@ function ExploreDesignsWorkspace() {
   const [selectedDesign, setSelectedDesign] =
     useState<CatalogueDesignItem | null>(() =>
       initialDesignParam
-        ? findDesignBySlugOrId(initialDesignParam, DEVELOPMENT_FIXTURE_DESIGNS)
+        ? findDesignBySlugOrId(initialDesignParam, catalogueDesigns)
         : null
     );
   const [prevDesignParam, setPrevDesignParam] =
@@ -318,43 +320,39 @@ function ExploreDesignsWorkspace() {
             <div className="inline-flex items-center gap-3">
               <span className="h-[1.5px] w-7 bg-[#9B1C1C]" />
               <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#9B1C1C]">
-                {EXPLORE_DESIGNS_HERO_CONTENT.eyebrow}
+                {pageContent?.hero.eyebrow || EXPLORE_DESIGNS_HERO_CONTENT.eyebrow}
               </span>
             </div>
 
             {/* Editorial Serif Heading — balanced 3-line hierarchy, "Every Space" kept intact on its own line */}
             <h1 className="mt-4 font-serif text-[clamp(2.05rem,3.95vw,3.85rem)] min-[360px]:text-[clamp(2.25rem,3.95vw,3.85rem)] font-semibold leading-[1.06] tracking-[-0.02em] text-[#1A1A1A]">
-              <span className="block whitespace-nowrap">Explore Wall Art</span>
-              <span className="block">Designs for</span>
-              <em className="block font-serif italic font-semibold text-[#9B1C1C] whitespace-nowrap">
-                Every Space
-              </em>
+              <span className="block">{pageContent?.hero.heading || "Explore Wall Art Designs for"}</span><em className="block text-[#9B1C1C]">{pageContent?.hero.highlightedText || "Every Space"}</em>
             </h1>
 
             {/* Description */}
             <p className="mt-4 max-w-[430px] text-[15px] leading-[1.68] text-[#4E4640] sm:text-[15.5px]">
-              {EXPLORE_DESIGNS_HERO_CONTENT.description}
+              {pageContent?.hero.subheading || EXPLORE_DESIGNS_HERO_CONTENT.description}
             </p>
 
             {/* Primary & Secondary CTAs */}
             <div className="mt-7 flex flex-col gap-3 min-[420px]:flex-row min-[420px]:flex-wrap min-[420px]:items-center min-[420px]:gap-3.5">
               <a
-                href="#atelier-art-vault"
-                onClick={handleScrollToCollection}
+                href={pageContent?.hero.primaryCta.href || "#atelier-art-vault"}
+                onClick={pageContent?.hero.primaryCta.href ? undefined : handleScrollToCollection}
                 className="group inline-flex h-12 w-full items-center justify-center gap-2.5 rounded-xl bg-[#9B1C1C] px-6 text-[13.5px] font-medium tracking-[0.01em] text-[#FAF9F6] shadow-[0_8px_22px_-8px_rgba(155,28,28,0.5)] transition-all duration-200 hover:bg-[#7F1616] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9B1C1C] min-[420px]:w-auto"
               >
-                <span>{EXPLORE_DESIGNS_HERO_CONTENT.primaryCtaLabel}</span>
+                <span>{pageContent?.hero.primaryCta.label || EXPLORE_DESIGNS_HERO_CONTENT.primaryCtaLabel}</span>
                 <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
               </a>
 
               <Link
-                href="/visualizer"
+                href={pageContent?.hero.secondaryCta.href || "/visualizer"}
                 className="group inline-flex h-12 w-full items-center justify-center gap-2.5 rounded-xl border border-[#D4C5B4] bg-[#FAF9F6]/90 px-5 text-[13.5px] font-medium tracking-[0.01em] text-[#1A1A1A] shadow-2xs backdrop-blur-xs transition-all duration-200 hover:border-[#9B1C1C] hover:bg-[#FAF9F6] hover:text-[#9B1C1C] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9B1C1C] min-[420px]:w-auto"
               >
                 <span className="flex h-5 w-5 items-center justify-center rounded-full border border-[#9B1C1C]/40 bg-[#9B1C1C]/[0.06] text-[#9B1C1C] transition-colors duration-200 group-hover:border-[#9B1C1C] group-hover:bg-[#9B1C1C] group-hover:text-[#FAF9F6]">
                   <Play className="h-2.5 w-2.5 translate-x-[0.5px] fill-current" />
                 </span>
-                <span>{EXPLORE_DESIGNS_HERO_CONTENT.secondaryCtaLabel}</span>
+                <span>{pageContent?.hero.secondaryCta.label || EXPLORE_DESIGNS_HERO_CONTENT.secondaryCtaLabel}</span>
               </Link>
             </div>
           </FadeUp>
@@ -363,7 +361,7 @@ function ExploreDesignsWorkspace() {
         {/* 3. RIGHT ARCHITECTURAL PHOTOGRAPHY (66–68% on Desktop for full vertical & horizontal room framing, full native aspect below CTAs on Mobile/Tablet) */}
         <div className="relative w-full aspect-[1145/768] min-h-[250px] overflow-hidden lg:absolute lg:inset-y-0 lg:right-0 lg:aspect-auto lg:h-full lg:w-[66%] xl:w-[68%]">
           <Image
-            src={EXPLORE_DESIGNS_HERO_CONTENT.heroImage}
+            src={pageContent?.hero.posterImage?.secureUrl || EXPLORE_DESIGNS_HERO_CONTENT.heroImage}
             alt={EXPLORE_DESIGNS_HERO_CONTENT.heroImageAlt}
             width={1145}
             height={768}

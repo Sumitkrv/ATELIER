@@ -35,8 +35,11 @@ interface OverviewData {
     blogsPublished: number;
     enquiriesTotal: number;
     enquiriesOpen: number;
+    enquiriesNew?: number;
+    pendingFollowups?: number;
   };
   recentEnquiries: StoredEnquiryRecord[];
+  recentActivity?: Array<{ id: string; actor: string; action: string; target: string | { collection: string; id: string }; createdAt: string }>;
 }
 
 const QUICK_WORKSPACES = [
@@ -105,6 +108,7 @@ export default function AdminDashboardOverviewPage() {
   const [data, setData] = useState<OverviewData | null>(null);
   const [pagesCount, setPagesCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -119,11 +123,12 @@ export default function AdminDashboardOverviewPage() {
       .then(([overviewJson, contentJson]) => {
         if (!active) return;
         if (overviewJson?.ok) setData(overviewJson);
+        else setLoadError(overviewJson?.error || "Dashboard is unavailable. Please refresh.");
         if (contentJson?.ok && Array.isArray(contentJson.pages)) {
           setPagesCount(contentJson.pages.length);
         }
       })
-      .catch(() => {})
+      .catch(() => { if (active) setLoadError("Could not load the dashboard. Please refresh."); })
       .finally(() => {
         if (active) setLoading(false);
       });
@@ -136,6 +141,8 @@ export default function AdminDashboardOverviewPage() {
   const counts = data?.counts;
 
   const metrics = [
+    { label: "New Enquiries", value: counts ? String(counts.enquiriesNew ?? 0) : "…", caption: "Waiting for first contact", href: "/admin/enquiries", Icon: MessageSquare },
+    { label: "Due Follow-ups", value: counts ? String(counts.pendingFollowups ?? 0) : "…", caption: "Follow-up date reached", href: "/admin/enquiries", Icon: MessageSquare },
     {
       label: "Published Designs",
       value: counts ? `${counts.designsPublished}` : loading ? "…" : "—",
@@ -183,6 +190,7 @@ export default function AdminDashboardOverviewPage() {
   return (
     <div className="space-y-6">
       {data ? <AdminAuthBanner authenticated={data.authenticated} /> : null}
+      {loadError && <p role="alert" className="rounded-xl border border-[#9B1C1C]/30 bg-[#FFFDF9] p-4 text-sm text-[#9B1C1C]">{loadError}</p>}
 
       {/* Editorial Studio Welcome Band */}
       <section className={`${adminCardClass} p-6 sm:p-8`}>
@@ -246,6 +254,10 @@ export default function AdminDashboardOverviewPage() {
         </div>
       </section>
 
+      <section className={`${adminCardClass} p-6`}>
+        <h2 className="font-serif text-2xl">Recent activity</h2>
+        {!data?.recentActivity?.length ? <p className="mt-3 text-sm text-[#746B64]">{loading ? "Loading activity…" : "No content activity recorded yet."}</p> : <ul className="mt-3 divide-y divide-[#E8DED3]">{data.recentActivity.map(entry => <li key={entry.id} className="flex flex-wrap items-center justify-between gap-2 py-3 text-xs"><span><strong>{entry.action.replace(/[_\.]/g, " ")}</strong> · {typeof entry.target === "string" ? entry.target.split("/")[0].replace("site_settings", "settings").replace("pages", "page") : "media"} · {entry.actor}</span><time dateTime={entry.createdAt}>{new Date(entry.createdAt).toLocaleString()}</time></li>)}</ul>}
+      </section>
       {/* Recent Enquiries + Quick Studio Workspaces */}
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
         {/* Recent Client Enquiries */}

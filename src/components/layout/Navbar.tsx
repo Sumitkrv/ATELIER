@@ -1,5 +1,6 @@
 "use client";
 
+import { useSiteSettings } from "@/components/layout/PublicContentProvider";
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -38,6 +39,8 @@ function WhatsAppIcon({ className }: { className?: string }) {
 }
 
 export function Navbar() {
+  const settings = useSiteSettings();
+  const whatsappHref = buildWhatsAppUrl(settings?.contact.whatsappNumber?.replace(/\D/g, ""));
   const pathname = usePathname();
   const prefersReducedMotion = useReducedMotion();
   const headerBarRef = useRef<HTMLDivElement | null>(null);
@@ -207,7 +210,7 @@ export function Navbar() {
           </Link>
 
           <a
-            href={buildWhatsAppUrl()}
+            href={whatsappHref}
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Chat with ATELIER — WALL STORY on WhatsApp"
@@ -302,7 +305,7 @@ export function Navbar() {
                 <span>Wall Preview</span>
               </Link>
               <a
-                href={buildWhatsAppUrl()}
+                href={whatsappHref}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center gap-2 rounded-lg border border-[#991D20]/35 bg-[#FDF8F3] px-4 py-2.5 text-xs font-medium text-[#991D20]"
@@ -311,7 +314,7 @@ export function Navbar() {
                 <span>WhatsApp</span>
               </a>
               <a
-                href="tel:+918591971675"
+                href={`tel:${settings?.contact.primaryPhone?.replace(/[^+\d]/g, "") || "+918591971675"}`}
                 className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#991D20] px-4 py-2.5 text-xs font-medium text-[#FDF8F3]"
               >
                 <Phone className="h-4 w-4" />

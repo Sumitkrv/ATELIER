@@ -1,6 +1,8 @@
 "use client";
 /* eslint-disable @next/next/no-img-element */
 
+import { AdminPublishingControls, AdminUnsavedChanges } from "@/components/admin/AdminPublishingControls";
+import { AdminRecordDetails, EMPTY_RECORD_DETAILS, readRecordDetails } from "@/components/admin/AdminRecordDetails";
 import React, { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import {
@@ -35,6 +37,7 @@ import {
 } from "lucide-react";
 
 const EMPTY_BLOG = {
+  ...EMPTY_RECORD_DETAILS,
   id: "",
   title: "",
   slug: "",
@@ -45,7 +48,7 @@ const EMPTY_BLOG = {
   imageUrl: "",
   tags: "wall art, 3d printing, mumbai",
   featured: false,
-  published: true,
+  published: false,
 };
 
 export default function AdminBlogsPage() {
@@ -80,6 +83,7 @@ export default function AdminBlogsPage() {
       .flatMap((s) => s.paragraphs)
       .join("\n\n");
     setForm({
+      ...readRecordDetails(b),
       id: b.id,
       title: b.title,
       slug: b.slug,
@@ -106,11 +110,18 @@ export default function AdminBlogsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ collection: "blogs", ...form }),
       });
+      if (!res.ok) {
+        const json = await res.json();
+        setFeedback(json.error || "Could not save changes.");
+        return;
+      }
       if (res.ok) {
         setShowEditor(false);
         setFeedback(`Saved article "${form.title || "Untitled"}".`);
         await loadBlogs();
       }
+    } catch {
+      setFeedback("Network error. Your changes were not saved.");
     } finally {
       setSaving(false);
     }
@@ -149,6 +160,7 @@ export default function AdminBlogsPage() {
   return (
     <div className="space-y-6">
       <AdminAuthBanner authenticated={authenticated} />
+      <AdminUnsavedChanges dirty={showEditor} />
 
       <AdminPageHeader
         eyebrow="Studio Journal CMS"
@@ -196,7 +208,7 @@ export default function AdminBlogsPage() {
             </div>
             <button
               type="button"
-              onClick={() => setShowEditor(false)}
+              onClick={() => { if (window.confirm("Close the editor? Unsaved changes will be lost.")) setShowEditor(false); }}
               aria-label="Close article editor"
               className="p-2 rounded-xl border border-[#DFD0C0] text-[#746B64] hover:text-[#1A1A1A] hover:bg-[#FAF6F0] cursor-pointer"
             >
@@ -269,6 +281,8 @@ export default function AdminBlogsPage() {
             />
           </div>
 
+          <AdminRecordDetails value={form} onChange={details => setForm({ ...form, ...details })} gallery={false} />
+          <AdminPublishingControls collection="blogs" id={form.id} route={`/blogs/${form.slug}`} onChange={loadBlogs} />
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-4 border-t border-[#E8DED3]">
             <div className="flex flex-wrap gap-6 font-sans text-sm text-[#1A1A1A]">
               <label className="inline-flex cursor-pointer items-center gap-2">
@@ -298,7 +312,7 @@ export default function AdminBlogsPage() {
             <div className="flex items-center gap-2.5">
               <button
                 type="button"
-                onClick={() => setShowEditor(false)}
+                onClick={() => { if (window.confirm("Close the editor? Unsaved changes will be lost.")) setShowEditor(false); }}
                 className={adminButtonClass("secondary")}
               >
                 Cancel

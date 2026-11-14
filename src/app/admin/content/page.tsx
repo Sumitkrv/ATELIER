@@ -1,5 +1,7 @@
 "use client";
 
+import { AdminPublishingControls, AdminUnsavedChanges } from "@/components/admin/AdminPublishingControls";
+import { AdminHomepageSections } from "@/components/admin/AdminHomepageSections";
 import React, { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import {
@@ -46,6 +48,7 @@ export default function AdminContentPage() {
   const [activeKey, setActiveKey] =
     useState<PageContentDocument["pageKey"]>("home");
   const [saving, setSaving] = useState(false);
+  const [dirty, setDirty] = useState(false);
   const [savedNotice, setSavedNotice] = useState<string | null>(null);
   const [errorNotice, setErrorNotice] = useState<string | null>(null);
 
@@ -77,6 +80,7 @@ export default function AdminContentPage() {
     updater: (doc: PageContentDocument) => PageContentDocument
   ) => {
     if (!activeDoc) return;
+    setDirty(true);
     setPages((prev) =>
       prev.map((item) =>
         item.pageKey === activeDoc.pageKey ? updater(item) : item
@@ -94,13 +98,14 @@ export default function AdminContentPage() {
       const res = await fetch("/api/admin/cms", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ collection: "content", page: activeDoc }),
+        body: JSON.stringify({ collection: "content", page: activeDoc, status: "draft" }),
       });
       const json = await res.json();
       if (!res.ok || !json?.ok) {
         setErrorNotice(json?.error || "Unable to save page content.");
         return;
       }
+      setDirty(false);
       setSavedNotice(
         `Saved "${activeMeta?.label || activeDoc.pageKey}" copy and media settings.`
       );
@@ -115,6 +120,7 @@ export default function AdminContentPage() {
   return (
     <div className="space-y-6">
       <AdminAuthBanner authenticated={authenticated} />
+      <AdminUnsavedChanges dirty={dirty} />
 
       <AdminPageHeader
         eyebrow="Pages & Editorial Copy"
@@ -123,7 +129,7 @@ export default function AdminContentPage() {
         actions={
           activeMeta ? (
             <Link
-              href={activeMeta.route}
+              href={`/api/admin/preview?path=${encodeURIComponent(activeMeta.route)}`}
               target="_blank"
               rel="noopener noreferrer"
               className={adminButtonClass("secondary", "sm")}
@@ -158,6 +164,8 @@ export default function AdminContentPage() {
                   key={p.pageKey}
                   type="button"
                   onClick={() => {
+                    if (dirty && !window.confirm("Switch pages? Unsaved changes will be lost.")) return;
+                    setDirty(false);
                     setActiveKey(p.pageKey);
                     setSavedNotice(null);
                     setErrorNotice(null);
@@ -324,6 +332,18 @@ export default function AdminContentPage() {
                   }
                 />
               </div>
+
+              <div>
+                <label className={adminLabelClass}>Hero video URL (optional)</label>
+                <input type="url" value={activeDoc.hero.videoAsset?.secureUrl || ""} onChange={e => updateActiveDoc(doc => ({ ...doc, hero: { ...doc.hero, videoAsset: e.target.value ? { publicId: "page-hero-video", secureUrl: e.target.value, resourceType: "video", altText: doc.hero.heading } : null } }))} className={adminInputClass}/>
+                <p className="mt-1 text-xs text-[#746B64]">Upload a video in the media library and paste its URL.</p>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className={adminLabelClass}>SEO title<input value={activeDoc.seo?.metaTitle || ""} maxLength={160} onChange={e => updateActiveDoc(doc => ({ ...doc, seo: { ...doc.seo, metaTitle: e.target.value } }))} className={adminInputClass}/></label>
+                <label className={adminLabelClass}>SEO description<textarea value={activeDoc.seo?.metaDescription || ""} maxLength={320} onChange={e => updateActiveDoc(doc => ({ ...doc, seo: { ...doc.seo, metaDescription: e.target.value } }))} className={adminTextareaClass}/></label>
+              </div>
+              <AdminHomepageSections doc={activeDoc} onChange={doc => updateActiveDoc(() => doc)}/>
+              <AdminPublishingControls collection="content" id={activeDoc.id} route={activeMeta?.route} onChange={loadPages}/>
 
               {/* Action Buttons */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 pt-2">
@@ -530,7 +550,7 @@ export default function AdminContentPage() {
                   className={adminButtonClass("primary")}
                 >
                   <Check className="h-4 w-4" />
-                  <span>{saving ? "Saving Changes…" : "Save Page Content"}</span>
+                  <span>{saving ? "Saving Changes…" : "Save Draft"}</span>
                 </button>
               </div>
             </form>

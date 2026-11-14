@@ -1,78 +1,36 @@
-import { NextResponse } from "next/server";
-import {
-  buildClearSessionCookieHeader,
-  buildSessionCookieHeader,
-  readAdminSessionFromRequest,
-  signAdminSessionToken,
-  verifyAdminCredentials,
-} from "@/lib/admin-auth";
+import { z } from "zod";
+import { buildClearSessionCookieHeader, buildSessionCookieHeader, getActiveAdminSession, persistAdminSession, revokeAdminSession, signAdminSessionToken, verifyAdminCredentials } from "@/lib/admin-auth";
+import { checkSameOrigin, enforceRateLimit, privateJson, readJsonBody, requestErrorResponse } from "@/lib/request-security";
 import { getEnvironmentReadiness } from "@/lib/env";
-
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
-  const session = readAdminSessionFromRequest(request);
-  const readiness = getEnvironmentReadiness();
-  const isDev = process.env.NODE_ENV !== "production";
-
-  return NextResponse.json({
-    ok: true,
-    authenticated: Boolean(session),
-    session: session
-      ? {
-          email: session.email,
-          role: session.role,
-          exp: session.exp,
-        }
-      : null,
-    readiness,
-    devEmailHint: isDev
-      ? process.env.INITIAL_ADMIN_EMAIL?.trim() || null
-      : null,
-  });
+  try {
+    const session = await getActiveAdminSession(request);
+    return privateJson({ ok: true, authenticated: Boolean(session), session: session ? { email: session.email, role: session.role, exp: session.exp } : null, ...(session ? { readiness: getEnvironmentReadiness() } : {}) });
+  } catch (error) { return requestErrorResponse(error); }
 }
-
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const email = typeof body?.email === "string" ? body.email : "";
-    const password = typeof body?.password === "string" ? body.password : "";
-
-    if (!email.trim() || !password) {
-      return NextResponse.json(
-        { ok: false, error: "Please enter both email and password." },
-        { status: 400 }
-      );
-    }
-
-    const verified = verifyAdminCredentials(email, password);
-    if (!verified.ok) {
-      return NextResponse.json(
-        { ok: false, error: verified.error },
-        { status: 401 }
-      );
-    }
-
+    checkSameOrigin(request);
+    const parsed = z.object({ email: z.string().trim().email().max(254), password: z.string().min(1).max(1024) }).safeParse(await readJsonBody(request, 4096));
+    if (!parsed.success) return privateJson({ ok: false, error: "Please enter a valid email and password." }, 400);
+    await enforceRateLimit(request, "admin-login", 10, 15 * 60 * 1000);
+    const verified = verifyAdminCredentials(parsed.data.email, parsed.data.password);
+    if (!verified.ok) return privateJson({ ok: false, error: verified.error }, 401);
     const token = signAdminSessionToken(verified.email);
-    const response = NextResponse.json({
-      ok: true,
-      authenticated: true,
-      session: {
-        email: verified.email,
-        role: "super_admin",
-      },
-    });
+    await persistAdminSession(token);
+    const response = privateJson({ ok: true, authenticated: true, session: { email: verified.email, role: "super_admin" } });
     response.headers.set("Set-Cookie", buildSessionCookieHeader(token));
     return response;
-  } catch {
-    return NextResponse.json(
-      { ok: false, error: "Unable to process sign-in request." },
-      { status: 400 }
-    );
-  }
+  } catch (error) { return requestErrorResponse(error); }
 }
-
-export async function DELETE() {
-  const response = NextResponse.json({ ok: true, authenticated: false });
-  response.headers.set("Set-Cookie", buildClearSessionCookieHeader());
-  return response;
+export async function DELETE(request: Request) {
+  try {
+    checkSameOrigin(request);
+    await revokeAdminSession(request);
+    const response = privateJson({ ok: true, authenticated: false });
+    response.headers.set("Set-Cookie", buildClearSessionCookieHeader());
+    return response;
+  } catch (error) { return requestErrorResponse(error); }
 }
-

@@ -1,6 +1,7 @@
 "use client";
 /* eslint-disable @next/next/no-img-element */
 
+import { usePageContent } from "@/components/layout/PublicContentProvider";
 import React, { useState, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -98,6 +99,7 @@ const CONSULTATION_CHECKLIST = [
 ] as const;
 
 export default function ProcessPage() {
+  const page = usePageContent("process");
   const [activeIndex, setActiveIndex] = useState<number>(0);
 
   const handleSelectStage = useCallback(
@@ -172,7 +174,7 @@ export default function ProcessPage() {
                 <div className="inline-flex items-center gap-3">
                   <span className="h-[1.5px] w-7 bg-[#9B1C1C]" />
                   <span className="text-[11px] font-bold tracking-[0.22em] text-[#9B1C1C] uppercase">
-                    THE ATELIER PROCESS
+                    {page?.hero.eyebrow || "THE ATELIER PROCESS"}
                   </span>
                 </div>
 
@@ -181,22 +183,12 @@ export default function ProcessPage() {
                   id="process-hero-heading"
                   className="mt-4 font-serif text-[clamp(2rem,4.45vw,3.75rem)] leading-[1.05] font-semibold tracking-[-0.02em] text-[#1A1A1A] min-[390px]:text-[clamp(2.3rem,4.45vw,3.75rem)] sm:text-[clamp(2.5rem,4.45vw,3.75rem)] lg:text-[clamp(2.35rem,3.8vw,3.75rem)]"
                 >
-                  <span className="block min-[390px]:whitespace-nowrap">
-                    From Idea to Wall,
-                  </span>
-                  <span className="block min-[390px]:whitespace-nowrap">
-                    A Thoughtful
-                  </span>
-                  <em className="block font-serif italic font-semibold text-[#9B1C1C]">
-                    Process.
-                  </em>
+                  <span className="block">{page?.hero.heading || "From Idea to Wall,"}</span><em className="block text-[#9B1C1C]">{page?.hero.highlightedText || "A Thoughtful Process."}</em>
                 </h1>
 
                 {/* Supporting Paragraph */}
                 <p className="mt-4 max-w-[460px] text-[15px] leading-[1.68] text-[#4E4640] sm:text-[15.5px]">
-                  From the first conversation to the final printed detail,
-                  discover the thoughtful process behind every ATELIER wall
-                  story.
+                  {page?.hero.subheading || "From the first conversation to the final printed detail, discover the thoughtful process behind every ATELIER wall story."}
                 </p>
 
                 {/* Primary & Secondary CTA Buttons */}
@@ -227,7 +219,7 @@ export default function ProcessPage() {
               <FadeUp delay={0.05} className="min-w-0">
                 <div className="overflow-hidden rounded-2xl bg-[#EAE0D3] shadow-[0_22px_50px_-18px_rgba(34,24,16,0.22)]">
                   <Image
-                    src="/images/atelier/process-hero-living-arch.jpg"
+                    src={page?.hero.posterImage?.secureUrl || "/images/atelier/process-hero-living-arch.jpg"}
                     alt="Sunlit luxury living room framed by a complete Venetian plaster archway featuring a bespoke terracotta, warm ochre, and muted olive botanical arch mural behind a curved cream bouclé sofa and travertine coffee table"
                     width={1004}
                     height={768}

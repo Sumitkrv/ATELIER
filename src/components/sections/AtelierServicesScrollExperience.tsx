@@ -903,11 +903,6 @@ export function AtelierServicesScrollExperience() {
         const statementCard = mobileStage.querySelector<HTMLElement>(
           ".atelier-mobile-statement"
         );
-        const chips = gsap.utils.toArray<HTMLElement>(
-          ".atelier-mobile-chip",
-          mobileStage
-        );
-
         if (introEl) {
           gsap.fromTo(
             introEl,
@@ -973,23 +968,6 @@ export function AtelierServicesScrollExperience() {
               ease: "power3.out",
             }
           );
-
-          if (chips.length > 0) {
-            tl.fromTo(
-              chips,
-              { scale: 0.78, y: 8, autoAlpha: 0 },
-              {
-                scale: 1,
-                y: 0,
-                autoAlpha: 1,
-                duration: 0.42,
-                stagger: 0.06,
-                ease: "back.out(1.5)",
-                clearProps: "transform",
-              },
-              "-=0.25"
-            );
-          }
         }
       },
       mobileStage
@@ -1199,54 +1177,22 @@ export function AtelierServicesScrollExperience() {
               ))}
             </div>
 
-            {/* Mobile/Tablet Editorial Statement with Animated Embedded Artwork Chips */}
+            {/* Mobile/Tablet service callout */}
             <div className="atelier-mobile-statement mt-9 rounded-sm border border-[#681A27]/20 bg-[#FCF6EF]/92 p-5 shadow-xs backdrop-blur-xs sm:mt-10 sm:p-8">
-              <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[#681A27]">
-                From Blank Walls to Living Art • Tap Any Artwork Chip
+              <h3 className="font-serif text-2xl font-light text-[#32191B]">
+                Art Beyond Ordinary Surfaces.
+              </h3>
+              <p className="mt-1 text-xs text-[#32191B]/75 sm:text-sm">
+                Discover how we turn your spaces into personal works of art.
               </p>
-              <p className="mt-3 font-serif text-xl font-light leading-[1.65] text-[#32191B] sm:text-2xl">
-                {ATELIER_SCROLL_SERVICES.map((service, idx) => (
-                  <React.Fragment key={service.id}>
-                    <span>
-                      {idx > 0 ? " " : ""}
-                      {service.editorialLeadPhrase}{" "}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => handleOpenServiceModal(service)}
-                      aria-label={`Inspect ${service.title}`}
-                      className="atelier-mobile-chip mx-1 inline-flex h-7 w-12 translate-y-[-2px] cursor-pointer overflow-hidden rounded-xs border border-[#681A27]/45 align-middle shadow-2xs transition-transform active:scale-95 sm:h-8 sm:w-14"
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={service.image}
-                        alt={service.title}
-                        className="h-full w-full object-cover"
-                      />
-                    </button>
-                  </React.Fragment>
-                ))}{" "}
-                <span className="text-[#681A27]">
-                  {ATELIER_SCROLL_EDITORIAL_CLOSING}
-                </span>
-              </p>
-
-              <div className="mt-6 border-t border-[#32191B]/10 pt-5">
-                <h3 className="font-serif text-2xl font-light text-[#32191B]">
-                  Art Beyond Ordinary Surfaces.
-                </h3>
-                <p className="mt-1 text-xs text-[#32191B]/75 sm:text-sm">
-                  Discover how we turn your spaces into personal works of art.
-                </p>
-                <button
-                  type="button"
-                  onClick={handleScrollToShowcase}
-                  className="mt-4 inline-flex cursor-pointer items-center gap-2 rounded-sm bg-[#681A27] px-5 py-2.5 font-mono text-xs uppercase tracking-[0.18em] text-[#FCF6EF] transition-transform active:scale-[0.98]"
-                >
-                  <span>Explore Our Services</span>
-                  <ArrowDown className="h-3.5 w-3.5" />
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={handleScrollToShowcase}
+                className="mt-4 inline-flex cursor-pointer items-center gap-2 rounded-sm bg-[#681A27] px-5 py-2.5 font-mono text-xs uppercase tracking-[0.18em] text-[#FCF6EF] transition-transform active:scale-[0.98]"
+              >
+                <span>Explore Our Services</span>
+                <ArrowDown className="h-3.5 w-3.5" />
+              </button>
             </div>
           </div>
         </div>

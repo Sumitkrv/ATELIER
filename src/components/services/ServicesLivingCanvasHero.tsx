@@ -1,5 +1,6 @@
 "use client";
 
+import { usePageContent } from "@/components/layout/PublicContentProvider";
 import React, { useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -71,6 +72,7 @@ function PlayTriangleIcon({ className }: { className?: string }) {
  * luxury living room on the right, anchored by a floating Service Spectrum bar.
  */
 export function ServicesLivingCanvasHero() {
+  const page = usePageContent("services");
   const prefersReducedMotion = useReducedMotion();
 
   const scrollToSection = useCallback(
@@ -142,7 +144,7 @@ export function ServicesLivingCanvasHero() {
           }}
         >
           <Image
-            src="/images/atelier/services-living-canvas-hero.jpg"
+            src={page?.hero.posterImage?.secureUrl || "/images/atelier/services-living-canvas-hero.jpg"}
             alt="Sunlit luxury contemporary living room featuring an oversized sculptural terracotta and blush iris botanical 3D wall mural above a curved cream bouclé sofa and travertine coffee table"
             fill
             priority
@@ -208,15 +210,7 @@ export function ServicesLivingCanvasHero() {
                 }}
                 className="mt-4 font-serif text-[2.35rem] font-normal leading-[1.05] tracking-[-0.02em] text-[#1A1A1A] min-[390px]:text-[2.58rem] sm:mt-5 sm:text-[3.05rem] md:text-[3.4rem] lg:text-[3.45rem] lg:leading-[1.04] xl:text-[4.05rem] 2xl:text-[4.4rem]"
               >
-                <span className="block lg:whitespace-nowrap">
-                  Turn Any Surface
-                </span>
-                <span className="mt-1 block lg:whitespace-nowrap">
-                  into a{" "}
-                  <em className="font-serif italic font-normal text-[#9B1C1C]">
-                    Living Canvas.
-                  </em>
-                </span>
+                {page ? <><span className="block">{page.hero.heading}</span><em className="mt-1 block text-[#9B1C1C]">{page.hero.highlightedText}</em></> : <><span className="block">Turn Any Surface</span><em className="mt-1 block text-[#9B1C1C]">into a Living Canvas.</em></>}
               </motion.h1>
 
               {/* 3. Restrained Editorial Description */}
@@ -230,9 +224,7 @@ export function ServicesLivingCanvasHero() {
                 }}
                 className="mt-4 max-w-[44ch] text-[14.5px] leading-[1.65] text-[#5B544E] sm:mt-5 sm:text-[15.5px] lg:max-w-[38ch] xl:max-w-[44ch] xl:text-[16px]"
               >
-                Design, print and install expressive wall art directly on
-                architectural surfaces — with precision, scale and studio-level
-                craftsmanship.
+                {page?.hero.subheading || "Design, print and install expressive wall art directly on architectural surfaces — with precision, scale and studio-level craftsmanship."}
               </motion.p>
 
               {/* 4. Primary & Secondary Action Buttons */}
@@ -281,7 +273,7 @@ export function ServicesLivingCanvasHero() {
               <div className="relative overflow-hidden rounded-2xl bg-[#E8E2D9] shadow-[0_20px_46px_-18px_rgba(26,22,18,0.2)]">
                 <div className="relative aspect-[850/660] w-full sm:aspect-[16/11]">
                   <Image
-                    src="/images/atelier/services-living-canvas-hero.jpg"
+                    src={page?.hero.posterImage?.secureUrl || "/images/atelier/services-living-canvas-hero.jpg"}
                     alt="Sunlit luxury contemporary living room featuring an oversized sculptural terracotta and blush iris botanical 3D wall mural above a curved cream bouclé sofa and travertine coffee table"
                     fill
                     priority

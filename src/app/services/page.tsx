@@ -19,7 +19,6 @@ import { Container } from "@/components/layout/Container";
 import { ServicesLivingCanvasHero } from "@/components/services/ServicesLivingCanvasHero";
 import { MaterialUniverseSection } from "@/components/services/MaterialUniverseSection";
 import { CoreExpertiseShowcase } from "@/components/services/CoreExpertiseShowcase";
-import { DEVELOPMENT_PROJECT_FIXTURES } from "@/lib/projects-catalogue";
 import {
   ATELIER_WHATSAPP_NUMBERS,
   buildWhatsAppUrl,
@@ -67,8 +66,7 @@ const STUDIO_SPACE_STUDIES: StudioSpaceStudyCard[] = [
     locationAndSurface: "Andheri West, Mumbai • Lime Plaster Wall",
     image: "/images/atelier/services/services-real-lotus-residence.webp",
     projectSlug:
-      DEVELOPMENT_PROJECT_FIXTURES[0]?.slug ??
-      "walls-architectural-elevation-study",
+      "",
   },
   {
     id: "creative-office-workspace",
@@ -78,8 +76,7 @@ const STUDIO_SPACE_STUDIES: StudioSpaceStudyCard[] = [
     locationAndSurface: "BKC, Mumbai • Acoustic Wall & Blinds",
     image: "/images/atelier/services/services-real-creative-office.webp",
     projectSlug:
-      DEVELOPMENT_PROJECT_FIXTURES[1]?.slug ??
-      "canvas-gallery-textured-study",
+      "",
   },
   {
     id: "cafe-terra-installation",
@@ -89,8 +86,7 @@ const STUDIO_SPACE_STUDIES: StudioSpaceStudyCard[] = [
     locationAndSurface: "Powai, Mumbai • Ceramic Tile & Plaster",
     image: "/images/atelier/services/services-real-cafe-terra.webp",
     projectSlug:
-      DEVELOPMENT_PROJECT_FIXTURES[2]?.slug ??
-      "tiles-ceramic-glaze-study",
+      "",
   },
   {
     id: "retail-terracotta-arch",
@@ -100,8 +96,7 @@ const STUDIO_SPACE_STUDIES: StudioSpaceStudyCard[] = [
     locationAndSurface: "Oshiwara, Mumbai • 3D Relief Wall",
     image: "/images/atelier/services/services-real-terracotta-boutique.webp",
     projectSlug:
-      DEVELOPMENT_PROJECT_FIXTURES[4]?.slug ??
-      "furniture-bespoke-cabinetry-study",
+      "",
   },
   {
     id: "executive-boardroom-relief",
@@ -111,8 +106,7 @@ const STUDIO_SPACE_STUDIES: StudioSpaceStudyCard[] = [
     locationAndSurface: "Lower Parel, Mumbai • Plywood & Bronze",
     image: "/images/atelier/services/services-real-executive-boardroom.webp",
     projectSlug:
-      DEVELOPMENT_PROJECT_FIXTURES[5]?.slug ??
-      "blinds-workspace-window-study",
+      "",
   },
 ];
 
@@ -270,7 +264,7 @@ export default function ServicesPage() {
                     {rotatedStudies.map((study) => (
                       <Link
                         key={study.id}
-                        href={`/projects/${study.projectSlug}`}
+                        href={study.projectSlug ? `/projects/${study.projectSlug}` : "/projects"}
                         className="group relative aspect-[4/3] overflow-hidden rounded-[20px] border border-[#DACBB8] bg-[#241D18] shadow-[0_14px_34px_rgba(29,24,21,0.14)]"
                       >
                         <img

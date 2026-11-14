@@ -6,7 +6,9 @@ import {
   JetBrains_Mono,
 } from "next/font/google";
 import { ATELIER_BRAND } from "@/lib/brand";
+import { siteMetadata } from "@/lib/public-seo";
 import "./globals.css";
+import { PublicContentProvider } from "@/components/layout/PublicContentProvider";
 
 const cormorant = Cormorant_Garamond({
   variable: "--font-cormorant",
@@ -37,7 +39,7 @@ const jetbrains = JetBrains_Mono({
   display: "swap",
 });
 
-export const metadata: Metadata = {
+const fallbackMetadata: Metadata = {
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
   ),
@@ -58,6 +60,11 @@ export const metadata: Metadata = {
   },
 };
 
+export async function generateMetadata(): Promise<Metadata> {
+  try { return { ...fallbackMetadata, ...await siteMetadata() }; }
+  catch { return fallbackMetadata; }
+}
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -76,7 +83,7 @@ export default function RootLayout({
         >
           Skip to content
         </a>
-        {children}
+        <PublicContentProvider>{children}</PublicContentProvider>
       </body>
     </html>
   );

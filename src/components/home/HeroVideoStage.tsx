@@ -14,6 +14,10 @@ interface HeroVideoStageProps {
   headlineLine1?: string;
   headlineLine2?: string;
   subheading?: string;
+  primaryCtaLabel?: string;
+  primaryCtaHref?: string;
+  secondaryCtaLabel?: string;
+  secondaryCtaHref?: string;
 }
 
 const HERO_MATERIAL_STRIP = [
@@ -27,11 +31,11 @@ const HERO_MATERIAL_STRIP = [
 
 /**
  * Responsive object-position classes tuned separately for mobile, tablet, and desktop
- * so `object-cover` preserves the 16:9 aspect ratio without stretching while keeping the
- * vertical 3D wall-printing machine and mural in frame and the left editorial copy legible.
+ * so phones show the complete 16:9 frame while larger screens use a cinematic crop that
+ * keeps the vertical 3D wall-printing machine and mural in frame.
  */
 const HERO_MEDIA_FRAMING_CLASSES =
-  "h-full w-full object-cover object-[67%_42%] sm:object-[65%_44%] md:object-[63%_42%] lg:object-[58%_40%] xl:object-[54%_42%]";
+  "h-full w-full object-contain object-[67%_42%] sm:object-cover sm:object-[65%_44%] md:object-[63%_42%] lg:object-[58%_40%] xl:object-[54%_42%]";
 
 /**
  * SECTION 01 — CINEMATIC 3D WALL PRINTING VIDEO HERO
@@ -45,6 +49,10 @@ export function HeroVideoStage({
   headlineLine1 = DEFAULT_HOMEPAGE_CONTENT.hero.headlineLine1,
   headlineLine2 = DEFAULT_HOMEPAGE_CONTENT.hero.headlineLine2,
   subheading = DEFAULT_HOMEPAGE_CONTENT.hero.subheading,
+  primaryCtaLabel = DEFAULT_HOMEPAGE_CONTENT.hero.primaryCtaLabel,
+  primaryCtaHref = DEFAULT_HOMEPAGE_CONTENT.hero.primaryCtaHref,
+  secondaryCtaLabel = DEFAULT_HOMEPAGE_CONTENT.hero.secondaryCtaLabel,
+  secondaryCtaHref = DEFAULT_HOMEPAGE_CONTENT.hero.secondaryCtaHref,
 }: HeroVideoStageProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const prefersReducedMotion = useReducedMotion();
@@ -110,10 +118,10 @@ export function HeroVideoStage({
     <section
       id="atelier-hero"
       aria-label="ATELIER — WALL STORY 3D wall printing studio hero"
-      className="relative flex h-[calc(100svh-var(--navbar-height,74px))] min-h-[540px] max-h-[820px] w-full flex-col justify-between overflow-hidden bg-[#1A1A1A] text-[#FAF9F6] sm:min-h-[600px] sm:max-h-[860px] lg:h-[calc(100dvh-var(--navbar-height,74px))] lg:min-h-[640px] lg:max-h-[880px]"
+      className="relative flex w-full flex-col justify-between overflow-hidden bg-[#1A1A1A] text-[#FAF9F6] sm:h-[calc(100svh-var(--navbar-height,74px))] sm:min-h-[600px] sm:max-h-[860px] lg:h-[calc(100dvh-var(--navbar-height,74px))] lg:min-h-[640px] lg:max-h-[880px]"
     >
       {/* Layer 1: Full-Bleed Vertical 3D Wall-Printing Machine Video & Poster Stage */}
-      <div className="pointer-events-none absolute inset-0 z-0 select-none overflow-hidden bg-[#1A1A1A]">
+      <div className="pointer-events-none relative z-0 aspect-video w-full shrink-0 select-none overflow-hidden bg-[#1A1A1A] sm:absolute sm:inset-0 sm:h-full sm:aspect-auto">
         {/* Persistent Poster Layer prevents any black flash or layout shift before video playback */}
         <img
           src={resolvedPoster}
@@ -125,7 +133,7 @@ export function HeroVideoStage({
               setPosterFallbackUsed(true);
             }
           }}
-          className={HERO_MEDIA_FRAMING_CLASSES}
+          className={`absolute inset-0 ${HERO_MEDIA_FRAMING_CLASSES}`}
         />
 
         {shouldRenderVideo ? (
@@ -152,7 +160,7 @@ export function HeroVideoStage({
         {/* Subtle Left-Side Dark Gradient for Headline Readability (keeps right-side printer clear) */}
         <div
           aria-hidden="true"
-          className="absolute inset-0"
+          className="absolute inset-0 hidden sm:block"
           style={{
             background:
               "linear-gradient(96deg, rgba(20, 16, 14, 0.84) 0%, rgba(22, 18, 16, 0.65) 34%, rgba(24, 19, 17, 0.22) 56%, rgba(24, 19, 17, 0.04) 100%)",
@@ -162,23 +170,23 @@ export function HeroVideoStage({
         {/* Subtle Top & Bottom Vignettes for Navbar Edge and Bottom Material Strip */}
         <div
           aria-hidden="true"
-          className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-[#1A1A1A]/35 to-transparent"
+          className="absolute inset-x-0 top-0 hidden h-20 bg-gradient-to-b from-[#1A1A1A]/35 to-transparent sm:block"
         />
         <div
           aria-hidden="true"
-          className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-[#1A1A1A]/85 via-[#1A1A1A]/35 to-transparent"
+          className="absolute inset-x-0 bottom-0 hidden h-28 bg-gradient-to-t from-[#1A1A1A]/85 via-[#1A1A1A]/35 to-transparent sm:block"
         />
       </div>
 
       {/* Layer 2: Left-Aligned Luxury Editorial Hero Content */}
-      <Container className="relative z-10 my-auto pt-7 pb-5 sm:pt-10 sm:pb-7 lg:py-12">
+      <Container className="relative z-10 my-0 pt-6 pb-7 sm:my-auto sm:pt-10 sm:pb-7 lg:py-12">
         <div className="max-w-[640px]">
           {/* Two-Line Studio Eyebrow */}
           <motion.div
             initial={prefersReducedMotion ? false : { opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.65, ease: easeOut }}
-            className="mb-4 flex items-start gap-3.5 sm:mb-5"
+            className="mb-4 hidden items-start gap-3.5 sm:mb-5 sm:flex"
           >
             <span
               aria-hidden="true"
@@ -230,7 +238,7 @@ export function HeroVideoStage({
               href={DEFAULT_HOMEPAGE_CONTENT.hero.primaryCtaHref}
               className="group inline-flex min-h-[48px] w-full items-center justify-center gap-3 rounded-lg border border-[#9B1C1C] bg-[#9B1C1C] px-6 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-[#FAF9F6] shadow-[0_14px_34px_-10px_rgba(155,28,28,0.55)] transition-all duration-300 hover:-translate-y-0.5 hover:border-[#7F1616] hover:bg-[#7F1616] min-[460px]:w-auto sm:px-7 sm:py-3.5"
             >
-              <span>EXPLORE DESIGNS</span>
+              <span>{primaryCtaLabel}</span>
               <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
             </Link>
 
@@ -238,7 +246,7 @@ export function HeroVideoStage({
               href={DEFAULT_HOMEPAGE_CONTENT.hero.secondaryCtaHref}
               className="group inline-flex min-h-[48px] w-full items-center justify-center gap-3 rounded-lg border border-[#E8E2D9]/45 bg-[#1A1A1A]/55 px-6 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-[#FAF9F6] backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-[#FAF9F6] hover:bg-[#FAF9F6]/12 min-[460px]:w-auto sm:px-7 sm:py-3.5"
             >
-              <span>PREVIEW ON YOUR WALL</span>
+              <span>{secondaryCtaLabel}</span>
               <ArrowRight className="h-4 w-4 text-[#E8E2D9] transition-transform duration-300 group-hover:translate-x-1 group-hover:text-[#FAF9F6]" />
             </Link>
           </motion.div>

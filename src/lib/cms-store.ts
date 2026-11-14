@@ -1,230 +1,165 @@
-import fs from "fs/promises";
-import path from "path";
+import crypto from "node:crypto";
+import type { Document } from "mongodb";
+import { getDb } from "@/lib/mongodb";
+import { cmsSchemas, type CmsCollection } from "@/lib/cms-validation";
 import { ATELIER_BRAND, ATELIER_CONTACTS } from "@/lib/brand";
-import {
-  CatalogueCategoryRecord,
-  CatalogueDesignItem,
-  DESIGN_CATEGORY_RECORDS,
-  DEVELOPMENT_FIXTURE_DESIGNS,
-  EXPLORE_DESIGNS_HERO_CONTENT,
-} from "@/lib/designs-catalogue";
-import {
-  DEVELOPMENT_PROJECT_FIXTURES,
-  PortfolioProjectRecord,
-  PROJECTS_PAGE_CONTENT,
-} from "@/lib/projects-catalogue";
-import {
-  ABOUT_PAGE_CONTENT,
-  BlogArticleRecord,
-  BLOGS_PAGE_CONTENT,
-  DEVELOPMENT_BLOG_FIXTURES,
-  PROCESS_PAGE_CONTENT,
-} from "@/lib/blogs-catalogue";
-import { PageContentDocument, SiteSettingsDocument } from "@/types/models";
+import { type CatalogueCategoryRecord, type CatalogueDesignItem, EXPLORE_DESIGNS_HERO_CONTENT } from "@/lib/designs-catalogue";
+import { type PortfolioProjectRecord, PROJECTS_PAGE_CONTENT } from "@/lib/projects-catalogue";
+import { ABOUT_PAGE_CONTENT, type BlogArticleRecord, BLOGS_PAGE_CONTENT, PROCESS_PAGE_CONTENT } from "@/lib/blogs-catalogue";
+import type { PageContentDocument, SiteSettingsDocument } from "@/types/models";
+import { DEFAULT_HOMEPAGE_CONTENT, type HomepageContentConfig } from "@/lib/homepage-content";
 
-// shortcut: file-backed JSON collections in web/.data for zero-dependency local CMS; swap readOrSeedJson/writeJson to MongoDB driver when MONGODB_URI is provisioned.
-const runtimeRoot = (): string => process["cwd"]();
-const DATA_DIR = path.join(runtimeRoot(), ".data");
-
-async function readOrSeedJson<T>(
-  fileName: string,
-  seedFactory: () => T
-): Promise<T> {
-  const filePath = path.join(DATA_DIR, fileName);
+export class CmsError extends Error {
+  constructor(message: string, public statusCode = 400) { super(message); }
+}
+export type ContentStatus = "draft" | "scheduled" | "published" | "archived";
+export interface CmsEnvelope extends Document {
+  id: string; revision: number; status: ContentStatus; draft: Document;
+  published: Document | null; scheduled?: Document | null; publishAt: string | null;
+  createdAt: string; updatedAt: string; deletedAt?: string | null;
+}
+export function contentMediaUrls(...values:unknown[]):string[]{
+  const urls=new Set<string>();
+  const visit=(v:unknown)=>{if(typeof v==="string"&&(/^(https?:\/\/|\/)/.test(v)))urls.add(v);else if(v&&typeof v==="object")for(const child of Object.values(v))visit(child);};
+  values.forEach(visit);return [...urls];
+}
+async function checkMediaAvailable(...values:unknown[]){
+  const urls=contentMediaUrls(...values);if(!urls.length)return;
+  if(await(await getDb()).collection("media_assets").findOne({secureUrl:{$in:urls},deletionState:"deleting"}))throw new CmsError("An image or video is being removed. Choose an available asset.",409);
+}
+let indexPromise: Promise<void> | undefined;
+async function collection(name: CmsCollection) {
+  const db = await getDb();
+  if (!indexPromise) indexPromise = (async () => {
+    for (const key of Object.keys(cmsSchemas) as CmsCollection[]) {
+      const c = db.collection<CmsEnvelope>(key);
+      await c.createIndex({id:1},{unique:true});
+      await c.createIndex({"draft.slug":1},{unique:true,partialFilterExpression:{"draft.slug":{$type:"string"}}});
+      await c.createIndex({"published.slug":1},{unique:true,partialFilterExpression:{"published.slug":{$type:"string"}}});
+      await c.createIndex({status:1,publishAt:1});
+      await c.createIndex({mediaUrls:1});
+    }
+    await db.collection("content_versions").createIndex({collection:1,targetId:1,createdAt:-1});
+    await db.collection("audit_logs").createIndex({createdAt:-1});
+  })().catch(e=>{indexPromise=undefined;throw e;});
+  await indexPromise;
+  return db.collection<CmsEnvelope>(name);
+}
+function editable<T>(row: CmsEnvelope): T {
+  return {...row.draft,revision:row.revision,status:row.status,publishAt:row.publishAt,createdAt:row.createdAt,updatedAt:row.updatedAt} as T;
+}
+export async function listCmsDrafts<T>(name:CmsCollection,limit=500):Promise<T[]> {
+  const rows=await (await collection(name)).find({deletedAt:{$in:[null]}}).sort({"draft.displayOrder":1,"draft.sortOrder":1,updatedAt:-1}).limit(Math.min(limit,1000)).toArray();
+  return rows.map(row=>editable<T>(row));
+}
+export async function getPublishedCmsCollection<T>(name:Exclude<CmsCollection,"site_settings">):Promise<T[]> {
+  const rows=await (await collection(name)).find({published:{$ne:null},deletedAt:{$in:[null]}}).sort({"published.displayOrder":1,"published.sortOrder":1}).limit(1000).toArray();
+  return rows.map(row=>row.published as T);
+}
+export async function auditCms(actor:string,action:string,target:string) {
+  await (await getDb()).collection("audit_logs").insertOne({id:crypto.randomUUID(),actor,action,target,createdAt:new Date().toISOString()});
+}
+export async function saveCmsRecord<T>(name:CmsCollection,input:T,actor="administrator",intent?:ContentStatus):Promise<T> {
+  const parsed=cmsSchemas[name].parse(input) as Document;
+  const c=await collection(name);
+  const current=await c.findOne({id:parsed.id});
+  if (current?.deletedAt) throw new CmsError("This record is archived. Restore a revision before editing.",409);
+  if (parsed.revision && current && parsed.revision!==current.revision) throw new CmsError("This record changed in another session. Reload before saving.",409);
+  const now=new Date().toISOString();
+  const publish=intent==="published";
+  if (publish) validatePublication(name,parsed);
+  const draft:Document={...parsed,createdAt:current?.createdAt||now,updatedAt:now};
+  delete draft.revision; delete draft.status; delete draft.publishAt;
+  if ("published" in draft) draft.published=publish;
+  const row:CmsEnvelope={id:parsed.id,revision:(current?.revision||0)+1,status:publish?"published":"draft",draft,published:publish?{...draft,published:true}:(current?.published||null),scheduled:null,publishAt:null,createdAt:current?.createdAt||now,updatedAt:now,deletedAt:null};
+  row.mediaUrls=contentMediaUrls(row.draft,row.published);
+  await checkMediaAvailable(row.draft,row.published);
+  await recordHistory(name,current,actor,"save");
   try {
-    const raw = await fs.readFile(filePath, "utf8");
-    return JSON.parse(raw) as T;
-  } catch {
-    const seeded = seedFactory();
-    await writeJson(fileName, seeded);
-    return seeded;
+    if(current){const result=await c.replaceOne({id:row.id,revision:current.revision},row);if(!result.matchedCount)throw new CmsError("Concurrent update. Reload before saving.",409);}
+    else await c.insertOne(row);
+  } catch(e){if(e && typeof e==="object" && "code" in e && e.code===11000)throw new CmsError("A record already uses this slug or identifier.",409);throw e;}
+  await auditCms(actor,publish?"publish":"save_draft",`${name}/${row.id}`);
+  return editable<T>(row);
+}
+function validatePublication(name:CmsCollection,doc:Document) {
+  if(["designs","projects","blogs"].includes(name) && !doc.coverImage?.secureUrl) throw new CmsError("Choose a cover image before publishing.");
+  if(name==="blogs" && !doc.sections?.some((s:Document)=>s.paragraphs?.some((p:string)=>p.trim()))) throw new CmsError("Add article content before publishing.");
+}
+async function recordHistory(name:CmsCollection,current:CmsEnvelope|null,actor:string,action:string) {
+  if(!current)return;
+  await (await getDb()).collection("content_versions").insertOne({id:crypto.randomUUID(),collection:name,targetId:current.id,revision:current.revision,snapshot:current.draft,actor,action,createdAt:new Date().toISOString()});
+}
+export async function transitionCmsRecord(name:CmsCollection,id:string,action:string,actor:string,options:{publishAt?:string;versionId?:string;revision?:number}={}) {
+  const c=await collection(name);const row=await c.findOne({id});if(!row)throw new CmsError("Record not found.",404);
+  if(options.revision && options.revision!==row.revision)throw new CmsError("Record changed. Reload first.",409);
+  const now=new Date().toISOString(); let draft={...row.draft};let published=row.published;let status:ContentStatus="draft";let publishAt:string|null=null;let scheduled:Document|null=null;
+  if(action==="restore") {
+    const version=await (await getDb()).collection("content_versions").findOne({id:options.versionId,collection:name,targetId:id});
+    if(!version)throw new CmsError("Revision not found.",404);draft={...version.snapshot};
+  } else if(action==="publish") {validatePublication(name,draft);status="published";published={...draft,published:true};}
+  else if(action==="schedule") {validatePublication(name,draft);const date=new Date(options.publishAt||"");if(!Number.isFinite(date.getTime())||date.getTime()<=Date.now())throw new CmsError("Choose a future publication time.");publishAt=date.toISOString();scheduled={...draft,published:true};status="scheduled";}
+  else if(action==="archive"||action==="unpublish") {published=null;status=action==="archive"?"archived":"draft";}
+  else if(action!=="draft")throw new CmsError("Unsupported publishing action.");
+  await checkMediaAvailable(draft,published,scheduled);
+  await recordHistory(name,row,actor,action);
+  const result=await c.findOneAndUpdate({id,revision:row.revision},{$set:{draft:{...draft,published:status==="published"},published,status,publishAt,scheduled,mediaUrls:contentMediaUrls(draft,published,scheduled),updatedAt:now,deletedAt:null},$inc:{revision:1}},{returnDocument:"after"});
+  if(!result)throw new CmsError("Concurrent update. Reload first.",409);
+  await auditCms(actor,action,`${name}/${id}`);return editable<Document>(result);
+}
+export async function listContentVersions(name:CmsCollection,id:string) {
+  return (await getDb()).collection("content_versions").find({collection:name,targetId:id},{projection:{_id:0}}).sort({createdAt:-1}).limit(50).toArray();
+}
+export async function deleteCmsRecord(name:CmsCollection,id:string,actor="administrator") {
+  if(name==="categories") {
+    const count=await (await collection("designs")).countDocuments({deletedAt:{$in:[null]},$or:[{"draft.categoryId":id},{"published.categoryId":id}]});
+    if(count)throw new CmsError("Move designs to another category before deleting this category.",409);
   }
+  const c=await collection(name);const row=await c.findOne({id});if(!row)return false;
+  await recordHistory(name,row,actor,"delete");
+  const result=await c.updateOne({id,revision:row.revision},{$set:{status:"archived",published:null,scheduled:null,publishAt:null,deletedAt:new Date().toISOString()},$inc:{revision:1}});
+  if(!result.modifiedCount)throw new CmsError("Concurrent update. Reload first.",409);
+  await auditCms(actor,"delete",`${name}/${id}`);return true;
 }
-
-async function writeJson<T>(fileName: string, value: T): Promise<void> {
-  await fs.mkdir(DATA_DIR, { recursive: true });
-  const filePath = path.join(DATA_DIR, fileName);
-  const tmpPath = `${filePath}.${process.pid}.${Date.now()}.tmp`;
-  await fs.writeFile(tmpPath, JSON.stringify(value, null, 2), "utf8");
-  await fs.rename(tmpPath, filePath);
+export async function publishDueContent(limit=100) {
+  let published=0;
+  for(const name of Object.keys(cmsSchemas) as CmsCollection[]){
+    const c=await collection(name);const now=new Date().toISOString();
+    const due=await c.find({status:"scheduled",publishAt:{$lte:now},scheduled:{$ne:null}}).limit(limit).toArray();
+    for(const row of due){const snapshot=row.scheduled;if(!snapshot)continue;const result=await c.updateOne({id:row.id,revision:row.revision,status:"scheduled"},{$set:{published:snapshot,draft:snapshot,status:"published",publishAt:null,scheduled:null,updatedAt:now},$inc:{revision:1}});if(result.modifiedCount){published++;await auditCms("scheduled-task","publish",`${name}/${row.id}`);}}
+  }return published;
 }
-
-/* ============================================================================
-   1. CATEGORIES (.data/categories.json)
-============================================================================ */
-
-export async function listStoredCategories(): Promise<
-  CatalogueCategoryRecord[]
-> {
-  const list = await readOrSeedJson<CatalogueCategoryRecord[]>(
-    "categories.json",
-    () => [...DESIGN_CATEGORY_RECORDS]
-  );
-  return [...list].sort((a, b) => a.displayOrder - b.displayOrder);
+export const listStoredCategories=()=>listCmsDrafts<CatalogueCategoryRecord>("categories");
+export const listStoredDesigns=()=>listCmsDrafts<CatalogueDesignItem>("designs");
+export const listStoredProjects=()=>listCmsDrafts<PortfolioProjectRecord>("projects");
+export const listStoredBlogs=()=>listCmsDrafts<BlogArticleRecord>("blogs");
+export const listStoredPageContents=async()=>{const rows=await listCmsDrafts<PageContentDocument>("pages");return [...rows,...buildDefaultPageContents().filter(d=>!rows.some(r=>r.pageKey===d.pageKey))];};
+export const findStoredProjectBySlug=async(key:string)=>(await listStoredProjects()).find(p=>p.slug===key||p.id===key)||null;
+export const findStoredBlogBySlug=async(key:string)=>(await listStoredBlogs()).find(p=>p.slug===key||p.id===key)||null;
+export const upsertStoredCategory=async(input:Partial<CatalogueCategoryRecord>&{id:string})=>{const current=(await listStoredCategories()).find(c=>c.id===input.id);return saveCmsRecord("categories",{...current,...input});};
+export const upsertStoredDesign=(item:CatalogueDesignItem)=>saveCmsRecord("designs",item);
+export const upsertStoredProject=(item:PortfolioProjectRecord)=>saveCmsRecord("projects",item);
+export const upsertStoredBlog=(item:BlogArticleRecord)=>saveCmsRecord("blogs",item);
+export const upsertStoredPageContent=(item:PageContentDocument)=>saveCmsRecord("pages",item);
+export const deleteStoredDesign=(id:string)=>deleteCmsRecord("designs",id);
+export const deleteStoredProject=(id:string)=>deleteCmsRecord("projects",id);
+export const deleteStoredBlog=(id:string)=>deleteCmsRecord("blogs",id);
+export const getStoredSiteSettings=async()=>(await listCmsDrafts<SiteSettingsDocument>("site_settings"))[0]||buildDefaultSiteSettings();
+export const saveStoredSiteSettings=async(patch:Partial<SiteSettingsDocument>)=>{const cur=await getStoredSiteSettings();return saveCmsRecord("site_settings",{...cur,...patch,contact:{...cur.contact,...patch.contact},socialLinks:{...cur.socialLinks,...patch.socialLinks},defaultSeo:{...cur.defaultSeo,...patch.defaultSeo},visualizer:{...cur.visualizer,...patch.visualizer}});};
+export async function getPublishedCmsSiteSettings():Promise<SiteSettingsDocument>{
+  const row=await (await collection("site_settings")).findOne({id:"site-settings-global",published:{$ne:null}});
+  const settings=(row?.published||buildDefaultSiteSettings()) as SiteSettingsDocument;
+  // Notification destinations are administrative configuration, never public content.
+  const {enquiryNotifications: _private,...publicSettings}=settings;void _private;return publicSettings as SiteSettingsDocument;
 }
-
-export async function upsertStoredCategory(
-  input: Partial<CatalogueCategoryRecord> & { id: string }
-): Promise<CatalogueCategoryRecord | null> {
-  const list = await listStoredCategories();
-  const idx = list.findIndex((c) => c.id === input.id);
-  if (idx === -1) return null;
-  const nowIso = new Date().toISOString();
-  const current = list[idx];
-  const next: CatalogueCategoryRecord = {
-    ...current,
-    name: input.name?.trim() || current.name,
-    shortTitle: input.name?.trim() || current.shortTitle,
-    slug: input.slug?.trim() || current.slug,
-    description:
-      input.description !== undefined
-        ? input.description.trim()
-        : current.description,
-    coverImage:
-      input.coverImage !== undefined ? input.coverImage : current.coverImage,
-    displayOrder:
-      typeof input.displayOrder === "number"
-        ? input.displayOrder
-        : current.displayOrder,
-    isActive:
-      typeof input.isActive === "boolean" ? input.isActive : current.isActive,
-    isConfigured: true,
-    updatedAt: nowIso,
-  };
-  list[idx] = next;
-  await writeJson("categories.json", list);
-  return next;
+export async function getPublishedCmsHomePageContent():Promise<HomepageContentConfig>{
+  const home=(await getPublishedCmsCollection<PageContentDocument>("pages")).find(p=>p.pageKey==="home");
+  if(!home)return {...DEFAULT_HOMEPAGE_CONTENT,collectionPreview:{...DEFAULT_HOMEPAGE_CONTENT.collectionPreview,sampleItems:[]}};
+  const result={...DEFAULT_HOMEPAGE_CONTENT,...home.homepage};
+  const hero=home.hero;
+  return {...result,hero:{...result.hero,headlineLine1:hero.heading,headlineLine2:hero.highlightedText||"",subheading:hero.subheading,primaryCtaLabel:hero.primaryCta.label,primaryCtaHref:hero.primaryCta.href,secondaryCtaLabel:hero.secondaryCta.label,secondaryCtaHref:hero.secondaryCta.href,videoUrl:hero.videoAsset?.secureUrl||result.hero.videoUrl,posterUrl:hero.posterImage?.secureUrl||result.hero.posterUrl}};
 }
-
-/* ============================================================================
-   2. DESIGNS (.data/designs.json)
-============================================================================ */
-
-export async function listStoredDesigns(): Promise<CatalogueDesignItem[]> {
-  const list = await readOrSeedJson<CatalogueDesignItem[]>(
-    "designs.json",
-    () => [...DEVELOPMENT_FIXTURE_DESIGNS]
-  );
-  return [...list].sort((a, b) => a.sortOrder - b.sortOrder);
-}
-
-export async function upsertStoredDesign(
-  item: CatalogueDesignItem
-): Promise<CatalogueDesignItem> {
-  const list = await listStoredDesigns();
-  const idx = list.findIndex((d) => d.id === item.id);
-  if (idx >= 0) {
-    list[idx] = item;
-  } else {
-    list.unshift(item);
-  }
-  await writeJson("designs.json", list);
-  return item;
-}
-
-export async function deleteStoredDesign(id: string): Promise<boolean> {
-  const list = await listStoredDesigns();
-  const next = list.filter((d) => d.id !== id);
-  if (next.length === list.length) return false;
-  await writeJson("designs.json", next);
-  return true;
-}
-
-/* ============================================================================
-   3. PROJECTS (.data/projects.json)
-============================================================================ */
-
-export async function listStoredProjects(): Promise<PortfolioProjectRecord[]> {
-  const list = await readOrSeedJson<PortfolioProjectRecord[]>(
-    "projects.json",
-    () => [...DEVELOPMENT_PROJECT_FIXTURES]
-  );
-  return [...list].sort((a, b) => a.displayOrder - b.displayOrder);
-}
-
-export async function findStoredProjectBySlug(
-  slugOrId: string
-): Promise<PortfolioProjectRecord | null> {
-  const key = slugOrId.trim().toLowerCase();
-  const list = await listStoredProjects();
-  return (
-    list.find(
-      (p) => p.slug.toLowerCase() === key || p.id.toLowerCase() === key
-    ) ?? null
-  );
-}
-
-export async function upsertStoredProject(
-  item: PortfolioProjectRecord
-): Promise<PortfolioProjectRecord> {
-  const list = await listStoredProjects();
-  const idx = list.findIndex((p) => p.id === item.id);
-  if (idx >= 0) {
-    list[idx] = item;
-  } else {
-    list.unshift(item);
-  }
-  await writeJson("projects.json", list);
-  return item;
-}
-
-export async function deleteStoredProject(id: string): Promise<boolean> {
-  const list = await listStoredProjects();
-  const next = list.filter((p) => p.id !== id);
-  if (next.length === list.length) return false;
-  await writeJson("projects.json", next);
-  return true;
-}
-
-/* ============================================================================
-   4. BLOG POSTS (.data/blogs.json)
-============================================================================ */
-
-export async function listStoredBlogs(): Promise<BlogArticleRecord[]> {
-  return readOrSeedJson<BlogArticleRecord[]>("blogs.json", () => [
-    ...DEVELOPMENT_BLOG_FIXTURES,
-  ]);
-}
-
-export async function findStoredBlogBySlug(
-  slugOrId: string
-): Promise<BlogArticleRecord | null> {
-  const key = slugOrId.trim().toLowerCase();
-  const list = await listStoredBlogs();
-  return (
-    list.find(
-      (b) => b.slug.toLowerCase() === key || b.id.toLowerCase() === key
-    ) ?? null
-  );
-}
-
-export async function upsertStoredBlog(
-  item: BlogArticleRecord
-): Promise<BlogArticleRecord> {
-  const list = await listStoredBlogs();
-  const idx = list.findIndex((b) => b.id === item.id);
-  if (idx >= 0) {
-    list[idx] = item;
-  } else {
-    list.unshift(item);
-  }
-  await writeJson("blogs.json", list);
-  return item;
-}
-
-export async function deleteStoredBlog(id: string): Promise<boolean> {
-  const list = await listStoredBlogs();
-  const next = list.filter((b) => b.id !== id);
-  if (next.length === list.length) return false;
-  await writeJson("blogs.json", next);
-  return true;
-}
-
-/* ============================================================================
-   5. PAGE CONTENTS (.data/page-contents.json)
-============================================================================ */
-
-function buildDefaultPageContents(): PageContentDocument[] {
+export function buildDefaultPageContents(): PageContentDocument[] {
   const nowIso = new Date().toISOString();
   return [
     {
@@ -419,46 +354,8 @@ function buildDefaultPageContents(): PageContentDocument[] {
   ];
 }
 
-export async function listStoredPageContents(): Promise<PageContentDocument[]> {
-  const stored = await readOrSeedJson<PageContentDocument[]>(
-    "page-contents.json",
-    buildDefaultPageContents
-  );
-  const defaults = buildDefaultPageContents();
-  const missing = defaults.filter(
-    (def) => !stored.some((item) => item.pageKey === def.pageKey)
-  );
-  if (missing.length === 0) return stored;
-  const merged = [...stored, ...missing];
-  await writeJson("page-contents.json", merged);
-  return merged;
-}
 
-export async function upsertStoredPageContent(
-  doc: PageContentDocument
-): Promise<PageContentDocument> {
-  const list = await listStoredPageContents();
-  const idx = list.findIndex(
-    (item) => item.pageKey === doc.pageKey || item.id === doc.id
-  );
-  const nextDoc: PageContentDocument = {
-    ...doc,
-    updatedAt: new Date().toISOString(),
-  };
-  if (idx >= 0) {
-    list[idx] = nextDoc;
-  } else {
-    list.push(nextDoc);
-  }
-  await writeJson("page-contents.json", list);
-  return nextDoc;
-}
-
-/* ============================================================================
-   6. SITE SETTINGS (.data/site-settings.json)
-============================================================================ */
-
-function buildDefaultSiteSettings(): SiteSettingsDocument {
+export function buildDefaultSiteSettings(): SiteSettingsDocument {
   return {
     id: "site-settings-global",
     singletonKey: "global",
@@ -502,42 +399,5 @@ function buildDefaultSiteSettings(): SiteSettingsDocument {
     },
     updatedAt: new Date().toISOString(),
   };
-}
-
-export async function getStoredSiteSettings(): Promise<SiteSettingsDocument> {
-  return readOrSeedJson<SiteSettingsDocument>(
-    "site-settings.json",
-    buildDefaultSiteSettings
-  );
-}
-
-export async function saveStoredSiteSettings(
-  patch: Partial<SiteSettingsDocument>
-): Promise<SiteSettingsDocument> {
-  const current = await getStoredSiteSettings();
-  const next: SiteSettingsDocument = {
-    ...current,
-    ...patch,
-    singletonKey: "global",
-    contact: {
-      ...current.contact,
-      ...(patch.contact || {}),
-    },
-    socialLinks: {
-      ...current.socialLinks,
-      ...(patch.socialLinks || {}),
-    },
-    visualizer: {
-      ...current.visualizer,
-      ...(patch.visualizer || {}),
-    },
-    defaultSeo: {
-      ...current.defaultSeo,
-      ...(patch.defaultSeo || {}),
-    },
-    updatedAt: new Date().toISOString(),
-  };
-  await writeJson("site-settings.json", next);
-  return next;
 }
 

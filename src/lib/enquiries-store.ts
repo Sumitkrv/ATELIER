@@ -1,6 +1,7 @@
-import fs from "fs/promises";
-import path from "path";
-import { EnquiryDocument, EnquiryStatus } from "@/types/models";
+import { createHash } from "node:crypto";
+import { getDb } from "@/lib/mongodb";
+import type { Filter } from "mongodb";
+import type { EnquiryDocument, EnquiryStatus } from "@/types/models";
 
 export interface StoredEnquiryRecord extends EnquiryDocument {
   referenceCode: string;
@@ -9,104 +10,86 @@ export interface StoredEnquiryRecord extends EnquiryDocument {
   selectedDesignReference?: string | null;
   resolvedCategoryCode?: string | null;
   resolvedSurfaceName?: string | null;
+  assignedOwner?: string | null;
+  followUpAt?: string | null;
+  emailStatus?: "pending" | "sent" | "delivered" | "failed";
+  emailProviderId?: string | null;
+  emailAttempts?: number;
+  emailAttemptedAt?: string | null;
+  emailRetryAt?: string | null;
+  emailLastError?: string | null;
+  emailLeaseUntil?: string | null;
+  emailIdempotencyKey?: string;
+  deduplicationKey?: string;
 }
+export const LEAD_STATUSES = ["New", "Contacted", "Follow-up", "Qualified", "Converted", "Closed", "In Progress"] as const;
 
-const runtimeRoot = (): string => process["cwd"]();
-const DATA_DIR = path.join(runtimeRoot(), ".data");
-const ENQUIRIES_FILE = path.join(DATA_DIR, "enquiries.json");
-
-async function ensureStoreFile(): Promise<void> {
-  try {
-    await fs.mkdir(DATA_DIR, { recursive: true });
-    await fs.access(ENQUIRIES_FILE);
-  } catch {
-    await fs.writeFile(ENQUIRIES_FILE, JSON.stringify([], null, 2), "utf8");
-  }
+async function collection() {
+  const db = await getDb();
+  const records = db.collection<StoredEnquiryRecord>("enquiries");
+  await Promise.all([
+    records.createIndex({ id: 1 }, { unique: true }),
+    records.createIndex({ deduplicationKey: 1 }, { unique: true, sparse: true }),
+    records.createIndex({ createdAt: -1 }), records.createIndex({ status: 1, followUpAt: 1 }),
+    records.createIndex({ emailStatus: 1, emailRetryAt: 1 }),
+  ]);
+  return records;
 }
-
 export async function listStoredEnquiries(): Promise<StoredEnquiryRecord[]> {
-  try {
-    await ensureStoreFile();
-    const raw = await fs.readFile(ENQUIRIES_FILE, "utf8");
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed as StoredEnquiryRecord[];
-  } catch {
-    return [];
+  return (await collection()).find({}, { projection: { _id: 0 } }).sort({ createdAt: -1 }).limit(10000).toArray();
+}
+export interface EnquiryQuery { page?: number; limit?: number; search?: string; status?: string; sourcePage?: string; overdue?: boolean }
+export function buildEnquiryFilter(query: EnquiryQuery): Filter<StoredEnquiryRecord> {
+  const filter: Filter<StoredEnquiryRecord> = {};
+  if (query.status && query.status !== "All") filter.status = query.status === "New" ? { $in: ["New", "new"] } : query.status as EnquiryStatus;
+  if (query.sourcePage) filter.sourcePage = query.sourcePage;
+  if (query.overdue) { filter.followUpAt = { $lte: new Date().toISOString(), $ne: null }; filter.status = { $nin: ["Closed", "Converted"] }; }
+  const search = query.search?.trim().slice(0, 160);
+  if (search) {
+    const regex = new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
+    filter.$or = ["fullName", "email", "phone", "referenceCode", "serviceOrDesignInterest"].map(key => ({ [key]: regex }));
+  }
+  return filter;
+}
+export async function queryEnquiries(query: EnquiryQuery = {}) {
+  const records = await collection();
+  const page = Math.max(1, Math.min(query.page || 1, 100000));
+  const limit = Math.max(1, Math.min(query.limit || 25, 100));
+  const filter = buildEnquiryFilter(query);
+  const [enquiries, total, statuses, sources, overdue] = await Promise.all([
+    records.find(filter, { projection: { _id: 0 } }).sort({ createdAt: -1, id: 1 }).skip((page - 1) * limit).limit(limit).toArray(),
+    records.countDocuments(filter),
+    records.aggregate<{ _id: string; count: number }>([{ $group: { _id: "$status", count: { $sum: 1 } } }]).toArray(),
+    records.aggregate<{ _id: string; count: number }>([{ $group: { _id: "$sourcePage", count: { $sum: 1 } } }, { $sort: { count: -1 } }, { $limit: 100 }]).toArray(),
+    records.countDocuments(buildEnquiryFilter({ overdue: true })),
+  ]);
+  return { enquiries, total, page, limit, pages: Math.max(1, Math.ceil(total / limit)), metrics: { statuses, sources, overdue } };
+}
+export async function saveEnquiryRecord(record: StoredEnquiryRecord): Promise<{ record: StoredEnquiryRecord; deduplicated: boolean }> {
+  const records = await collection();
+  const fingerprint = createHash("sha256").update(JSON.stringify([record.email.toLowerCase(), record.phone, record.message, Math.floor(Date.now() / 120000)])).digest("hex");
+  const next = { ...record, deduplicationKey: fingerprint };
+  try { await records.insertOne(next); return { record: next, deduplicated: false }; }
+  catch (error) {
+    if (typeof error === "object" && error && "code" in error && error.code === 11000) {
+      const existing = await records.findOne({ deduplicationKey: fingerprint }, { projection: { _id: 0 } });
+      if (existing) return { record: existing, deduplicated: true };
+    }
+    throw error;
   }
 }
-
-export async function saveEnquiryRecord(
-  record: StoredEnquiryRecord
-): Promise<{ record: StoredEnquiryRecord; deduplicated: boolean }> {
-  await ensureStoreFile();
-  const existing = await listStoredEnquiries();
-
-  const nowMs = Date.now();
-  const duplicate = existing.find((item) => {
-    const createdMs = new Date(item.createdAt).getTime();
-    const withinWindow = Math.abs(nowMs - createdMs) < 2 * 60 * 1000;
-    return (
-      withinWindow &&
-      item.email.toLowerCase() === record.email.toLowerCase() &&
-      item.phone.trim() === record.phone.trim() &&
-      item.message.trim() === record.message.trim()
-    );
-  });
-
-  if (duplicate) {
-    return { record: duplicate, deduplicated: true };
-  }
-
-  const updated = [record, ...existing];
-  await fs.writeFile(ENQUIRIES_FILE, JSON.stringify(updated, null, 2), "utf8");
-  return { record, deduplicated: false };
+export async function updateEnquiryRecord(id: string, patch: { status?: EnquiryStatus; note?: string; authorName?: string; assignedOwner?: string | null; followUpAt?: string | null }): Promise<StoredEnquiryRecord | null> {
+  const records = await collection();
+  const now = new Date().toISOString();
+  const fields: Record<string, unknown> = { updatedAt: now };
+  for (const key of ["status", "assignedOwner", "followUpAt"] as const) if (patch[key] !== undefined) fields[key] = patch[key];
+  const update = { $set: fields, ...(patch.note?.trim() ? { $push: { adminNotes: { note: patch.note.trim(), authorName: patch.authorName || "Studio Admin", createdAt: now } } } : {}) };
+  const updated = await records.findOneAndUpdate({ id }, update, { returnDocument: "after", projection: { _id: 0 } });
+  if (updated) await (await getDb()).collection("audit_logs").insertOne({ actor: patch.authorName || "Studio Admin", action: patch.assignedOwner !== undefined ? "lead.assigned" : "lead.updated", target: id, collection: "enquiries", createdAt: now });
+  return updated;
 }
-
-export async function updateEnquiryRecord(
-  id: string,
-  patch: {
-    status?: EnquiryStatus;
-    note?: string;
-    authorName?: string;
-  }
-): Promise<StoredEnquiryRecord | null> {
-  await ensureStoreFile();
-  const existing = await listStoredEnquiries();
-  const idx = existing.findIndex((item) => item.id === id);
-  if (idx === -1) return null;
-
-  const current = existing[idx];
-  const nowIso = new Date().toISOString();
-  const nextNotes = patch.note?.trim()
-    ? [
-        ...(current.adminNotes || []),
-        {
-          note: patch.note.trim(),
-          authorName: patch.authorName || "Studio Admin",
-          createdAt: nowIso,
-        },
-      ]
-    : current.adminNotes || [];
-
-  const updatedItem: StoredEnquiryRecord = {
-    ...current,
-    status: patch.status ?? current.status,
-    adminNotes: nextNotes,
-    updatedAt: nowIso,
-  };
-
-  const nextList = [...existing];
-  nextList[idx] = updatedItem;
-  await fs.writeFile(ENQUIRIES_FILE, JSON.stringify(nextList, null, 2), "utf8");
-  return updatedItem;
-}
-
-export async function deleteEnquiryRecord(id: string): Promise<boolean> {
-  await ensureStoreFile();
-  const existing = await listStoredEnquiries();
-  const nextList = existing.filter((item) => item.id !== id);
-  if (nextList.length === existing.length) return false;
-  await fs.writeFile(ENQUIRIES_FILE, JSON.stringify(nextList, null, 2), "utf8");
-  return true;
+export async function deleteEnquiryRecord(id: string, actor = "Studio Admin"): Promise<boolean> {
+  const result = await (await collection()).deleteOne({ id });
+  if (result.deletedCount) await (await getDb()).collection("audit_logs").insertOne({ actor, action: "lead.deleted", target: id, collection: "enquiries", createdAt: new Date().toISOString() });
+  return result.deletedCount > 0;
 }

@@ -91,6 +91,9 @@ export type AdminBadgeTone =
   | "featured"
   | "New"
   | "Contacted"
+  | "Follow-up"
+  | "Qualified"
+  | "Converted"
   | "In Progress"
   | "Closed"
   | "neutral";
@@ -103,6 +106,9 @@ const BADGE_STYLES: Record<AdminBadgeTone, string> = {
   featured: "bg-[#F9EDED] text-[#8F1919] border-[#E4BFBF]",
   New: "bg-[#F9EDED] text-[#8F1919] border-[#E4BFBF]",
   Contacted: "bg-[#F5EBDC] text-[#7A4E16] border-[#E4CFAF]",
+  "Follow-up": "bg-[#F5EBDC] text-[#7A4E16] border-[#E4CFAF]",
+  Qualified: "bg-[#EBF0F4] text-[#2C4B66] border-[#CBD7E1]",
+  Converted: "bg-[#E9F0EA] text-[#264E32] border-[#C9DBC9]",
   "In Progress": "bg-[#EBF0F4] text-[#2C4B66] border-[#CBD7E1]",
   Closed: "bg-[#F2EAE1] text-[#746B64] border-[#DFD0C0]",
   neutral: "bg-[#F2EAE1] text-[#574F49] border-[#DFD0C0]",

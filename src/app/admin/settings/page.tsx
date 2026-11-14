@@ -1,5 +1,7 @@
 "use client";
 
+import { AdminPublishingControls, AdminUnsavedChanges } from "@/components/admin/AdminPublishingControls";
+import { AdminImageUploadField } from "@/components/admin/AdminChromeClient";
 import React, { useCallback, useEffect, useState } from "react";
 import { AdminAuthBanner } from "@/components/admin/AdminChromeClient";
 import {
@@ -21,6 +23,7 @@ export default function AdminSettingsPage() {
   const [authenticated, setAuthenticated] = useState(false);
   const [activeTab, setActiveTab] = useState<SettingsTab>("general");
   const [saving, setSaving] = useState(false);
+  const [dirty, setDirty] = useState(false);
   const [savedNotice, setSavedNotice] = useState<string | null>(null);
   const [errorNotice, setErrorNotice] = useState<string | null>(null);
 
@@ -50,13 +53,14 @@ export default function AdminSettingsPage() {
       const res = await fetch("/api/admin/cms", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ collection: "settings", settings }),
+        body: JSON.stringify({ collection: "settings", settings, status: "draft" }),
       });
       if (!res.ok) {
         setErrorNotice("Unable to save settings.");
         return;
       }
-      setSavedNotice("Brand, contact, and global SEO settings updated.");
+      setDirty(false);
+      setSavedNotice("Settings draft saved. Publish the saved draft when ready.");
       await loadSettings();
     } catch {
       setErrorNotice("Network error while saving settings.");
@@ -78,6 +82,7 @@ export default function AdminSettingsPage() {
   return (
     <div className="space-y-6">
       <AdminAuthBanner authenticated={authenticated} />
+      <AdminUnsavedChanges dirty={dirty} />
 
       <AdminPageHeader
         eyebrow="Studio Configuration"
@@ -127,7 +132,7 @@ export default function AdminSettingsPage() {
         </div>
 
         {settings ? (
-          <form onSubmit={handleSave} className="p-6 sm:p-8 space-y-6">
+          <form onChange={() => setDirty(true)} onSubmit={handleSave} className="p-6 sm:p-8 space-y-6">
             {activeTab === "general" ? (
               <div className="space-y-6">
                 <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -195,6 +200,19 @@ export default function AdminSettingsPage() {
                 </div>
               </div>
             ) : null}
+
+            {activeTab === "general" && <div className="space-y-4">
+              <AdminImageUploadField label="Light background logo" value={settings.logoLight?.secureUrl || ""} onChange={url => { setDirty(true); setSettings({ ...settings, logoLight: url ? { publicId: "site-logo-light", secureUrl: url, resourceType: "image", altText: settings.brandName } : null }); }}/>
+              <AdminImageUploadField label="Dark background logo" value={settings.logoDark?.secureUrl || ""} onChange={url => { setDirty(true); setSettings({ ...settings, logoDark: url ? { publicId: "site-logo-dark", secureUrl: url, resourceType: "image", altText: settings.brandName } : null }); }}/>
+              <AdminImageUploadField label="Favicon" value={settings.favicon?.secureUrl || ""} onChange={url => { setDirty(true); setSettings({ ...settings, favicon: url ? { publicId: "site-favicon", secureUrl: url, resourceType: "image", altText: settings.brandName } : null }); }}/>
+              <label className={adminLabelClass}>Footer description<input value={settings.footerText || ""} onChange={e => setSettings({ ...settings, footerText: e.target.value })} className={adminInputClass}/></label>
+              <label className={adminLabelClass}>Copyright text<input value={settings.copyrightText || ""} onChange={e => setSettings({ ...settings, copyrightText: e.target.value })} className={adminInputClass}/></label>
+            </div>}
+            {activeTab === "contact" && <div className="space-y-3 rounded-2xl border border-[#DFD0C0] p-4">
+              <label className="flex gap-2 text-sm"><input type="checkbox" checked={settings.enquiryNotifications?.enabled ?? true} onChange={e => setSettings({ ...settings, enquiryNotifications: { enabled: e.target.checked, destinationEmail: settings.enquiryNotifications?.destinationEmail || "" } })}/>Email enquiry notifications</label>
+              <label className={adminLabelClass}>Notification destination email<input type="email" value={settings.enquiryNotifications?.destinationEmail || ""} onChange={e => setSettings({ ...settings, enquiryNotifications: { enabled: settings.enquiryNotifications?.enabled ?? true, destinationEmail: e.target.value } })} className={adminInputClass}/></label>
+              <p className="text-xs text-[#746B64]">The email provider must be configured on the server. Provider keys are never stored here.</p>
+            </div>}
 
             {activeTab === "contact" ? (
               <div className="space-y-6">
@@ -474,6 +492,7 @@ export default function AdminSettingsPage() {
                 <span>{saving ? "Saving Settings…" : "Save Settings"}</span>
               </button>
             </div>
+            <AdminPublishingControls collection="settings" id={settings.id} route="/" onChange={loadSettings}/>
           </form>
         ) : (
           <div className="p-12 text-center font-sans text-sm text-[#746B64]">

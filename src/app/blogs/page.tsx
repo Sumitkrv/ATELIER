@@ -1,6 +1,7 @@
 "use client";
 /* eslint-disable @next/next/no-img-element */
 
+import { usePageContent } from "@/components/layout/PublicContentProvider";
 import React, {
   Suspense,
   useCallback,
@@ -17,7 +18,6 @@ import {
   BLOG_DRAFT_CATEGORIES,
   BlogArticleRecord,
   BLOGS_PAGE_CONTENT,
-  DEVELOPMENT_BLOG_FIXTURES,
   filterBlogArticles,
 } from "@/lib/blogs-catalogue";
 import {
@@ -33,6 +33,7 @@ import {
 const INITIAL_GRID_PAGE_SIZE = 3;
 
 function BlogsListingWorkspace() {
+  const pageContent = usePageContent("blogs");
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -72,12 +73,12 @@ function BlogsListingWorkspace() {
       .then((res) => (res.ok ? res.json() : null))
       .then((payload) => {
         if (!active || !payload) return;
-        if (Array.isArray(payload.articles) && payload.articles.length > 0) {
+        if (Array.isArray(payload.articles)) {
           setLiveDbArticles(payload.articles);
         }
       })
       .catch(() => {
-        // Use fallback DEVELOPMENT_BLOG_FIXTURES
+        // Keep the catalogue empty until published articles can be loaded.
       });
     return () => {
       active = false;
@@ -112,7 +113,7 @@ function BlogsListingWorkspace() {
     () =>
       liveDbArticles && liveDbArticles.length > 0
         ? liveDbArticles
-        : DEVELOPMENT_BLOG_FIXTURES,
+        : [],
     [liveDbArticles]
   );
 
@@ -194,7 +195,7 @@ function BlogsListingWorkspace() {
                   className="h-[1.5px] w-8 bg-[#9B1C1C]"
                 />
                 <span className="text-[11px] font-bold tracking-[0.22em] text-[#9B1C1C] uppercase">
-                  {BLOGS_PAGE_CONTENT.hero.eyebrow}
+                  {pageContent?.hero.eyebrow || BLOGS_PAGE_CONTENT.hero.eyebrow}
                 </span>
               </div>
 
@@ -203,15 +204,15 @@ function BlogsListingWorkspace() {
                 className="font-serif text-[clamp(2.65rem,4.7vw,4.35rem)] leading-[1.02] font-normal tracking-[-0.02em]"
               >
                 <span className="block text-[#1A1A1A]">
-                  {BLOGS_PAGE_CONTENT.hero.headlineLine1}
+                  {pageContent?.hero.heading || BLOGS_PAGE_CONTENT.hero.headlineLine1}
                 </span>
                 <span className="mt-1 block text-[#9B1C1C]">
-                  {BLOGS_PAGE_CONTENT.hero.headlineLine2}
+                  {pageContent?.hero.highlightedText || BLOGS_PAGE_CONTENT.hero.headlineLine2}
                 </span>
               </h1>
 
               <p className="mt-4 max-w-[38ch] text-[15px] leading-[1.68] text-[#655B54] sm:text-[16px]">
-                {BLOGS_PAGE_CONTENT.hero.supportingText}
+                {pageContent?.hero.subheading || BLOGS_PAGE_CONTENT.hero.supportingText}
               </p>
             </div>
 

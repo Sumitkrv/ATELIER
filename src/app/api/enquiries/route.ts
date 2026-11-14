@@ -1,334 +1,46 @@
-import { NextResponse } from "next/server";
+import { randomUUID } from "node:crypto";
 import { enquirySubmissionSchema } from "@/types/models";
-import { getEnvironmentReadiness } from "@/lib/env";
-import { findDesignBySlugOrId } from "@/lib/designs-catalogue";
-import { findProjectBySlugOrId } from "@/lib/projects-catalogue";
-import {
-  deleteEnquiryRecord,
-  listStoredEnquiries,
-  saveEnquiryRecord,
-  StoredEnquiryRecord,
-  updateEnquiryRecord,
-} from "@/lib/enquiries-store";
-import { requireAdminRequest } from "@/lib/admin-auth";
-import { EnquiryStatus } from "@/types/models";
-
-const MAX_PAYLOAD_BYTES = 16 * 1024; // 16 KB payload limit
-const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute window
-const MAX_REQUESTS_PER_WINDOW = 8;
-
-function sanitizeText(value: string): string {
-  return value.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "").trim();
-}
-
-const rateLimitStore = new Map<
-  string,
-  { count: number; resetAtTimestamp: number }
->();
-
-function getClientIdentifier(request: Request): string {
-  const forwarded = request.headers.get("x-forwarded-for");
-  if (forwarded) {
-    return forwarded.split(",")[0]?.trim() || "anonymous";
-  }
-  return request.headers.get("x-real-ip") || "local-client";
-}
-
-function checkRateLimit(clientKey: string): {
-  allowed: boolean;
-  retryAfterSeconds: number;
-} {
-  const now = Date.now();
-  const existing = rateLimitStore.get(clientKey);
-
-  if (!existing || now >= existing.resetAtTimestamp) {
-    rateLimitStore.set(clientKey, {
-      count: 1,
-      resetAtTimestamp: now + RATE_LIMIT_WINDOW_MS,
-    });
-    return { allowed: true, retryAfterSeconds: 0 };
-  }
-
-  if (existing.count >= MAX_REQUESTS_PER_WINDOW) {
-    const retryAfterSeconds = Math.max(
-      1,
-      Math.ceil((existing.resetAtTimestamp - now) / 1000)
-    );
-    return { allowed: false, retryAfterSeconds };
-  }
-
-  existing.count += 1;
-  return { allowed: true, retryAfterSeconds: 0 };
-}
-
-/**
- * GET /api/enquiries
- * Returns persisted enquiries for the Admin CMS Enquiry CRM Inbox (`/admin/enquiries`).
- */
-export async function GET() {
-  try {
-    const enquiries = await listStoredEnquiries();
-    const readiness = getEnvironmentReadiness();
-    return NextResponse.json({
-      ok: true,
-      count: enquiries.length,
-      storageMode: readiness.mongodbConfigured
-        ? "mongodb_configured"
-        : "local_persistent_collection",
-      enquiries,
-    });
-  } catch {
-    return NextResponse.json(
-      {
-        ok: false,
-        error: "Unable to read enquiries collection.",
-      },
-      { status: 500 }
-    );
-  }
-}
-
-/**
- * POST /api/enquiries
- * Validates customer, design-specific, and project-specific enquiries from `/contact`,
- * `/explore-designs`, `/projects`, and `/services`, and persists them to the `enquiries` store.
- */
+import { saveEnquiryRecord, type StoredEnquiryRecord } from "@/lib/enquiries-store";
+import { checkSameOrigin, enforceRateLimit, privateJson, readJsonBody, RequestError, requestErrorResponse } from "@/lib/request-security";
+import { sendEnquiryNotification } from "@/lib/enquiry-email";
+// Compatibility for existing authenticated clients; private management lives in its own handler.
+export { GET, PATCH, DELETE } from "@/app/api/admin/enquiries/route";
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+const clean = (value: string) => value.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "").trim();
 export async function POST(request: Request) {
   try {
-    // 1. Rate-limiting check
-    const clientKey = getClientIdentifier(request);
-    const rateStatus = checkRateLimit(clientKey);
-    if (!rateStatus.allowed) {
-      return NextResponse.json(
-        {
-          ok: false,
-          error: `Too many enquiry submissions. Please wait ${rateStatus.retryAfterSeconds} seconds before trying again.`,
-        },
-        {
-          status: 429,
-          headers: {
-            "Retry-After": String(rateStatus.retryAfterSeconds),
-          },
-        }
-      );
-    }
-
-    // 2. Payload size limit check
-    const rawBody = await request.text();
-    if (rawBody.length > MAX_PAYLOAD_BYTES) {
-      return NextResponse.json(
-        {
-          ok: false,
-          error: "Enquiry payload exceeds the 16 KB maximum size limit.",
-        },
-        { status: 413 }
-      );
-    }
-
-    const body = JSON.parse(rawBody);
-
-    // 3. Honeypot spam protection check
-    if (
-      typeof body?.honeypot === "string" &&
-      body.honeypot.trim().length > 0
-    ) {
-      return NextResponse.json(
-        {
-          ok: false,
-          spamBlocked: true,
-          error: "Submission rejected by automated spam protection.",
-        },
-        { status: 400 }
-      );
-    }
-
-    // 4. Zod schema validation
+    checkSameOrigin(request);
+    const body = await readJsonBody(request, 16 * 1024);
+    if (body && typeof body === "object" && "honeypot" in body && body.honeypot) throw new RequestError("Submission rejected by spam protection.");
     const parsed = enquirySubmissionSchema.safeParse(body);
-
     if (!parsed.success) {
       const fieldErrors: Record<string, string> = {};
-      for (const issue of parsed.error.issues) {
-        const key = String(issue.path[0] || "form");
-        if (!fieldErrors[key]) {
-          fieldErrors[key] = issue.message;
-        }
-      }
-      return NextResponse.json(
-        {
-          ok: false,
-          error: "Validation failed. Please check the highlighted fields.",
-          fieldErrors,
-        },
-        { status: 400 }
-      );
+      for (const issue of parsed.error.issues) fieldErrors[String(issue.path[0] || "form")] ||= issue.message;
+      return privateJson({ ok: false, error: "Please check the highlighted fields.", fieldErrors }, 400);
     }
-
-    // 5. Server-side resolution of Design / Project slugs
-    const matchedDesign =
-      findDesignBySlugOrId(parsed.data.selectedDesignSlug) ||
-      findDesignBySlugOrId(parsed.data.selectedDesignReference);
-
-    const matchedProject =
-      findProjectBySlugOrId(parsed.data.selectedProjectSlug) ||
-      findProjectBySlugOrId(parsed.data.selectedDesignReference);
-
-    const resolvedServiceInterest =
-      parsed.data.serviceInterest?.trim() ||
-      parsed.data.serviceOrDesignInterest?.trim() ||
-      (matchedProject
-        ? `3D Printing on ${matchedProject.surfaceName}`
-        : matchedDesign
-          ? `3D Wall Printing — ${matchedDesign.title}`
-          : "General 3D Wall Printing Enquiry");
-
-    const nowIso = new Date().toISOString();
-    const readiness = getEnvironmentReadiness();
-
-    // 6. Email notification gate (disabled until admin@atelierwallstory.com is created & verified)
-    const emailVerifiedFlag =
-      process.env.ENQUIRY_EMAIL_VERIFIED === "true" &&
-      readiness.emailConfigured;
-    const emailSent = false;
-
-    const timestampSuffix = String(Date.now()).slice(-5);
-    const referenceCode = `AWS-${new Date().getFullYear()}-${timestampSuffix}`;
-
-    const enquiryRecord: StoredEnquiryRecord = {
-      id: `enq-${Date.now()}`,
-      referenceCode,
-      fullName: sanitizeText(parsed.data.fullName),
-      email: sanitizeText(parsed.data.email).toLowerCase(),
-      phone: sanitizeText(parsed.data.phone),
-      interestType: matchedProject
-        ? "custom_project"
-        : matchedDesign
-          ? "design"
-          : parsed.data.serviceInterest
-            ? "service"
-            : "general",
-      serviceInterest: sanitizeText(resolvedServiceInterest),
-      serviceOrDesignInterest: sanitizeText(resolvedServiceInterest),
-      selectedDesignId: matchedDesign?.id || null,
-      selectedDesignSlug:
-        matchedDesign?.slug || parsed.data.selectedDesignSlug || null,
-      selectedDesignTitle: matchedDesign?.title || null,
-      selectedProjectId: matchedProject?.id || null,
-      selectedProjectSlug:
-        matchedProject?.slug || parsed.data.selectedProjectSlug || null,
-      selectedProjectTitle: matchedProject?.title || null,
-      selectedDesignReference:
-        (parsed.data.selectedDesignReference
-          ? sanitizeText(parsed.data.selectedDesignReference)
-          : null) ||
-        matchedDesign?.title ||
-        matchedProject?.title ||
-        null,
-      resolvedCategoryCode: matchedDesign?.categoryCode || null,
-      resolvedSurfaceName: matchedProject?.surfaceName || null,
-      message: sanitizeText(parsed.data.message),
-      consentGiven: Boolean(parsed.data.consentGiven),
-      status: "New",
-      adminNotes: [],
-      sourcePage: parsed.data.sourcePage || "/contact",
-      emailSent,
-      emailNotificationSent: emailSent,
-      createdAt: nowIso,
-      updatedAt: nowIso,
+    await enforceRateLimit(request, "public-enquiry", 8, 60000);
+    const data = parsed.data;
+    const interest = clean(data.serviceInterest || data.serviceOrDesignInterest || "General 3D Wall Printing Enquiry");
+    const now = new Date().toISOString();
+    const id = randomUUID();
+    const record: StoredEnquiryRecord = {
+      id: `enq-${id}`, referenceCode: `AWS-${new Date().getFullYear()}-${id.slice(0, 8).toUpperCase()}`,
+      fullName: clean(data.fullName), email: clean(data.email).toLowerCase(), phone: clean(data.phone || ""),
+      interestType: data.selectedProjectSlug ? "custom_project" : data.selectedDesignSlug ? "design" : data.serviceInterest ? "service" : "general",
+      serviceInterest: interest, serviceOrDesignInterest: interest,
+      selectedDesignSlug: data.selectedDesignSlug ? clean(data.selectedDesignSlug) : null,
+      selectedProjectSlug: data.selectedProjectSlug ? clean(data.selectedProjectSlug) : null,
+      selectedDesignReference: data.selectedDesignReference ? clean(data.selectedDesignReference) : null,
+      message: clean(data.message), consentGiven: data.consentGiven === true,
+      sourcePage: data.sourcePage?.startsWith("/") && !data.sourcePage.startsWith("//") ? clean(data.sourcePage) : "/contact",
+      status: "New", adminNotes: [], assignedOwner: null, followUpAt: null,
+      emailStatus: "pending", emailAttempts: 0, emailSent: false, emailNotificationSent: false,
+      createdAt: now, updatedAt: now,
     };
-
-    const { record: savedRecord, deduplicated } =
-      await saveEnquiryRecord(enquiryRecord);
-
-    const databaseStatus = readiness.mongodbConfigured
-      ? "mongodb_persisted"
-      : "local_collection_persisted";
-
-    return NextResponse.json({
-      ok: true,
-      persistedToDatabase: true,
-      deduplicated,
-      referenceCode: savedRecord.referenceCode,
-      databaseStatus,
-      emailSent,
-      emailNotificationSent: emailSent,
-      emailConfigurationStatus: emailVerifiedFlag
-        ? "ready"
-        : "gated_awaiting_verified_mailbox",
-      message:
-        "Thank you. Your enquiry has been received by our Mumbai studio team in Oshiwara, Andheri West. We will get in touch with you shortly.",
-      enquirySummary: savedRecord,
-    });
-  } catch {
-    return NextResponse.json(
-      {
-        ok: false,
-        error: "Unable to process your enquiry right now. Please try again.",
-      },
-      { status: 400 }
-    );
-  }
-}
-
-export async function PATCH(request: Request) {
-  const auth = requireAdminRequest(request);
-  if (!auth.ok) return auth.response;
-
-  try {
-    const body = await request.json();
-    const id = typeof body?.id === "string" ? body.id.trim() : "";
-    if (!id) {
-      return NextResponse.json(
-        { ok: false, error: "Enquiry id is required." },
-        { status: 400 }
-      );
-    }
-
-    const allowedStatuses: EnquiryStatus[] = [
-      "New",
-      "Contacted",
-      "In Progress",
-      "Closed",
-    ];
-    const status = allowedStatuses.includes(body?.status)
-      ? (body.status as EnquiryStatus)
-      : undefined;
-    const note = typeof body?.note === "string" ? body.note : undefined;
-
-    const updated = await updateEnquiryRecord(id, {
-      status,
-      note,
-      authorName: auth.session.email,
-    });
-
-    if (!updated) {
-      return NextResponse.json(
-        { ok: false, error: "Enquiry not found." },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json({ ok: true, enquiry: updated });
-  } catch {
-    return NextResponse.json(
-      { ok: false, error: "Unable to update enquiry." },
-      { status: 400 }
-    );
-  }
-}
-
-export async function DELETE(request: Request) {
-  const auth = requireAdminRequest(request);
-  if (!auth.ok) return auth.response;
-
-  const { searchParams } = new URL(request.url);
-  const id = searchParams.get("id") || "";
-  if (!id) {
-    return NextResponse.json(
-      { ok: false, error: "Enquiry id is required." },
-      { status: 400 }
-    );
-  }
-
-  const deleted = await deleteEnquiryRecord(id);
-  return NextResponse.json({ ok: deleted });
+    const { record: saved, deduplicated } = await saveEnquiryRecord(record);
+    // Persistence has succeeded. Delivery failure must never turn a saved enquiry into an error.
+    if (!deduplicated) await sendEnquiryNotification(saved.id).catch(() => undefined);
+    return privateJson({ ok: true, referenceCode: saved.referenceCode, deduplicated, message: "Thank you. Our studio has received your enquiry and will get in touch shortly." }, 201);
+  } catch (error) { return requestErrorResponse(error, "Unable to submit your enquiry right now. Please try again."); }
 }

@@ -1,6 +1,8 @@
 "use client";
 /* eslint-disable @next/next/no-img-element */
 
+import { AdminPublishingControls, AdminUnsavedChanges } from "@/components/admin/AdminPublishingControls";
+import { AdminRecordDetails, EMPTY_RECORD_DETAILS, readRecordDetails } from "@/components/admin/AdminRecordDetails";
 import React, { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import {
@@ -45,6 +47,7 @@ const SPACE_CATEGORIES: ProjectSpaceCategory[] = [
 ];
 
 const EMPTY_PROJECT = {
+  ...EMPTY_RECORD_DETAILS,
   id: "",
   title: "",
   slug: "",
@@ -55,7 +58,7 @@ const EMPTY_PROJECT = {
   description: "",
   imageUrl: "",
   featured: true,
-  published: true,
+  published: false,
 };
 
 export default function AdminProjectsPage() {
@@ -87,6 +90,7 @@ export default function AdminProjectsPage() {
 
   const openEdit = (p: PortfolioProjectRecord) => {
     setForm({
+      ...readRecordDetails(p),
       id: p.id,
       title: p.title,
       slug: p.slug,
@@ -113,11 +117,18 @@ export default function AdminProjectsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ collection: "projects", ...form }),
       });
+      if (!res.ok) {
+        const json = await res.json();
+        setFeedback(json.error || "Could not save changes.");
+        return;
+      }
       if (res.ok) {
         setShowEditor(false);
         setFeedback(`Saved "${form.title || "Project"}" case study.`);
         await loadProjects();
       }
+    } catch {
+      setFeedback("Network error. Your changes were not saved.");
     } finally {
       setSaving(false);
     }
@@ -156,6 +167,7 @@ export default function AdminProjectsPage() {
   return (
     <div className="space-y-6">
       <AdminAuthBanner authenticated={authenticated} />
+      <AdminUnsavedChanges dirty={showEditor} />
 
       <AdminPageHeader
         eyebrow="Portfolio Installations"
@@ -203,7 +215,7 @@ export default function AdminProjectsPage() {
             </div>
             <button
               type="button"
-              onClick={() => setShowEditor(false)}
+              onClick={() => { if (window.confirm("Close the editor? Unsaved changes will be lost.")) setShowEditor(false); }}
               aria-label="Close project editor"
               className="p-2 rounded-xl border border-[#DFD0C0] text-[#746B64] hover:text-[#1A1A1A] hover:bg-[#FAF6F0] cursor-pointer"
             >
@@ -314,6 +326,8 @@ export default function AdminProjectsPage() {
             onChange={(url) => setForm({ ...form, imageUrl: url })}
           />
 
+          <AdminRecordDetails value={form} onChange={details => setForm({ ...form, ...details })} project />
+          <AdminPublishingControls collection="projects" id={form.id} route={`/projects/${form.slug}`} onChange={loadProjects} />
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-4 border-t border-[#E8DED3]">
             <div className="flex flex-wrap gap-6 font-sans text-sm text-[#1A1A1A]">
               <label className="inline-flex cursor-pointer items-center gap-2">
@@ -337,14 +351,14 @@ export default function AdminProjectsPage() {
                   }
                   className="w-4 h-4 accent-[#9B1C1C]"
                 />
-                <span>Published</span>
+                <span>Publish on save</span>
               </label>
             </div>
 
             <div className="flex items-center gap-2.5">
               <button
                 type="button"
-                onClick={() => setShowEditor(false)}
+                onClick={() => { if (window.confirm("Close the editor? Unsaved changes will be lost.")) setShowEditor(false); }}
                 className={adminButtonClass("secondary")}
               >
                 Cancel

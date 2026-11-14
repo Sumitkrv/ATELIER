@@ -8,7 +8,6 @@ import { Container } from "@/components/layout/Container";
 import { FadeUp } from "@/components/motion/Reveal";
 import {
   BlogArticleRecord,
-  DEVELOPMENT_BLOG_FIXTURES,
 } from "@/lib/blogs-catalogue";
 import { ATELIER_BRAND, buildWhatsAppUrl } from "@/lib/brand";
 import {
@@ -29,16 +28,14 @@ import {
 
 interface BlogArticleDetailClientProps {
   article: BlogArticleRecord;
+  relatedArticles?: BlogArticleRecord[];
 }
 
 export function BlogArticleDetailClient({
   article,
+  relatedArticles = [],
 }: BlogArticleDetailClientProps) {
   const [copiedLink, setCopiedLink] = useState(false);
-
-  const relatedArticles = DEVELOPMENT_BLOG_FIXTURES.filter(
-    (item) => item.slug !== article.slug && item.published
-  ).slice(0, 3);
 
   const handleCopyLink = async () => {
     try {
@@ -88,7 +85,7 @@ export function BlogArticleDetailClient({
       {/* Structured Data (Article Schema) */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdArticle) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdArticle).replace(/</g, "\\u003c") }}
       />
 
       <div className="min-h-screen bg-[#F8F3ED] text-[#1A1A1A]">

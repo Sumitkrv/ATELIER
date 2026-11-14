@@ -1,5 +1,6 @@
 "use client";
 
+import { usePageContent } from "@/components/layout/PublicContentProvider";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { PublicShell } from "@/components/layout/PublicShell";
@@ -11,10 +12,9 @@ import {
   mapPortfolioProjectToWallItem,
 } from "@/components/ui/scroll-portrait-wall";
 import {
-  DEVELOPMENT_PROJECT_FIXTURES,
   filterPortfolioProjects,
   PortfolioProjectRecord,
-  PROJECTS_HERO_SLIDES,
+  type ProjectHeroSlide,
   PROJECTS_PAGE_CONTENT,
 } from "@/lib/projects-catalogue";
 import { ATELIER_SURFACES, buildWhatsAppUrl } from "@/lib/brand";
@@ -56,10 +56,11 @@ const STUDIO_APPROACH_PILLARS = [
 ] as const;
 
 export default function ProjectsPage() {
+  const pageContent = usePageContent("projects");
   // Live API-backed project records (preserving MongoDB /api/projects contract)
   const [projectsData, setProjectsData] = useState<
     ReadonlyArray<PortfolioProjectRecord>
-  >(DEVELOPMENT_PROJECT_FIXTURES);
+  >([]);
 
   useEffect(() => {
     let active = true;
@@ -70,15 +71,12 @@ export default function ProjectsPage() {
         const clientList = Array.isArray(payload.approvedClientProjects)
           ? (payload.approvedClientProjects as PortfolioProjectRecord[])
           : [];
-        const fixtureList = Array.isArray(payload.developmentFixtures)
-          ? (payload.developmentFixtures as PortfolioProjectRecord[])
-          : [];
-        if (clientList.length > 0) {
-          setProjectsData([...clientList, ...fixtureList]);
+        if (Array.isArray(payload.approvedClientProjects)) {
+          setProjectsData(clientList);
         }
       })
       .catch(() => {
-        // Fallback to canonical studio studies
+        // Keep the empty state when the catalogue cannot be loaded.
       });
     return () => {
       active = false;
@@ -88,9 +86,10 @@ export default function ProjectsPage() {
   // Section 01: Hero Carousel State
   const [heroSlideIndex, setHeroSlideIndex] = useState<number>(0);
   const heroTouchStartRef = useRef<{ x: number; y: number } | null>(null);
-  const totalHeroSlides = PROJECTS_HERO_SLIDES.length;
+  const projectHeroSlides = useMemo<ProjectHeroSlide[]>(() => projectsData.length ? projectsData.map((project, index) => ({ id: project.id, slideNumber: String(index + 1).padStart(2, "0"), title: project.title, classification: project.recordClassification || "Verified Completed Installation", locationOrContext: project.locationNote, spaceCategory: project.spaceCategory || "Residential", surfaceName: project.surfaceName, imageUrl: project.coverImage.secureUrl, imageAlt: project.coverImage.altText, projectSlug: project.slug })) : [{ id: "studio-illustration", slideNumber: "01", title: "Architectural Surface Art", classification: "Illustrative Application", locationOrContext: "ATELIER — WALL STORY", spaceCategory: "Residential", surfaceName: "Walls", imageUrl: "/images/atelier/project-hero-crane-living.jpg", imageAlt: "Illustrative architectural mural in a living space", projectSlug: "" }], [projectsData]);
+  const totalHeroSlides = projectHeroSlides.length;
   const activeHeroSlide =
-    PROJECTS_HERO_SLIDES[heroSlideIndex] ?? PROJECTS_HERO_SLIDES[0];
+    projectHeroSlides[heroSlideIndex] ?? projectHeroSlides[0];
 
   const handlePrevHeroSlide = useCallback(() => {
     setHeroSlideIndex((prev) => (prev - 1 + totalHeroSlides) % totalHeroSlides);
@@ -290,7 +289,7 @@ export default function ProjectsPage() {
               <div className="inline-flex items-center gap-3">
                 <span className="h-[1.5px] w-7 bg-[#9B1C1C]" />
                 <span className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#9B1C1C]">
-                  {PROJECTS_PAGE_CONTENT.hero.eyebrow}
+                  {pageContent?.hero.eyebrow || PROJECTS_PAGE_CONTENT.hero.eyebrow}
                 </span>
               </div>
 
@@ -298,26 +297,20 @@ export default function ProjectsPage() {
                 id="projects-hero-heading"
                 className="mt-4 font-serif text-[clamp(2.35rem,4.2vw,3.75rem)] font-semibold leading-[1.04] tracking-[-0.02em] text-[#211D1A]"
               >
-                Real Spaces,
-                <br />
-                Lasting{" "}
-                <em className="font-serif italic font-semibold text-[#9B1C1C]">
-                  Impressions
-                </em>
-                .
+                <span className="block">{pageContent?.hero.heading || "Real Spaces,"}</span><em className="block text-[#9B1C1C]">{pageContent?.hero.highlightedText || "Lasting Impressions."}</em>
               </h1>
 
               <p className="mt-4 max-w-[430px] text-[14.5px] leading-[1.65] text-[#6F665E]">
-                {PROJECTS_PAGE_CONTENT.hero.supportingText}
+                {pageContent?.hero.subheading || PROJECTS_PAGE_CONTENT.hero.supportingText}
               </p>
 
               {/* Hero CTAs */}
               <div className="mt-7 flex flex-col gap-3 min-[430px]:flex-row min-[430px]:flex-wrap min-[430px]:items-center min-[430px]:gap-3.5">
                 <a
-                  href="#portfolio-gallery"
+                  href={pageContent?.hero.primaryCta.href || "#portfolio-gallery"}
                   className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#9B1C1C] px-6 py-3.5 text-[13px] font-medium text-[#FAF9F6] shadow-md transition-all duration-200 hover:bg-[#73171B]"
                 >
-                  <span>Explore Projects</span>
+                  <span>{pageContent?.hero.primaryCta.label || "Explore Projects"}</span>
                   <ArrowRight className="h-4 w-4" />
                 </a>
 
@@ -408,7 +401,7 @@ export default function ProjectsPage() {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               key={activeHeroSlide.imageUrl}
-              src={activeHeroSlide.imageUrl}
+              src={pageContent?.hero.posterImage?.secureUrl || activeHeroSlide.imageUrl}
               alt={activeHeroSlide.imageAlt}
               className="h-full w-full object-cover object-[66%_86%] transition-opacity duration-700 lg:object-[70%_88%] xl:object-[68%_88%]"
             />
@@ -440,7 +433,7 @@ export default function ProjectsPage() {
             className="absolute right-4 top-1/2 z-20 hidden -translate-y-1/2 flex-col items-end gap-4 lg:flex xl:right-6"
           >
             <div className="relative flex flex-col items-end gap-4 rounded-2xl border border-[#DDD2C5]/85 bg-[#FBF8F3]/92 px-3 py-3 shadow-md backdrop-blur-xs">
-              {PROJECTS_HERO_SLIDES.map((slide, idx) => {
+              {projectHeroSlides.map((slide, idx) => {
                 const isCurrent = idx === heroSlideIndex;
                 return (
                   <button
@@ -482,7 +475,7 @@ export default function ProjectsPage() {
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <Link
-                    href={`/projects/${activeHeroSlide.projectSlug}`}
+                    href={activeHeroSlide.projectSlug ? `/projects/${activeHeroSlide.projectSlug}` : "/projects"}
                     className="font-serif text-base font-semibold leading-snug text-[#211D1A] hover:text-[#9B1C1C] sm:text-lg"
                   >
                     {activeHeroSlide.title}
@@ -505,7 +498,7 @@ export default function ProjectsPage() {
                   aria-label="Select project slide"
                   className="mr-1 flex items-center gap-1.5 lg:hidden"
                 >
-                  {PROJECTS_HERO_SLIDES.map((slide, idx) => {
+                  {projectHeroSlides.map((slide, idx) => {
                     const isCurrent = idx === heroSlideIndex;
                     return (
                       <button
@@ -617,7 +610,7 @@ export default function ProjectsPage() {
 
               <div className="mt-6">
                 <a
-                  href="#portfolio-gallery"
+                  href={pageContent?.hero.primaryCta.href || "#portfolio-gallery"}
                   className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#9B1C1C] transition-colors hover:text-[#211D1A]"
                 >
                   <span>View All Projects</span>

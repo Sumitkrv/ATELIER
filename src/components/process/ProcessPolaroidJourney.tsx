@@ -1,5 +1,6 @@
 "use client";
 
+import { usePageContent } from "@/components/layout/PublicContentProvider";
 import React, { useCallback, useRef } from "react";
 import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
@@ -136,7 +137,8 @@ export function ProcessPolaroidJourney({
 }: ProcessPolaroidJourneyProps) {
   const carouselRef = useRef<PolaroidLineCarouselHandle | null>(null);
   const prefersReducedMotion = useReducedMotion();
-  const stages = ATELIER_POLAROID_PROCESS_STAGES;
+  const page = usePageContent("process");
+  const stages = page?.processStages?.length ? page.processStages.map((stage, index) => ({ ...ATELIER_POLAROID_PROCESS_STAGES[index % ATELIER_POLAROID_PROCESS_STAGES.length], ...stage, highlights: stage.deliverables })) : ATELIER_POLAROID_PROCESS_STAGES;
   const totalCount = stages.length;
   const safeIndex =
     ((activeIndex % totalCount) + totalCount) % totalCount;

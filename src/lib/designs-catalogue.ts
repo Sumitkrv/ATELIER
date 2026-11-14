@@ -1934,10 +1934,11 @@ export const DEVELOPMENT_FIXTURE_DESIGNS: ReadonlyArray<CatalogueDesignItem> = [
 export function resolveCategoryFromQuery(params: {
   categoryParam?: string | null;
   slotParam?: string | null;
+  categories?: ReadonlyArray<CatalogueCategoryRecord>;
 }): CatalogueCategoryRecord | null {
   const rawCategory = params.categoryParam?.trim().toLowerCase();
   if (rawCategory && rawCategory !== "all") {
-    const bySlugOrCodeOrName = DESIGN_CATEGORY_RECORDS.find(
+    const bySlugOrCodeOrName = (params.categories || []).find(
       (cat) =>
         cat.slug.toLowerCase() === rawCategory ||
         cat.slotCode.toLowerCase() === rawCategory ||
@@ -1950,7 +1951,7 @@ export function resolveCategoryFromQuery(params: {
   const slotNum = Number(params.slotParam || "0");
   if (Number.isInteger(slotNum) && slotNum >= 1 && slotNum <= 13) {
     return (
-      DESIGN_CATEGORY_RECORDS.find((cat) => cat.slotNumber === slotNum) ?? null
+      (params.categories || []).find((cat) => cat.slotNumber === slotNum) ?? null
     );
   }
 
@@ -1962,7 +1963,7 @@ export function resolveCategoryFromQuery(params: {
  */
 export function findDesignBySlugOrId(
   identifier?: string | null,
-  source: ReadonlyArray<CatalogueDesignItem> = DEVELOPMENT_FIXTURE_DESIGNS
+  source: ReadonlyArray<CatalogueDesignItem> = []
 ): CatalogueDesignItem | null {
   if (!identifier) return null;
   const clean = identifier.trim().toLowerCase();
@@ -2094,8 +2095,8 @@ const DEFAULT_CATEGORY_FALLBACK_IMAGE =
  * are published.
  */
 export function buildAtelierVaultCategories(
-  categories: ReadonlyArray<CatalogueCategoryRecord> = DESIGN_CATEGORY_RECORDS,
-  designs: ReadonlyArray<CatalogueDesignItem> = DEVELOPMENT_FIXTURE_DESIGNS
+  categories: ReadonlyArray<CatalogueCategoryRecord> = [],
+  designs: ReadonlyArray<CatalogueDesignItem> = []
 ): AtelierVaultCategoryItem[] {
   const publishedDesigns = designs.filter((d) => d.published);
 

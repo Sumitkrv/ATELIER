@@ -1,4 +1,6 @@
+"use client";
 import React from "react";
+import { useSiteSettings } from "@/components/layout/PublicContentProvider";
 import Image from "next/image";
 import { ATELIER_BRAND } from "@/lib/brand";
 import { cn } from "@/lib/cn";
@@ -42,10 +44,12 @@ export function BrandLogo({
   priority = false,
   className,
 }: BrandLogoProps) {
+  const settings = useSiteSettings();
+  const asset = variant === "white" ? settings?.logoDark : settings?.logoLight;
   return (
     <Image
-      src={variantSrcMap[variant]}
-      alt={`${ATELIER_BRAND.name} official logo`}
+      src={asset?.secureUrl || variantSrcMap[variant]}
+      alt={asset?.altText || `${settings?.brandName || ATELIER_BRAND.name} official logo`}
       width={ATELIER_BRAND.assets.logoWidth}
       height={ATELIER_BRAND.assets.logoHeight}
       priority={priority}

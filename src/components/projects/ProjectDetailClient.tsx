@@ -384,7 +384,7 @@ export function ProjectDetailClient({
       {/* =====================================================================
           03. BEFORE / AFTER SUBSTRATE TRANSFORMATION STUDY (Warm Cream)
       ===================================================================== */}
-      <section className="border-b border-[#DDD2C5] bg-[#F2EBE2] py-14 text-[#211D1A] sm:py-20">
+      {project.beforeAfterMedia?.beforeImageUrl && project.beforeAfterMedia?.afterImageUrl && project.beforeAfterMedia.beforeImageUrl !== project.beforeAfterMedia.afterImageUrl ? (<section className="border-b border-[#DDD2C5] bg-[#F2EBE2] py-14 text-[#211D1A] sm:py-20">
         <Container>
           <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:items-center">
             {/* Before / After Slider */}
@@ -536,7 +536,7 @@ export function ProjectDetailClient({
             </div>
           </div>
         </Container>
-      </section>
+      </section>) : null}
 
       {/* =====================================================================
           04. RELATED PROJECTS ACROSS OTHER CONFIRMED SURFACES

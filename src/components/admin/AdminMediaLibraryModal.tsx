@@ -1,509 +1,104 @@
 "use client";
+/* eslint-disable @next/next/no-img-element */
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Copy, Search, Upload, X } from "lucide-react";
+import { adminButtonClass, adminInputClass } from "./AdminUiPrimitives";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import {
-  Check,
-  Copy,
-  Image as ImageIcon,
-  LayoutGrid,
-  List,
-  Search,
-  Upload,
-  X,
-} from "lucide-react";
-import {
-  ATELIER_ASSET_REGISTRY,
-  atelierImages,
-} from "@/lib/asset-registry";
-import {
-  adminButtonClass,
-  adminInputClass,
-  AdminStatusBadge,
-} from "@/components/admin/AdminUiPrimitives";
-
-export interface StudioMediaAsset {
-  id: string;
-  title: string;
-  url: string;
-  section: string;
-  category:
-    | "Designs"
-    | "Projects"
-    | "Journal"
-    | "Surfaces"
-    | "Visualizer"
-    | "Studio"
-    | "Uploads";
-  dimensions?: string;
+interface Asset {
+  id: string; secureUrl: string; originalFilename: string; altText: string;
+  resourceType: "image" | "video"; format: string; bytes: number; width: number; height: number;
+  references: { id: string; published: boolean }[];
 }
-
-function classifyAssetCategory(url: string, section: string): StudioMediaAsset["category"] {
-  const lower = `${url} ${section}`.toLowerCase();
-  if (lower.includes("/designs/") || lower.includes("catalogue") || lower.includes("category") || lower.includes("artwork")) {
-    return "Designs";
-  }
-  if (lower.includes("/projects/") || lower.includes("project")) {
-    return "Projects";
-  }
-  if (lower.includes("/journal/") || lower.includes("blog")) {
-    return "Journal";
-  }
-  if (lower.includes("/visualizer/")) {
-    return "Visualizer";
-  }
-  if (
-    lower.includes("substrate") ||
-    lower.includes("surface") ||
-    lower.includes("/services/services-material")
-  ) {
-    return "Surfaces";
-  }
-  return "Studio";
-}
-
-function formatFilenameTitle(filename: string): string {
-  return filename
-    .replace(/\.[a-z0-9]+$/i, "")
-    .replace(/[-_]+/g, " ")
-    .replace(/\b\w/g, (ch) => ch.toUpperCase());
-}
-
-function flattenManifestUrls(
-  node: unknown,
-  prefix: string[] = [],
-  out: Array<{ url: string; label: string }> = []
-) {
-  if (typeof node === "string") {
-    out.push({ url: node, label: prefix.join(" › ") });
-    return out;
-  }
-  if (node && typeof node === "object") {
-    for (const [key, val] of Object.entries(node as Record<string, unknown>)) {
-      flattenManifestUrls(val, [...prefix, key], out);
-    }
-  }
-  return out;
-}
-
-function buildCuratedStudioAssets(): StudioMediaAsset[] {
-  const byUrl = new Map<string, StudioMediaAsset>();
-
-  for (const entry of Object.values(ATELIER_ASSET_REGISTRY)) {
-    byUrl.set(entry.url, {
-      id: entry.id,
-      title: formatFilenameTitle(entry.filename),
-      url: entry.url,
-      section: entry.intendedSection,
-      category: classifyAssetCategory(entry.url, entry.intendedSection),
-      dimensions:
-        "width" in entry && "height" in entry && entry.width && entry.height
-          ? `${entry.width} × ${entry.height}`
-          : undefined,
-    });
-  }
-
-  for (const item of flattenManifestUrls(atelierImages)) {
-    if (!byUrl.has(item.url)) {
-      const filename = item.url.split("/").pop() || item.url;
-      byUrl.set(item.url, {
-        id: item.url,
-        title: formatFilenameTitle(filename),
-        url: item.url,
-        section: item.label || "ATELIER Visual Library",
-        category: classifyAssetCategory(item.url, item.label),
-      });
-    }
-  }
-
-  return Array.from(byUrl.values());
-}
-
-const CURATED_ASSETS = buildCuratedStudioAssets();
-
-const FILTER_TABS: Array<StudioMediaAsset["category"] | "All"> = [
-  "All",
-  "Designs",
-  "Projects",
-  "Journal",
-  "Surfaces",
-  "Visualizer",
-  "Studio",
-  "Uploads",
-];
-
-export function AdminMediaLibraryModal({
-  open,
-  onClose,
-  onSelect,
-  title = "Studio Media Library",
-}: {
-  open: boolean;
-  onClose: () => void;
-  onSelect?: (url: string) => void;
-  title?: string;
+export function AdminMediaLibraryModal({ open, onClose, onSelect, title = "Media Library" }: {
+  open: boolean; onClose: () => void; onSelect?: (url: string) => void; title?: string;
 }) {
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [assets, setAssets] = useState<Asset[]>([]);
   const [search, setSearch] = useState("");
-  const [category, setCategory] = useState<StudioMediaAsset["category"] | "All">("All");
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [uploadedAssets, setUploadedAssets] = useState<StudioMediaAsset[]>([]);
-  const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
-  const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
-
+  const [type, setType] = useState("");
+  const [unused, setUnused] = useState(false);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState("");
+  const [error, setError] = useState("");
+  const [editing, setEditing] = useState<Asset | null>(null);
+  const load = useCallback(async () => {
+    setLoading(true); setError("");
+    try {
+      const response = await fetch(`/api/admin/media?page=${page}&type=${type}&q=${encodeURIComponent(search)}`, { cache: "no-store" });
+      const json = await response.json();
+      if (!response.ok || !json.ok) throw new Error(json.error || "Media could not be loaded.");
+      setAssets(json.assets); setTotal(json.total);
+    } catch (e) { setError(e instanceof Error ? e.message : "Media could not be loaded."); }
+    finally { setLoading(false); }
+  }, [page, type, search]);
+  useEffect(() => { if (!open) return; const timer = setTimeout(() => void load(), 250); return () => clearTimeout(timer); }, [open, load]);
   useEffect(() => {
     if (!open) return;
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-    }
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    const previous = document.activeElement as HTMLElement | null;
+    dialogRef.current?.focus();
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+      if (event.key === "Tab") {
+        const controls = dialogRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled),select,a[href],[tabindex="0"]');
+        const first = controls?.[0], last = controls?.[controls.length - 1];
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("keydown", onKey); previous?.focus(); };
   }, [open, onClose]);
-
-  const combinedAssets = useMemo(
-    () => [...uploadedAssets, ...CURATED_ASSETS],
-    [uploadedAssets]
-  );
-
-  const filteredAssets = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return combinedAssets.filter((asset) => {
-      if (category !== "All" && asset.category !== category) return false;
-      if (!q) return true;
-      return (
-        asset.title.toLowerCase().includes(q) ||
-        asset.section.toLowerCase().includes(q) ||
-        asset.url.toLowerCase().includes(q)
-      );
-    });
-  }, [combinedAssets, search, category]);
-
-  async function handleFileUpload(file: File) {
-    setUploadError(null);
-    setUploading(true);
+  async function upload(file: File) {
+    setBusy(true); setError(""); setNotice("");
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      const res = await fetch("/api/admin/upload", {
-        method: "POST",
-        body: formData,
-      });
-      const json = (await res.json()) as {
-        ok?: boolean;
-        error?: string;
-        media?: { secureUrl?: string; altText?: string };
-      };
-      if (!res.ok || !json.ok || !json.media?.secureUrl) {
-        setUploadError(
-          json.error || "Sign in as administrator to upload a new studio asset."
-        );
-        return;
-      }
-
-      const created: StudioMediaAsset = {
-        id: `upload-${Date.now()}`,
-        title: formatFilenameTitle(file.name),
-        url: json.media.secureUrl,
-        section: "Uploaded in this session",
-        category: "Uploads",
-      };
-      setUploadedAssets((prev) => [created, ...prev]);
-      setCategory("All");
-      if (onSelect) {
-        onSelect(created.url);
-        onClose();
-      }
-    } catch {
-      setUploadError("Upload could not be completed. Verify connection and file size.");
-    } finally {
-      setUploading(false);
-    }
+      const form = new FormData(); form.append("file", file);
+      const response = await fetch("/api/admin/upload", { method: "POST", body: form });
+      const json = await response.json();
+      if (!response.ok || !json.ok) throw new Error(json.error || "Upload failed.");
+      setNotice("Media uploaded and saved."); await load();
+      if (onSelect) { onSelect(json.media.secureUrl); onClose(); }
+    } catch (e) { setError(e instanceof Error ? e.message : "Upload failed."); }
+    finally { setBusy(false); }
   }
-
-  async function copyAssetUrl(url: string) {
+  async function saveAlt() {
+    if (!editing) return; setBusy(true); setError("");
     try {
-      await navigator.clipboard.writeText(url);
-      setCopiedUrl(url);
-      window.setTimeout(() => setCopiedUrl((curr) => (curr === url ? null : curr)), 2000);
-    } catch {
-      // Fallback ignored gracefully in non-clipboard contexts
-    }
+      const response = await fetch("/api/admin/media", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: editing.id, altText: editing.altText }) });
+      const json = await response.json(); if (!response.ok || !json.ok) throw new Error(json.error || "Update failed.");
+      setEditing(null); setNotice("Alt text saved."); await load();
+    } catch (e) { setError(e instanceof Error ? e.message : "Update failed."); } finally { setBusy(false); }
   }
-
+  async function remove(asset: Asset) {
+    if (!window.confirm(`Delete ${asset.originalFilename}? This removes it from cloud storage permanently.`)) return;
+    setBusy(true); setError("");
+    try {
+      const response = await fetch(`/api/admin/media?id=${encodeURIComponent(asset.id)}`, { method: "DELETE" });
+      const json = await response.json(); if (!response.ok || !json.ok) throw new Error(json.error || "Delete failed.");
+      setNotice("Unused media deleted."); await load();
+    } catch (e) { setError(e instanceof Error ? e.message : "Delete failed."); } finally { setBusy(false); }
+  }
   if (!open) return null;
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-[#1A1A1A]/45 backdrop-blur-[2px]"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="studio-media-library-title"
-    >
-      <div className="w-full max-w-5xl max-h-[90vh] flex flex-col rounded-[24px] border border-[#DFD0C0] bg-[#FAF6F0] shadow-[0_28px_80px_rgba(26,26,26,0.28)] overflow-hidden">
-        {/* Top Modal Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-6 py-5 bg-[#FFFDF9] border-b border-[#E8DED3]">
-          <div>
-            <p className="font-sans text-[11px] font-semibold uppercase tracking-[0.2em] text-[#9B1C1C]">
-              ATELIER Visual Assets
-            </p>
-            <h2
-              id="studio-media-library-title"
-              className="mt-1 font-serif text-2xl sm:text-[28px] font-normal text-[#1A1A1A]"
-            >
-              {title}
-            </h2>
-          </div>
-
-          <div className="flex items-center gap-2.5">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/avif"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) void handleFileUpload(file);
-                e.currentTarget.value = "";
-              }}
-            />
-            <button
-              type="button"
-              disabled={uploading}
-              onClick={() => fileInputRef.current?.click()}
-              className={adminButtonClass("primary", "sm")}
-            >
-              <Upload className="w-3.5 h-3.5" />
-              {uploading ? "Uploading..." : "Upload Image"}
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="Close Studio Media Library"
-              className="p-2 rounded-xl border border-[#DFD0C0] bg-[#FFFDF9] text-[#746B64] hover:text-[#1A1A1A] hover:bg-[#FAF6F0] cursor-pointer"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-
-        {/* Search + Filters */}
-        <div className="px-6 py-4 bg-[#FFFDF9]/80 border-b border-[#E8DED3] space-y-3">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-            <div className="relative flex-1">
-              <Search className="w-4 h-4 text-[#746B64] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-              <input
-                type="search"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search studio assets by name, route section, or URL..."
-                className={`${adminInputClass} pl-10 h-10 bg-[#FAF6F0]`}
-              />
-            </div>
-
-            <div className="flex items-center gap-1.5 self-end sm:self-auto">
-              <span className="font-sans text-xs text-[#746B64] mr-2 admin-tabular">
-                {filteredAssets.length} assets
-              </span>
-              <button
-                type="button"
-                aria-label="Grid view"
-                onClick={() => setViewMode("grid")}
-                className={`p-2 rounded-lg border cursor-pointer transition-colors ${
-                  viewMode === "grid"
-                    ? "border-[#9B1C1C] bg-[#9B1C1C]/10 text-[#9B1C1C]"
-                    : "border-[#DFD0C0] bg-[#FFFDF9] text-[#746B64] hover:text-[#1A1A1A]"
-                }`}
-              >
-                <LayoutGrid className="w-4 h-4" />
-              </button>
-              <button
-                type="button"
-                aria-label="List view"
-                onClick={() => setViewMode("list")}
-                className={`p-2 rounded-lg border cursor-pointer transition-colors ${
-                  viewMode === "list"
-                    ? "border-[#9B1C1C] bg-[#9B1C1C]/10 text-[#9B1C1C]"
-                    : "border-[#DFD0C0] bg-[#FFFDF9] text-[#746B64] hover:text-[#1A1A1A]"
-                }`}
-              >
-                <List className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap gap-1.5">
-            {FILTER_TABS.map((tab) => {
-              const active = category === tab;
-              return (
-                <button
-                  key={tab}
-                  type="button"
-                  onClick={() => setCategory(tab)}
-                  className={`px-3 py-1 rounded-full border font-sans text-xs font-medium transition-colors cursor-pointer ${
-                    active
-                      ? "bg-[#9B1C1C] text-[#FFFDF9] border-[#9B1C1C]"
-                      : "bg-[#FFFDF9] text-[#746B64] border-[#DFD0C0] hover:border-[#9B1C1C]/40 hover:text-[#1A1A1A]"
-                  }`}
-                >
-                  {tab}
-                </button>
-              );
-            })}
-          </div>
-
-          {uploadError ? (
-            <div
-              role="alert"
-              className="rounded-xl border border-[#9B1C1C]/30 bg-[#9B1C1C]/8 px-3.5 py-2.5 font-sans text-xs text-[#9B1C1C]"
-            >
-              {uploadError}
-            </div>
-          ) : null}
-        </div>
-
-        {/* Scrollable Asset Body */}
-        <div className="flex-1 overflow-y-auto p-6">
-          {filteredAssets.length === 0 ? (
-            <div className="rounded-2xl border border-[#DFD0C0] bg-[#FFFDF9] p-10 text-center">
-              <ImageIcon className="w-8 h-8 text-[#746B64]/50 mx-auto" />
-              <p className="mt-3 font-serif text-xl text-[#1A1A1A]">
-                No matching visual assets
-              </p>
-              <p className="mt-1 font-sans text-xs text-[#746B64]">
-                Try a different keyword or upload a new studio image.
-              </p>
-            </div>
-          ) : viewMode === "grid" ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {filteredAssets.map((asset) => (
-                <div
-                  key={asset.id}
-                  className="group rounded-2xl border border-[#DFD0C0] bg-[#FFFDF9] overflow-hidden flex flex-col transition-colors hover:border-[#9B1C1C]/45"
-                >
-                  <div className="relative h-36 bg-[#F2EAE1] overflow-hidden">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={asset.url}
-                      alt={asset.title}
-                      loading="lazy"
-                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-                    />
-                    <div className="absolute top-2.5 left-2.5">
-                      <AdminStatusBadge tone="neutral">{asset.category}</AdminStatusBadge>
-                    </div>
-                  </div>
-                  <div className="p-3.5 flex-1 flex flex-col justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="font-sans text-xs font-semibold text-[#1A1A1A] truncate">
-                        {asset.title}
-                      </p>
-                      <p className="mt-0.5 font-sans text-[11px] text-[#746B64] line-clamp-1">
-                        {asset.section}
-                      </p>
-                    </div>
-
-                    <div className="flex items-center gap-2 pt-2 border-t border-[#E8DED3]">
-                      {onSelect ? (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            onSelect(asset.url);
-                            onClose();
-                          }}
-                          className={`${adminButtonClass("primary", "sm")} flex-1`}
-                        >
-                          Use Image
-                        </button>
-                      ) : null}
-                      <button
-                        type="button"
-                        onClick={() => void copyAssetUrl(asset.url)}
-                        className={adminButtonClass("secondary", "sm", onSelect ? "" : "flex-1")}
-                        title={asset.url}
-                      >
-                        {copiedUrl === asset.url ? (
-                          <>
-                            <Check className="w-3.5 h-3.5 text-[#264E32]" />
-                            Copied
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-3.5 h-3.5" />
-                            {onSelect ? "URL" : "Copy URL"}
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="rounded-2xl border border-[#DFD0C0] bg-[#FFFDF9] divide-y divide-[#E8DED3] overflow-hidden">
-              {filteredAssets.map((asset) => (
-                <div
-                  key={asset.id}
-                  className="p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-[#FAF6F0]/70 transition-colors"
-                >
-                  <div className="flex items-center gap-3.5 min-w-0">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={asset.url}
-                      alt={asset.title}
-                      loading="lazy"
-                      className="w-14 h-12 rounded-xl object-cover border border-[#DFD0C0] shrink-0 bg-[#F2EAE1]"
-                    />
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <p className="font-sans text-sm font-medium text-[#1A1A1A] truncate">
-                          {asset.title}
-                        </p>
-                        <AdminStatusBadge tone="neutral">{asset.category}</AdminStatusBadge>
-                      </div>
-                      <p className="mt-0.5 font-sans text-xs text-[#746B64] truncate">
-                        {asset.url}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => void copyAssetUrl(asset.url)}
-                      className={adminButtonClass("secondary", "sm")}
-                    >
-                      {copiedUrl === asset.url ? (
-                        <>
-                          <Check className="w-3.5 h-3.5 text-[#264E32]" />
-                          Copied
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-3.5 h-3.5" />
-                          Copy URL
-                        </>
-                      )}
-                    </button>
-                    {onSelect ? (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          onSelect(asset.url);
-                          onClose();
-                        }}
-                        className={adminButtonClass("primary", "sm")}
-                      >
-                        Select
-                      </button>
-                    ) : null}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+  return <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-3 backdrop-blur-sm sm:p-6">
+    <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="media-library-title" className="flex max-h-[92dvh] w-full max-w-5xl flex-col overflow-hidden rounded-3xl border border-[#DFD0C0] bg-[#FAF6F0] shadow-2xl">
+      <div className="flex items-center justify-between gap-3 border-b border-[#E8DED3] p-5"><h2 id="media-library-title" className="font-serif text-2xl">{title}</h2><button type="button" onClick={onClose} aria-label="Close media library" className={adminButtonClass("secondary", "sm")}><X size={18}/></button></div>
+      <div className="space-y-3 border-b border-[#E8DED3] p-4">
+        <div className="flex flex-wrap items-center gap-3"><label className="relative min-w-40 flex-1"><Search className="absolute top-3 left-3" size={16}/><span className="sr-only">Search media</span><input className={`${adminInputClass} pl-9`} value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Search media..."/></label>
+        <select aria-label="Media type" className={adminInputClass + " w-auto"} value={type} onChange={e => { setType(e.target.value); setPage(1); }}><option value="">All media</option><option value="image">Images</option><option value="video">Videos</option></select>
+        <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/avif,video/mp4,video/webm" hidden onChange={e => { const file = e.target.files?.[0]; if (file) void upload(file); e.target.value = ""; }}/><button type="button" disabled={busy} onClick={() => fileRef.current?.click()} className={adminButtonClass("primary", "sm")}><Upload size={16}/>{busy ? "Working…" : "Upload"}</button></div>
+        <div className="flex flex-wrap justify-between gap-2 text-xs text-[#746B64]"><label><input type="checkbox" checked={unused} onChange={e => setUnused(e.target.checked)}/> Show unused on this page</label><span>JPG, PNG, WebP, AVIF, MP4 or WebM · up to 4 MB</span></div>
+        {error && <p role="alert" className="text-sm text-[#9B1C1C]">{error}</p>}{notice && <p role="status" className="text-sm text-[#264E32]">{notice}</p>}
+        {editing && <div className="flex flex-wrap gap-2"><input aria-label="Image alt text" value={editing.altText} maxLength={500} onChange={e => setEditing({ ...editing, altText: e.target.value })} className={`${adminInputClass} flex-1`}/><button type="button" disabled={busy} onClick={() => void saveAlt()} className={adminButtonClass("primary", "sm")}>Save alt text</button><button type="button" onClick={() => setEditing(null)} className={adminButtonClass("secondary", "sm")}>Cancel</button></div>}
       </div>
+      <div className="overflow-y-auto p-4">{loading ? <p role="status" className="p-10 text-center">Loading media…</p> : !assets.length ? <p className="p-10 text-center">No uploaded media yet. Upload an image or video to get started.</p> : <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{assets.filter(asset => !unused || !asset.references.length).map(asset => <article key={asset.id} className="overflow-hidden rounded-2xl border border-[#DFD0C0] bg-[#FFFDF9]">
+        {asset.resourceType === "video" ? <video src={asset.secureUrl} controls preload="metadata" className="aspect-video w-full bg-black object-contain"/> : <a href={asset.secureUrl} target="_blank" rel="noreferrer"><img src={asset.secureUrl} alt={asset.altText} loading="lazy" className="aspect-video w-full object-cover"/></a>}
+        <div className="space-y-3 p-3"><p className="truncate text-sm font-medium">{asset.originalFilename}</p><p className="text-xs text-[#746B64]">{asset.width} × {asset.height} · {(asset.bytes/1024).toFixed(0)} KB · {asset.format}<br/>{asset.references.length ? `Used in ${asset.references.length} saved items` : "Unused"}</p>
+        <div className="flex flex-wrap gap-2">{onSelect && <button type="button" onClick={() => { onSelect(asset.secureUrl); onClose(); }} className={adminButtonClass("primary", "sm")}>Use media</button>}<button type="button" onClick={async () => { try { await navigator.clipboard.writeText(asset.secureUrl); setNotice("URL copied."); } catch { setError("Could not copy the URL. Open the asset to copy its address."); } }} className={adminButtonClass("secondary", "sm")}><Copy size={13}/>URL</button><button type="button" onClick={() => setEditing(asset)} className={adminButtonClass("secondary", "sm")}>Alt text</button><button type="button" disabled={busy || !!asset.references.length} onClick={() => void remove(asset)} className={adminButtonClass("secondary", "sm")}>Delete</button></div></div>
+      </article>)}</div>}</div>
+      <div className="flex items-center justify-between border-t border-[#E8DED3] p-4 text-sm"><button type="button" disabled={page <= 1} onClick={() => setPage(page-1)} className={adminButtonClass("secondary", "sm")}>Previous</button><span>{total} assets · Page {page}</span><button type="button" disabled={page*60 >= total} onClick={() => setPage(page+1)} className={adminButtonClass("secondary", "sm")}>Next</button></div>
     </div>
-  );
+  </div>;
 }
-

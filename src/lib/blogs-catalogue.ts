@@ -791,7 +791,7 @@ export const DEVELOPMENT_BLOG_FIXTURES: ReadonlyArray<BlogArticleRecord> =
 
 export function findBlogBySlugOrId(
   identifier?: string | null,
-  source: ReadonlyArray<BlogArticleRecord> = DEVELOPMENT_BLOG_FIXTURES
+  source: ReadonlyArray<BlogArticleRecord> = []
 ): BlogArticleRecord | null {
   if (!identifier) return null;
   const clean = identifier.trim().toLowerCase();

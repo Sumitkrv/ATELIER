@@ -5,7 +5,7 @@ import { Container } from "@/components/layout/Container";
 import { Button } from "@/components/ui/Button";
 import { FadeUp } from "@/components/motion/Reveal";
 import { ATELIER_SURFACES } from "@/lib/brand";
-import { DEFAULT_HOMEPAGE_CONTENT } from "@/lib/homepage-content";
+import { DEFAULT_HOMEPAGE_CONTENT, type HomepageContentConfig } from "@/lib/homepage-content";
 import { cn } from "@/lib/cn";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -69,8 +69,7 @@ const PHILOSOPHY_SURFACE_VISUALS: Record<
   },
 };
 
-export function PhilosophySection() {
-  const content = DEFAULT_HOMEPAGE_CONTENT;
+export function PhilosophySection({ content = DEFAULT_HOMEPAGE_CONTENT }: { content?: HomepageContentConfig }) {
   const [activeSurfaceId, setActiveSurfaceId] = useState<string | null>(null);
   const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
 

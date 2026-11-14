@@ -1,20 +1,11 @@
 import { NextResponse } from "next/server";
-import { getEnvironmentReadiness } from "@/lib/env";
-import { listStoredProjects } from "@/lib/cms-store";
-
+import { getPublicProjects } from "@/lib/public-cms";
+export const dynamic = "force-dynamic";
 export async function GET() {
-  const readiness = getEnvironmentReadiness();
-  const projects = await listStoredProjects();
-  const publishedProjects = projects.filter((p) => p.published);
-
-  return NextResponse.json({
-    status: "ok",
-    readiness: {
-      mongodbConfigured: readiness.mongodbConfigured,
-      localCmsEnabled: readiness.localCmsEnabled,
-      cloudinaryConfigured: readiness.cloudinaryConfigured,
-    },
-    approvedClientProjects: publishedProjects,
-    developmentFixtures: [],
-  });
+  try {
+    const items = await getPublicProjects();
+    return NextResponse.json({ status: "ok", approvedClientProjects: items, developmentFixtures: [] }, { headers: { "Cache-Control": "private, no-store" } });
+  } catch {
+    return NextResponse.json({ error: "Content is temporarily unavailable." }, { status: 503, headers: { "Cache-Control": "no-store" } });
+  }
 }

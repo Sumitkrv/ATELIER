@@ -1,6 +1,8 @@
 "use client";
 /* eslint-disable @next/next/no-img-element */
 
+import { AdminPublishingControls, AdminUnsavedChanges } from "@/components/admin/AdminPublishingControls";
+import { AdminRecordDetails, EMPTY_RECORD_DETAILS, readRecordDetails } from "@/components/admin/AdminRecordDetails";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AdminAuthBanner,
@@ -36,6 +38,7 @@ import {
 } from "lucide-react";
 
 const EMPTY_FORM = {
+  ...EMPTY_RECORD_DETAILS,
   id: "",
   title: "",
   slug: "",
@@ -46,7 +49,7 @@ const EMPTY_FORM = {
   compatibleSurfaces: ["Walls"] as string[],
   defaultMode: "mural" as "mural" | "pattern",
   featured: false,
-  published: true,
+  published: false,
 };
 
 type StatusFilter = "all" | "published" | "hidden" | "featured";
@@ -117,6 +120,7 @@ export default function AdminDesignsPage() {
 
   const openEdit = (d: CatalogueDesignItem) => {
     setForm({
+      ...readRecordDetails(d),
       id: d.id,
       title: d.title,
       slug: d.slug,
@@ -170,6 +174,8 @@ export default function AdminDesignsPage() {
         text: `Saved "${form.title || "Design"}" to collection.`,
       });
       await loadData();
+    } catch {
+      setFeedback({ type: "error", text: "Network error. Your changes were not saved." });
     } finally {
       setSaving(false);
     }
@@ -211,6 +217,7 @@ export default function AdminDesignsPage() {
   return (
     <div className="space-y-6">
       <AdminAuthBanner authenticated={authenticated} />
+      <AdminUnsavedChanges dirty={showEditor} />
 
       <AdminPageHeader
         eyebrow="Artwork & Mural Collection"
@@ -259,7 +266,7 @@ export default function AdminDesignsPage() {
             </div>
             <button
               type="button"
-              onClick={() => setShowEditor(false)}
+              onClick={() => { if (window.confirm("Close the editor? Unsaved changes will be lost.")) setShowEditor(false); }}
               aria-label="Close design editor"
               className="p-2 rounded-xl border border-[#DFD0C0] text-[#746B64] hover:text-[#1A1A1A] hover:bg-[#FAF6F0] cursor-pointer"
             >
@@ -343,6 +350,8 @@ export default function AdminDesignsPage() {
             onChange={(url) => setForm({ ...form, imageUrl: url })}
           />
 
+          <AdminRecordDetails value={form} onChange={details => setForm({ ...form, ...details })} />
+          <AdminPublishingControls collection="designs" id={form.id} route={"/explore-designs"} onChange={loadData} />
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 pt-2">
             <div>
               <span className={adminLabelClass}>Compatible Surfaces</span>
@@ -408,7 +417,7 @@ export default function AdminDesignsPage() {
                   }
                   className="w-4 h-4 accent-[#9B1C1C]"
                 />
-                <span>Published</span>
+                <span>Publish on save</span>
               </label>
             </div>
           </div>
@@ -416,7 +425,7 @@ export default function AdminDesignsPage() {
           <div className="flex justify-end gap-3 pt-4 border-t border-[#E8DED3]">
             <button
               type="button"
-              onClick={() => setShowEditor(false)}
+              onClick={() => { if (window.confirm("Close the editor? Unsaved changes will be lost.")) setShowEditor(false); }}
               className={adminButtonClass("secondary")}
             >
               Cancel

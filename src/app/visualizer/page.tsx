@@ -7,6 +7,7 @@ import React, {
   useMemo,
   useState,
 } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { PublicShell } from "@/components/layout/PublicShell";
 import {
@@ -24,8 +25,6 @@ import { VisualizerHowItWorks } from "@/components/visualizer/VisualizerHowItWor
 import {
   CatalogueCategoryRecord,
   CatalogueDesignItem,
-  DESIGN_CATEGORY_RECORDS,
-  DEVELOPMENT_FIXTURE_DESIGNS,
   findDesignBySlugOrId,
 } from "@/lib/designs-catalogue";
 import {
@@ -34,10 +33,6 @@ import {
   WallVisionAssetPayload,
 } from "@/lib/visualizer-bridge";
 import { PageContentDocument } from "@/types/models";
-
-const DEFAULT_BOTANICAL_DESIGN: CatalogueDesignItem =
-  DEVELOPMENT_FIXTURE_DESIGNS.find((d) => d.id === "design-slot-1") ||
-  DEVELOPMENT_FIXTURE_DESIGNS[0];
 
 function formatVisualizerDisplayTitle(design: CatalogueDesignItem): string {
   if (
@@ -55,6 +50,54 @@ function formatCollectionSlotLabel(slotNumber: number): string {
 }
 
 function VisualizerExperienceWorkspace() {
+  // Synchronize published designs, 13 categories & optional CMS hero/process copy
+  const [catalogueCategories, setCatalogueCategories] = useState<
+    ReadonlyArray<CatalogueCategoryRecord>
+  >([]);
+  const [catalogueDesigns, setCatalogueDesigns] = useState<
+    ReadonlyArray<CatalogueDesignItem>
+  >([]);
+  const [visualizerPageContent, setVisualizerPageContent] =
+    useState<PageContentDocument | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/designs", { cache: "no-store" });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (cancelled) return;
+        if (Array.isArray(data?.categories)) {
+          setCatalogueCategories(data.categories);
+        }
+        const combinedDesigns: CatalogueDesignItem[] = [
+          ...(Array.isArray(data?.approvedClientDesigns)
+            ? data.approvedClientDesigns
+            : []),
+          ...(Array.isArray(data?.developmentFixtures)
+            ? data.developmentFixtures
+            : []),
+        ];
+        if (Array.isArray(data?.approvedClientDesigns)) {
+          setCatalogueDesigns(combinedDesigns);
+        }
+        if (data?.visualizerPageContent) {
+          setVisualizerPageContent(data.visualizerPageContent);
+        }
+      } catch {
+        // Retain verified canonical catalogue when offline
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (!catalogueDesigns.length) return <PublicShell><div className="mx-auto max-w-2xl px-5 py-24 text-center"><h1 className="font-serif text-3xl">Choose your wall art</h1><p className="mt-4">The artwork catalogue is loading or has no published designs yet.</p><Link className="mt-5 inline-block underline" href="/explore-designs">Explore designs</Link></div></PublicShell>;
+  return <VisualizerWithCatalogue catalogueCategories={catalogueCategories} catalogueDesigns={catalogueDesigns} visualizerPageContent={visualizerPageContent} />;
+}
+function VisualizerWithCatalogue({ catalogueCategories, catalogueDesigns, visualizerPageContent }: { catalogueCategories: ReadonlyArray<CatalogueCategoryRecord>; catalogueDesigns: ReadonlyArray<CatalogueDesignItem>; visualizerPageContent: PageContentDocument | null }) {
   const searchParams = useSearchParams();
 
   const rawDesignParam =
@@ -69,50 +112,6 @@ function VisualizerExperienceWorkspace() {
   const externalVisualizerBase =
     process.env.NEXT_PUBLIC_WALL_VISUALIZER_URL ||
     "http://localhost:3001/visualizer";
-
-  // Synchronize published designs, 13 categories & optional CMS hero/process copy
-  const [catalogueCategories, setCatalogueCategories] = useState<
-    ReadonlyArray<CatalogueCategoryRecord>
-  >(DESIGN_CATEGORY_RECORDS);
-  const [catalogueDesigns, setCatalogueDesigns] = useState<
-    ReadonlyArray<CatalogueDesignItem>
-  >(DEVELOPMENT_FIXTURE_DESIGNS);
-  const [visualizerPageContent, setVisualizerPageContent] =
-    useState<PageContentDocument | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch("/api/designs", { cache: "no-store" });
-        if (!res.ok) return;
-        const data = await res.json();
-        if (cancelled) return;
-        if (Array.isArray(data?.categories) && data.categories.length > 0) {
-          setCatalogueCategories(data.categories);
-        }
-        const combinedDesigns: CatalogueDesignItem[] = [
-          ...(Array.isArray(data?.approvedClientDesigns)
-            ? data.approvedClientDesigns
-            : []),
-          ...(Array.isArray(data?.developmentFixtures)
-            ? data.developmentFixtures
-            : []),
-        ];
-        if (combinedDesigns.length > 0) {
-          setCatalogueDesigns(combinedDesigns);
-        }
-        if (data?.visualizerPageContent) {
-          setVisualizerPageContent(data.visualizerPageContent);
-        }
-      } catch {
-        // Retain verified canonical catalogue when offline
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   // Resolve initial design from URL params -> sessionStorage -> default Botanical Canopy Wall Mural
   const resolution = useMemo<{
@@ -147,7 +146,7 @@ function VisualizerExperienceWorkspace() {
 
       if (!rawTitleParam.trim()) {
         return {
-          design: DEFAULT_BOTANICAL_DESIGN,
+          design: catalogueDesigns[0],
           wasInvalidQuery: true,
           customTitleOverride: null,
         };
@@ -169,7 +168,7 @@ function VisualizerExperienceWorkspace() {
     }
 
     return {
-      design: DEFAULT_BOTANICAL_DESIGN,
+      design: catalogueDesigns[0],
       wasInvalidQuery: false,
       customTitleOverride: rawTitleParam.trim() || null,
     };

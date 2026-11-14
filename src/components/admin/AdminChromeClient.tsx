@@ -360,12 +360,12 @@ export function AdminShellLayout({
                 className="hidden md:inline-flex items-center gap-1.5 rounded-full border border-[#DFD0C0] bg-[#FAF6F0] px-3 py-1.5 font-sans text-[11px] font-medium text-[#574F49]"
                 title={
                   mongodbConfigured
-                    ? "Connected to MongoDB database"
-                    : "Reading and saving to local development JSON store"
+                    ? "MongoDB configuration is present. Availability is checked when saving content."
+                    : "MongoDB must be configured before content can be saved."
                 }
               >
                 <Database className="w-3 h-3 text-[#9B1C1C]" />
-                <span>{mongodbConfigured ? "Connected Database" : "Local Development"}</span>
+                <span>{mongodbConfigured ? "Database Configured" : "Database Setup Needed"}</span>
               </span>
 
               <Link
@@ -430,7 +430,7 @@ export function AdminAuthBanner({
         </div>
         <div>
           <p className="font-sans text-sm font-medium text-[#1A1A1A]">
-            Read-Only Preview Mode
+            Administrator sign-in required
           </p>
           <p className="font-sans text-xs text-[#746B64]">
             Sign in with your administrator credentials to publish, edit, upload imagery, or update enquiries.

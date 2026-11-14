@@ -1,5 +1,6 @@
 "use client";
 
+import { usePageContent } from "@/components/layout/PublicContentProvider";
 import React from "react";
 import Image from "next/image";
 import { ArrowRight, Box, Layers, MessageSquare, Send, Zap } from "lucide-react";
@@ -102,6 +103,7 @@ export function ContactHeroAndCapabilities({
   onScrollToForm,
   studioWhatsAppHref,
 }: ContactHeroAndCapabilitiesProps) {
+  const page = usePageContent("contact");
   return (
     <>
       {/* ===================================================================
@@ -168,7 +170,7 @@ export function ContactHeroAndCapabilities({
           className="contact-hero-bg pointer-events-none absolute inset-y-0 right-0 -z-10 hidden md:block md:w-[66%] lg:w-[64%] xl:w-[62%]"
         >
           <Image
-            src={ATELIER_ASSET_REGISTRY.contactHeroLotusArch.url}
+            src={page?.hero.posterImage?.secureUrl || ATELIER_ASSET_REGISTRY.contactHeroLotusArch.url}
             alt=""
             fill
             priority
@@ -198,21 +200,13 @@ export function ContactHeroAndCapabilities({
                 id="contact-hero-heading"
                 className="mt-3.5 font-serif text-[clamp(2.2rem,3.95vw,3.65rem)] leading-[1.06] font-normal tracking-[-0.022em] text-[#1A1A1A] sm:mt-4"
               >
-                <span className="block">Let’s Create</span>
-                <span className="mt-0.5 block sm:whitespace-nowrap">
-                  Something{" "}
-                  <em className="font-serif italic font-normal text-[#9B1C1C]">
-                    Remarkable.
-                  </em>
-                </span>
+                <span className="block">{page?.hero.heading || "Let’s Create"}</span><em className="mt-0.5 block text-[#9B1C1C]">{page?.hero.highlightedText || "Something Remarkable."}</em>
               </h1>
             </div>
 
             {/* 2. Supporting Description */}
             <p className="contact-reveal-2 mt-4 max-w-[46ch] text-[14.5px] leading-[1.66] text-[#5B524B] sm:text-[15.25px]">
-              Tell us about your space, surface, your ideas, and the wall story
-              you want to create. Our Mumbai studio will get in touch with you
-              soon.
+              {page?.hero.subheading || "Tell us about your space, surface, your ideas, and the wall story you want to create. Our Mumbai studio will get in touch with you soon."}
             </p>
 
             {/* 3. Hero CTA Buttons */}
@@ -246,7 +240,7 @@ export function ContactHeroAndCapabilities({
           <div className="mt-6 overflow-hidden rounded-[20px] border border-[#DFD0C0] bg-[#EFE6DA] shadow-[0_16px_36px_-18px_rgba(32,22,14,0.18)] md:hidden">
             <div className="relative aspect-[16/10] w-full">
               <Image
-                src={ATELIER_ASSET_REGISTRY.contactHeroLotusArch.url}
+                src={page?.hero.posterImage?.secureUrl || ATELIER_ASSET_REGISTRY.contactHeroLotusArch.url}
                 alt={ATELIER_ASSET_REGISTRY.contactHeroLotusArch.altText}
                 fill
                 priority

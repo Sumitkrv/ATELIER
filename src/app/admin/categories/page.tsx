@@ -1,6 +1,7 @@
 "use client";
 /* eslint-disable @next/next/no-img-element */
 
+import { AdminPublishingControls } from "@/components/admin/AdminPublishingControls";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AdminAuthBanner,
@@ -37,6 +38,8 @@ export default function AdminCategoriesPage() {
     isActive: true,
   });
   const [saving, setSaving] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [newName, setNewName] = useState("");
   const [feedback, setFeedback] = useState<string | null>(null);
 
   const loadData = useCallback(() => {
@@ -110,12 +113,13 @@ export default function AdminCategoriesPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ collection: "categories", ...draft }),
       });
+      if (!res.ok) { const json = await res.json(); setFeedback(json.error || "Could not save category."); return; }
       if (res.ok) {
         setEditingId(null);
         setFeedback(`Updated "${draft.name}" category configuration.`);
         await loadData();
       }
-    } finally {
+    } catch { setFeedback("Network error. Your changes were not saved."); } finally {
       setSaving(false);
     }
   };
@@ -126,9 +130,19 @@ export default function AdminCategoriesPage() {
 
       <AdminPageHeader
         eyebrow="Catalogue Taxonomy"
-        title={`Categories (${categories.length} Slots)`}
-        description="Configure category names, URL slugs, display order, cover visuals, and active visibility across /explore-designs."
+        title={`Categories (${categories.length})`}
+        description="Manage category names, display order, cover visuals, and visibility."
+        actions={<button type="button" onClick={() => setCreating(true)} className={adminButtonClass("primary")}>Add category</button>}
       />
+
+      {creating && <form className={`${adminCardClass} space-y-3 p-5`} onSubmit={async e => {
+        e.preventDefault(); setSaving(true);
+        try {
+          const response = await fetch("/api/admin/cms", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ collection: "categories", name: newName, description: "", isActive: true, displayOrder: categories.length + 1 }) });
+          const json = await response.json(); if (!response.ok || !json.ok) throw new Error(json.error || "Could not add category.");
+          setCreating(false); setNewName(""); setFeedback("Category added. Edit it below to add a description and image."); loadData();
+        } catch (error) { setFeedback(error instanceof Error ? error.message : "Could not add category."); } finally { setSaving(false); }
+      }}><label className={adminLabelClass}>Category name<input required maxLength={120} value={newName} onChange={e => setNewName(e.target.value)} className={adminInputClass}/></label><div className="flex gap-2"><button type="submit" disabled={saving} className={adminButtonClass("primary")}>Create category</button><button type="button" onClick={() => setCreating(false)} className={adminButtonClass("secondary")}>Cancel</button></div></form>}
 
       {feedback ? (
         <div
@@ -275,6 +289,15 @@ export default function AdminCategoriesPage() {
                       </button>
                     </div>
                   </div>
+                  <AdminPublishingControls collection="categories" id={cat.id} route="/explore-designs" onChange={loadData}/>
+                  <button type="button" disabled={saving || designCount > 0} title={designCount ? "Move all designs to another category first" : "Delete empty category"} className={adminButtonClass("secondary")} onClick={async () => {
+                    if (!window.confirm(`Delete category ${cat.name}?`)) return;
+                    try {
+                      const response = await fetch(`/api/admin/cms?collection=categories&id=${encodeURIComponent(cat.id)}`, { method: "DELETE" });
+                      const json = await response.json(); if (!response.ok || !json.ok) throw new Error(json.error || "Could not delete category.");
+                      setFeedback("Category deleted."); setEditingId(null); loadData();
+                    } catch (error) { setFeedback(error instanceof Error ? error.message : "Could not delete category."); }
+                  }}>Delete empty category</button>
                 </form>
               ) : (
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

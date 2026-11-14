@@ -1,5 +1,6 @@
 "use client";
 
+import { usePageContent } from "@/components/layout/PublicContentProvider";
 import React, { useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -471,7 +472,8 @@ function ExpertiseStrip() {
  * verified studio overlay, and four-pillar capability bar.
  */
 export function AboutStudioHero() {
-  const { hero } = ABOUT_PAGE_CONTENT;
+  const page = usePageContent("about");
+  const hero = { ...ABOUT_PAGE_CONTENT.hero, ...(page ? { eyebrow: page.hero.eyebrow, headlineLine1: page.hero.heading, supportingText: page.hero.subheading, heroImageUrl: page.hero.posterImage?.secureUrl || ABOUT_PAGE_CONTENT.hero.heroImageUrl } : {}) };
 
   const handleScrollToStory = useCallback(
     (e: React.MouseEvent<HTMLAnchorElement>) => {

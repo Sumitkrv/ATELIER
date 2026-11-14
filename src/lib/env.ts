@@ -18,29 +18,24 @@ export function getEnvironmentReadiness(): EnvironmentReadiness {
     process.env.MONGODB_URI && process.env.MONGODB_URI.trim().length > 0
   );
 
-  const localCmsEnabled =
-    process.env.LOCAL_CMS_ENABLED === "true" ||
-    process.env.NODE_ENV !== "production";
+  const localCmsEnabled = false;
 
   const adminAuthConfigured = Boolean(
     process.env.ADMIN_AUTH_SECRET &&
-      process.env.ADMIN_AUTH_SECRET.trim().length >= 16 &&
+      process.env.ADMIN_AUTH_SECRET.trim().length >= 32 &&
       process.env.INITIAL_ADMIN_EMAIL &&
-      process.env.INITIAL_ADMIN_PASSWORD
+      (process.env.INITIAL_ADMIN_PASSWORD_HASH || process.env.INITIAL_ADMIN_PASSWORD)
   );
 
   const cloudinaryConfigured = Boolean(
-    process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME &&
+    (process.env.CLOUDINARY_CLOUD_NAME || process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME) &&
       process.env.CLOUDINARY_API_KEY &&
       process.env.CLOUDINARY_API_SECRET
   );
 
   const emailConfigured = Boolean(
-    (process.env.RESEND_API_KEY &&
-      process.env.ENQUIRY_NOTIFICATION_TO_EMAIL) ||
-      (process.env.SMTP_HOST &&
-        process.env.SMTP_USER &&
-        process.env.ENQUIRY_NOTIFICATION_TO_EMAIL)
+    process.env.RESEND_API_KEY && process.env.RESEND_FROM_EMAIL &&
+      (process.env.ADMIN_NOTIFICATION_EMAIL || process.env.ENQUIRY_NOTIFICATION_TO_EMAIL)
   );
 
   const heroVideoConfigured = Boolean(

@@ -1,37 +1,13 @@
 import { NextResponse } from "next/server";
-import { getEnvironmentReadiness } from "@/lib/env";
-import {
-  listStoredCategories,
-  listStoredDesigns,
-  listStoredPageContents,
-} from "@/lib/cms-store";
-
+import { getPublicCategories, getPublicDesigns, getPublicPages } from "@/lib/public-cms";
+export const dynamic = "force-dynamic";
 export async function GET() {
-  const readiness = getEnvironmentReadiness();
-  const [categories, designs, pageContents] = await Promise.all([
-    listStoredCategories(),
-    listStoredDesigns(),
-    listStoredPageContents(),
-  ]);
-
-  const activeCategories = categories.filter((c) => c.isActive);
-  const publishedDesigns = designs.filter((d) => d.published);
-  const visualizerPageContent =
-    pageContents.find((p) => p.pageKey === "visualizer") ?? null;
-
-  return NextResponse.json({
-    status: "ok",
-    totalCategorySlots: categories.length,
-    officialCategoryNamesPendingClient: false,
-    readiness: {
-      mongodbConfigured: readiness.mongodbConfigured,
-      localCmsEnabled: readiness.localCmsEnabled,
-      cloudinaryConfigured: readiness.cloudinaryConfigured,
-      visualizerUrl: readiness.visualizerUrl,
-    },
-    categories: activeCategories,
-    approvedClientDesigns: publishedDesigns,
-    developmentFixtures: [],
-    visualizerPageContent,
-  });
+  try {
+    const [categories, designs, pages] = await Promise.all([getPublicCategories(), getPublicDesigns(), getPublicPages()]);
+    const activeCategories = categories.filter(category => category.isActive);
+    const visibleIds = new Set(activeCategories.map(category => category.id));
+    return NextResponse.json({ status: "ok", categories: activeCategories, totalCategorySlots: activeCategories.length, approvedClientDesigns: designs.filter(design => visibleIds.has(design.categoryId)), developmentFixtures: [], visualizerPageContent: pages.find(page => page.pageKey === "visualizer") || null }, { headers: { "Cache-Control": "private, no-store" } });
+  } catch {
+    return NextResponse.json({ error: "The design catalogue is temporarily unavailable." }, { status: 503, headers: { "Cache-Control": "no-store" } });
+  }
 }
