@@ -3,12 +3,16 @@ import { getPublicPages, getPublicSiteSettings, isPrivatePreview } from "@/lib/p
 import type { PageContentDocument } from "@/types/models";
 export function siteOrigin() { return (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/$/, ""); }
 export async function pageMetadata(key: PageContentDocument["pageKey"], title: string, description: string): Promise<Metadata> {
-  const [pages, preview] = await Promise.all([getPublicPages(), isPrivatePreview()]);
-  const page = pages.find(item => item.pageKey === key);
   const path = key === "home" ? "/" : `/${key}`;
-  const resolvedTitle = page?.seo?.metaTitle || page?.hero.heading || title;
-  const resolvedDescription = page?.seo?.metaDescription || page?.hero.subheading || description;
-  return { title: resolvedTitle, description: resolvedDescription, alternates: { canonical: page?.seo?.canonicalUrl || path }, openGraph: { title: resolvedTitle, description: resolvedDescription, url: path, type: "website", ...(page?.seo?.ogImageUrl ? { images: [page.seo.ogImageUrl] } : {}) }, robots: preview || page?.seo?.noIndex ? { index: false, follow: false } : { index: true, follow: true } };
+  try {
+    const [pages, preview] = await Promise.all([getPublicPages(), isPrivatePreview()]);
+    const page = pages.find(item => item.pageKey === key);
+    const resolvedTitle = page?.seo?.metaTitle || page?.hero.heading || title;
+    const resolvedDescription = page?.seo?.metaDescription || page?.hero.subheading || description;
+    return { title: resolvedTitle, description: resolvedDescription, alternates: { canonical: page?.seo?.canonicalUrl || path }, openGraph: { title: resolvedTitle, description: resolvedDescription, url: path, type: "website", ...(page?.seo?.ogImageUrl ? { images: [page.seo.ogImageUrl] } : {}) }, robots: preview || page?.seo?.noIndex ? { index: false, follow: false } : { index: true, follow: true } };
+  } catch {
+    return { title, description, alternates: { canonical: path }, openGraph: { title, description, url: path, type: "website" } };
+  }
 }
 export async function siteMetadata(): Promise<Metadata> {
   const settings = await getPublicSiteSettings();

@@ -36,7 +36,7 @@ test("login creates HTTP-only server session; logout revokes copied cookie",asyn
 });
 test("draft saves stay private; publish, update, rollback, unpublish and conflict control work",async()=>{
  const initial=buildDefaultPageContents()[0];initial.hero.heading="First published headline";
- const draft=await saveCmsRecord("pages",initial,"test");assert.equal((await getPublishedCmsCollection("pages")).length,0);
+ const draft=await saveCmsRecord("pages",initial,"test");assert.ok(draft.id);assert.equal((await getPublishedCmsCollection("pages")).length,0);
  await transitionCmsRecord("pages",initial.id,"publish","test");assert.equal((await getPublishedCmsHomePageContent()).hero.headlineLine1,"First published headline");
  const rows=await listCmsDrafts<typeof draft>("pages");await saveCmsRecord("pages",{...rows[0],hero:{...initial.hero,heading:"Private edited headline"}},"test");assert.equal((await getPublishedCmsHomePageContent()).hero.headlineLine1,"First published headline");
  await assert.rejects(saveCmsRecord("pages",rows[0],"test"),/changed/);

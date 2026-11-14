@@ -6,7 +6,9 @@ import crypto from "node:crypto";
 import { getDb } from "../src/lib/mongodb";
 import { cmsSchemas, type CmsCollection } from "../src/lib/cms-validation";
 import { buildDefaultPageContents, buildDefaultSiteSettings } from "../src/lib/cms-store";
-import { DESIGN_CATEGORY_RECORDS } from "../src/lib/designs-catalogue";
+import { DESIGN_CATEGORY_RECORDS, DEVELOPMENT_FIXTURE_DESIGNS } from "../src/lib/designs-catalogue";
+import { DEVELOPMENT_PROJECT_FIXTURES } from "../src/lib/projects-catalogue";
+import { DEVELOPMENT_BLOG_FIXTURES } from "../src/lib/blogs-catalogue";
 import { enquirySubmissionSchema } from "../src/types/models";
 
 loadEnvConfig(process.cwd());
@@ -20,7 +22,7 @@ async function run(){
   try{const raw=await fs.readFile(path.join(source,file),"utf8");const data=JSON.parse(raw);sources.push({file,name,raw,records:Array.isArray(data)?data:[data],backup:true});}
   catch(e){if((e as NodeJS.ErrnoException).code!=="ENOENT")throw new Error(`Cannot parse ${file}. Migration stopped before writes.`);}
  }
- if(initialize){for(const [file,name,records] of [["pages-initial.json","pages",buildDefaultPageContents()],["settings-initial.json","site_settings",[buildDefaultSiteSettings()]],["categories-initial.json","categories",[...DESIGN_CATEGORY_RECORDS]]] as const){sources.push({file,name,records:[...records],raw:JSON.stringify(records),backup:false});}}
+ if(initialize){for(const [file,name,records] of [["pages-initial.json","pages",buildDefaultPageContents()],["settings-initial.json","site_settings",[buildDefaultSiteSettings()]],["categories-initial.json","categories",[...DESIGN_CATEGORY_RECORDS]],["designs-initial.json","designs",[...DEVELOPMENT_FIXTURE_DESIGNS]],["projects-initial.json","projects",[...DEVELOPMENT_PROJECT_FIXTURES]],["blogs-initial.json","blogs",[...DEVELOPMENT_BLOG_FIXTURES]]] as const){sources.push({file,name,records:[...records],raw:JSON.stringify(records),backup:false});}}
  const errors:string[]=[];
  for(const source of sources){source.records=source.records.filter((record,index)=>{
   const valid=source.name==="enquiries"?enquirySubmissionSchema.safeParse(record):cmsSchemas[source.name].safeParse(record);

@@ -194,23 +194,23 @@ export default function ProcessPage() {
                 {/* Primary & Secondary CTA Buttons */}
                 <div className="mt-7 flex flex-col gap-3 min-[430px]:flex-row min-[430px]:flex-wrap min-[430px]:items-center min-[430px]:gap-3.5">
                   <a
-                    href="#process-journey"
+                    href={page?.hero.primaryCta.href || "#process-journey"}
                     onClick={handleExploreProcessClick}
                     className="group inline-flex h-12 w-full items-center justify-center gap-2.5 rounded-xl bg-[#9B1C1C] px-6 text-[13.5px] font-medium tracking-[0.01em] text-[#FAF9F6] shadow-[0_10px_24px_-8px_rgba(155,28,28,0.5)] transition-all duration-200 hover:bg-[#7F1616] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9B1C1C] min-[430px]:w-auto"
                   >
                     <span className="flex h-5 w-5 items-center justify-center rounded-full border border-[#FAF9F6]/45 text-[#FAF9F6]">
                       <Play className="h-2.5 w-2.5 translate-x-[0.5px] fill-current" />
                     </span>
-                    <span>Explore the Process</span>
+                    <span>{page?.hero.primaryCta.label || "Explore the Process"}</span>
                     <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
                   </a>
 
                   <Link
-                    href="/contact?intent=process"
+                    href={page?.hero.secondaryCta.href || "/contact?intent=process"}
                     className="group inline-flex h-12 w-full items-center justify-center gap-2.5 rounded-xl border border-[#D4C5B4] bg-[#FAF9F6]/90 px-5 text-[13.5px] font-medium tracking-[0.01em] text-[#1A1A1A] transition-all duration-200 hover:border-[#9B1C1C] hover:bg-[#FAF9F6] hover:text-[#9B1C1C] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9B1C1C] min-[430px]:w-auto"
                   >
                     <Box className="h-4 w-4 text-[#1A1A1A] transition-colors group-hover:text-[#9B1C1C]" />
-                    <span>Start Your Project</span>
+                    <span>{page?.hero.secondaryCta.label || "Start Your Project"}</span>
                   </Link>
                 </div>
               </FadeUp>

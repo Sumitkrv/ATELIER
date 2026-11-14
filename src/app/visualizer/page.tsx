@@ -94,7 +94,7 @@ function VisualizerExperienceWorkspace() {
     };
   }, []);
 
-  if (!catalogueDesigns.length) return <PublicShell><div className="mx-auto max-w-2xl px-5 py-24 text-center"><h1 className="font-serif text-3xl">Choose your wall art</h1><p className="mt-4">The artwork catalogue is loading or has no published designs yet.</p><Link className="mt-5 inline-block underline" href="/explore-designs">Explore designs</Link></div></PublicShell>;
+  if (!catalogueDesigns.length) return <div className="mx-auto max-w-2xl px-5 py-24 text-center"><h1 className="font-serif text-3xl">Choose your wall art</h1><p className="mt-4">The artwork catalogue is loading or has no published designs yet.</p><Link className="mt-5 inline-block underline" href="/explore-designs">Explore designs</Link></div>;
   return <VisualizerWithCatalogue catalogueCategories={catalogueCategories} catalogueDesigns={catalogueDesigns} visualizerPageContent={visualizerPageContent} />;
 }
 function VisualizerWithCatalogue({ catalogueCategories, catalogueDesigns, visualizerPageContent }: { catalogueCategories: ReadonlyArray<CatalogueCategoryRecord>; catalogueDesigns: ReadonlyArray<CatalogueDesignItem>; visualizerPageContent: PageContentDocument | null }) {

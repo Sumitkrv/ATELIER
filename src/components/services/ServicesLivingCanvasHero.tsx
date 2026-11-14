@@ -194,7 +194,7 @@ export function ServicesLivingCanvasHero() {
                   className="h-[1.5px] w-7 shrink-0 bg-[#9B1C1C] sm:w-8"
                 />
                 <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#9B1C1C] sm:text-[11.5px]">
-                  OUR SERVICES
+                  {page?.hero.eyebrow || "OUR SERVICES"}
                 </span>
               </motion.div>
 
@@ -239,22 +239,26 @@ export function ServicesLivingCanvasHero() {
                 className="mt-6 flex flex-col gap-3 min-[480px]:flex-row min-[480px]:flex-wrap min-[480px]:items-center sm:mt-7 sm:gap-3.5 lg:flex-nowrap"
               >
                 <Link
-                  href="/contact"
+                  href={page?.hero.primaryCta.href || "/contact"}
                   className="group inline-flex min-h-[48px] w-full shrink-0 items-center justify-center gap-2.5 whitespace-nowrap rounded-xl bg-[#9B1C1C] px-5 py-3 text-[13px] font-medium tracking-[0.01em] text-[#FAF9F6] shadow-[0_12px_28px_-8px_rgba(155,28,28,0.42)] transition-all duration-300 ease-out hover:-translate-y-0.5 hover:bg-[#7D1515] hover:shadow-[0_16px_32px_-8px_rgba(125,21,21,0.48)] min-[480px]:w-auto xl:px-6 xl:text-[13.5px]"
                 >
-                  <span>Get a Custom Consultation</span>
+                  <span>{page?.hero.primaryCta.label || "Get a Custom Consultation"}</span>
                   <ArrowRight className="h-4 w-4 transition-transform duration-300 ease-out group-hover:translate-x-0.5" />
                 </Link>
 
                 <a
-                  href="#featured-case-studies"
-                  onClick={(e) => scrollToSection(e, "featured-case-studies")}
+                  href={page?.hero.secondaryCta.href || "#featured-case-studies"}
+                  onClick={(e) => {
+                    if (!page?.hero.secondaryCta.href || page.hero.secondaryCta.href === "#featured-case-studies") {
+                      scrollToSection(e, "featured-case-studies");
+                    }
+                  }}
                   className="group inline-flex min-h-[48px] w-full shrink-0 items-center justify-center gap-2.5 whitespace-nowrap rounded-xl border border-[#DFD5C8] bg-[#FAF9F6]/95 px-4.5 py-3 text-[13px] font-medium tracking-[0.01em] text-[#1A1A1A] transition-all duration-300 ease-out hover:-translate-y-0.5 hover:border-[#9B1C1C]/50 hover:bg-[#FFFDFB] min-[480px]:w-auto xl:px-5 xl:text-[13.5px]"
                 >
                   <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-[#9B1C1C]/80 text-[#9B1C1C] transition-colors duration-300 group-hover:bg-[#9B1C1C] group-hover:text-[#FAF9F6]">
                     <PlayTriangleIcon className="ml-0.5 h-2.5 w-2.5" />
                   </span>
-                  <span>See Our Services in Action</span>
+                  <span>{page?.hero.secondaryCta.label || "See Our Services in Action"}</span>
                 </a>
               </motion.div>
             </div>

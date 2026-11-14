@@ -19,7 +19,7 @@ function localDate(iso: string | null | undefined) {
   if (Number.isNaN(value.getTime())) return "";
   return new Date(value.getTime() - value.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 }
-function LeadCard({ item, onUpdate, onDelete, initiallyExpanded }: { item: StoredEnquiryRecord; onUpdate: (id: string, patch: Record<string, unknown>) => Promise<void>; onDelete: () => void; initiallyExpanded: boolean }) {
+function LeadCard({ item, nowMs, onUpdate, onDelete, initiallyExpanded }: { item: StoredEnquiryRecord; nowMs: number; onUpdate: (id: string, patch: Record<string, unknown>) => Promise<void>; onDelete: () => void; initiallyExpanded: boolean }) {
   const [expanded, setExpanded] = useState(initiallyExpanded);
   const [note, setNote] = useState("");
   const [owner, setOwner] = useState(item.assignedOwner || "");
@@ -28,7 +28,7 @@ function LeadCard({ item, onUpdate, onDelete, initiallyExpanded }: { item: Store
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const overdue = Boolean(item.followUpAt && new Date(item.followUpAt).getTime() < Date.now() && !["Closed", "Converted"].includes(item.status));
+  const overdue = Boolean(nowMs > 0 && item.followUpAt && new Date(item.followUpAt).getTime() < nowMs && !["Closed", "Converted"].includes(item.status));
   const digits = item.phone?.replace(/\D/g, "");
   const save = async (patch: Record<string, unknown>) => {
     setBusy(true); setError(null); setNotice(null);
@@ -106,22 +106,40 @@ export default function AdminEnquiriesPage() {
   const [pendingDelete, setPendingDelete] = useState<StoredEnquiryRecord | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [selectedId, setSelectedId] = useState("");
+  const [nowMs, setNowMs] = useState(0);
   const params = new URLSearchParams({ search: querySearch, status, source, overdue: String(overdue), page: String(page) });
   const query = params.toString();
   useEffect(() => { const timer = setTimeout(() => { setQuerySearch(search); setPage(1); }, 300); return () => clearTimeout(timer); }, [search]);
-  useEffect(() => { setSelectedId(new URLSearchParams(window.location.search).get("enquiry") || ""); }, []);
   const load = useCallback(async () => {
+    await Promise.resolve();
     setLoading(true); setError(null);
     try {
       const response = await fetch(`/api/admin/enquiries?${query}`, { cache: "no-store" });
       const data = await response.json();
+      setNowMs(Date.now());
+      if (typeof window !== "undefined") setSelectedId(new URLSearchParams(window.location.search).get("enquiry") || "");
       setAuthenticated(response.status !== 401 && response.status !== 403);
       if (!response.ok || !data.ok) throw new Error(data.error || "Unable to load enquiries.");
       setEnquiries(data.enquiries); setTotal(data.total); setPages(data.pages); setMetrics(data.metrics);
     } catch (err) { setError(err instanceof Error ? err.message : "Unable to load enquiries."); }
     finally { setLoading(false); }
   }, [query]);
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/admin/enquiries?${query}`, { cache: "no-store" })
+      .then(async (response) => {
+        const data = await response.json();
+        if (cancelled) return;
+        setNowMs(Date.now());
+        if (typeof window !== "undefined") setSelectedId(new URLSearchParams(window.location.search).get("enquiry") || "");
+        setAuthenticated(response.status !== 401 && response.status !== 403);
+        if (!response.ok || !data.ok) throw new Error(data.error || "Unable to load enquiries.");
+        setEnquiries(data.enquiries); setTotal(data.total); setPages(data.pages); setMetrics(data.metrics); setError(null);
+      })
+      .catch((err) => { if (!cancelled) setError(err instanceof Error ? err.message : "Unable to load enquiries."); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [query]);
   const update = async (id: string, patch: Record<string, unknown>) => {
     const response = await fetch("/api/admin/enquiries", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, ...patch }) });
     const data = await response.json();
@@ -158,7 +176,7 @@ export default function AdminEnquiriesPage() {
       </div>
     </section>
     {error && <p role="alert" className="rounded-xl border border-[#9B1C1C]/30 p-4 text-sm text-[#9B1C1C]">{error}</p>}
-    {loading ? <p role="status" className={`${adminCardClass} p-10 text-center text-sm text-[#746B64]`}>Loading enquiries…</p> : !error && enquiries.length === 0 ? <div className={`${adminCardClass} p-12 text-center`}><Inbox className="mx-auto h-8 w-8 text-[#746B64]" /><p className="mt-3 font-serif text-2xl">No matching enquiries</p><p className="mt-2 text-xs text-[#746B64]">Customer submissions will appear here. Try changing the filters.</p></div> : <div className="space-y-4">{enquiries.map(item => <LeadCard key={item.id} item={item} onUpdate={update} onDelete={() => setPendingDelete(item)} initiallyExpanded={selectedId === item.id} />)}</div>}
+    {loading ? <p role="status" className={`${adminCardClass} p-10 text-center text-sm text-[#746B64]`}>Loading enquiries…</p> : !error && enquiries.length === 0 ? <div className={`${adminCardClass} p-12 text-center`}><Inbox className="mx-auto h-8 w-8 text-[#746B64]" /><p className="mt-3 font-serif text-2xl">No matching enquiries</p><p className="mt-2 text-xs text-[#746B64]">Customer submissions will appear here. Try changing the filters.</p></div> : <div className="space-y-4">{enquiries.map(item => <LeadCard key={item.id} item={item} nowMs={nowMs} onUpdate={update} onDelete={() => setPendingDelete(item)} initiallyExpanded={selectedId === item.id} />)}</div>}
     <div className="flex items-center justify-between gap-3 text-xs text-[#746B64]"><p>Page {page} of {pages} · {total} matching enquiries</p><div className="flex gap-2"><button disabled={loading || page <= 1} onClick={() => setPage(value => value - 1)} className={adminButtonClass("secondary", "sm")}>Previous</button><button disabled={loading || page >= pages} onClick={() => setPage(value => value + 1)} className={adminButtonClass("secondary", "sm")}>Next</button></div></div>
     <AdminConfirmModal open={Boolean(pendingDelete)} title="Delete enquiry" description={pendingDelete ? `Permanently delete ${pendingDelete.referenceCode} from ${pendingDelete.fullName}, including its private notes?` : ""} confirmLabel="Delete enquiry" busy={deleting} onCancel={() => setPendingDelete(null)} onConfirm={remove} />
   </div>;

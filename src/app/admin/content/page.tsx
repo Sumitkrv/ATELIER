@@ -335,7 +335,7 @@ export default function AdminContentPage() {
 
               <div>
                 <label className={adminLabelClass}>Hero video URL (optional)</label>
-                <input type="url" value={activeDoc.hero.videoAsset?.secureUrl || ""} onChange={e => updateActiveDoc(doc => ({ ...doc, hero: { ...doc.hero, videoAsset: e.target.value ? { publicId: "page-hero-video", secureUrl: e.target.value, resourceType: "video", altText: doc.hero.heading } : null } }))} className={adminInputClass}/>
+                <input type="text" value={activeDoc.hero.videoAsset?.secureUrl || ""} onChange={e => updateActiveDoc(doc => ({ ...doc, hero: { ...doc.hero, videoAsset: e.target.value ? { publicId: "page-hero-video", secureUrl: e.target.value, resourceType: "video", altText: doc.hero.heading } : null } }))} className={adminInputClass}/>
                 <p className="mt-1 text-xs text-[#746B64]">Upload a video in the media library and paste its URL.</p>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">

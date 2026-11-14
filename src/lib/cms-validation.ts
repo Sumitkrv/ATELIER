@@ -2,7 +2,8 @@ import { z } from "zod";
 
 export const safeUrl = z.string().trim().max(2048).refine((value) => {
   if (!value) return true;
-  if (/^\/(?!\/)/.test(value) || value.startsWith("#")) return !/[\\\u0000-\u0020]/.test(value);
+  if (/[\\\u0000-\u0020\u007f]/.test(value)) return false;
+  if (/^\/(?!\/)/.test(value) || value.startsWith("#")) return true;
   try { return new URL(value).protocol === "https:"; } catch { return false; }
 }, "Use a local path or an HTTPS URL.");
 const text = z.string().trim().max(20000);

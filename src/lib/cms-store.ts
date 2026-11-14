@@ -257,6 +257,13 @@ export function buildDefaultPageContents(): PageContentDocument[] {
         primaryCta: { label: "Explore the Process", href: "#stages" },
         secondaryCta: { label: "Start Your Project", href: "/contact" },
       },
+      processStages: PROCESS_PAGE_CONTENT.stages.map((stage) => ({
+        stepNumber: stage.stepNumber,
+        code: stage.code,
+        title: stage.title,
+        description: stage.description,
+        deliverables: [...stage.highlights],
+      })),
       updatedAt: nowIso,
     },
     {

@@ -192,7 +192,7 @@ export function ContactHeroAndCapabilities({
                   className="h-[1.5px] w-7 shrink-0 bg-[#9B1C1C]"
                 />
                 <span className="font-sans text-[11px] font-bold tracking-[0.22em] text-[#9B1C1C] uppercase">
-                  ATELIER — WALL STORY
+                  {page?.hero.eyebrow || "ATELIER — WALL STORY"}
                 </span>
               </div>
 
@@ -217,7 +217,7 @@ export function ContactHeroAndCapabilities({
                 className="group inline-flex min-h-[46px] w-full cursor-pointer items-center justify-center gap-2.5 rounded-full bg-[#9B1C1C] px-6 py-2.5 text-[13px] font-semibold tracking-[0.01em] text-[#FFFDF9] shadow-[0_12px_26px_-8px_rgba(155,28,28,0.44)] transition-[background-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:bg-[#7F1616] focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[#9B1C1C] min-[430px]:w-auto"
               >
                 <Send aria-hidden="true" className="h-3.5 w-3.5" />
-                <span>Start a Project Enquiry</span>
+                <span>{page?.hero.primaryCta.label || "Start a Project Enquiry"}</span>
                 <ArrowRight
                   aria-hidden="true"
                   className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5"
@@ -225,13 +225,13 @@ export function ContactHeroAndCapabilities({
               </button>
 
               <a
-                href={studioWhatsAppHref}
+                href={page?.hero.secondaryCta.href || studioWhatsAppHref}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex min-h-[46px] w-full items-center justify-center gap-2 rounded-full border border-[#DFD0C0] bg-[#FFFDF9]/95 px-5.5 py-2.5 text-[13px] font-semibold tracking-[0.01em] text-[#1A1A1A] shadow-[0_6px_18px_-8px_rgba(26,20,16,0.12)] transition-[border-color,background-color,color,transform] duration-200 hover:-translate-y-0.5 hover:border-[#9B1C1C]/65 hover:bg-[#FFFDF9] hover:text-[#9B1C1C] focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[#9B1C1C] min-[430px]:w-auto"
               >
                 <WhatsAppOutlineIcon className="h-4 w-4 text-[#9B1C1C]" />
-                <span>WhatsApp Our Studio</span>
+                <span>{page?.hero.secondaryCta.label || "WhatsApp Our Studio"}</span>
               </a>
             </div>
           </div>

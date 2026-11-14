@@ -1,6 +1,6 @@
 "use client";
 
-import { usePageContent } from "@/components/layout/PublicContentProvider";
+import { usePageContent, useSiteSettings } from "@/components/layout/PublicContentProvider";
 import React, { useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -243,12 +243,24 @@ function DecorativeArchitecturalLines() {
 function HeroContent({
   eyebrow,
   headlineLine1,
+  highlightedText,
   supportingText,
+  primaryCtaLabel,
+  primaryCtaHref,
+  secondaryCtaLabel,
+  secondaryCtaHref,
+  studioAddress,
   onScrollToStory,
 }: {
   eyebrow: string;
   headlineLine1: string;
+  highlightedText?: string;
   supportingText: string;
+  primaryCtaLabel: string;
+  primaryCtaHref: string;
+  secondaryCtaLabel: string;
+  secondaryCtaHref: string;
+  studioAddress: string;
   onScrollToStory: (e: React.MouseEvent<HTMLAnchorElement>) => void;
 }) {
   return (
@@ -271,10 +283,18 @@ function HeroContent({
         >
           <span className="block sm:whitespace-nowrap">{headlineLine1}</span>
           <span className="mt-0.5 block sm:whitespace-nowrap">
-            Has a{" "}
-            <em className="font-serif italic font-normal text-[#9B1C1C]">
-              Story.
-            </em>
+            {highlightedText ? (
+              <em className="font-serif italic font-normal text-[#9B1C1C]">
+                {highlightedText}
+              </em>
+            ) : (
+              <>
+                Has a{" "}
+                <em className="font-serif italic font-normal text-[#9B1C1C]">
+                  Story.
+                </em>
+              </>
+            )}
           </span>
         </h1>
       </div>
@@ -288,16 +308,18 @@ function HeroContent({
       <div className="about-reveal-3">
         <div className="mt-6 flex flex-wrap items-center gap-3 sm:mt-7 sm:gap-3.5 xl:mt-8">
           <a
-            href="#studio-story"
-            onClick={onScrollToStory}
+            href={primaryCtaHref}
+            onClick={(e) => {
+              if (primaryCtaHref === "#studio-story") onScrollToStory(e);
+            }}
             className="group inline-flex min-h-[48px] items-center justify-center gap-2.5 rounded-[12px] bg-[#9B1C1C] px-6 py-3 text-[13.5px] font-semibold tracking-[0.01em] text-[#FFFDF9] shadow-[0_12px_26px_-8px_rgba(155,28,28,0.42)] transition-all duration-300 ease-out hover:-translate-y-0.5 hover:bg-[#801616] hover:shadow-[0_16px_30px_-8px_rgba(155,28,28,0.5)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#9B1C1C] max-[359px]:w-full"
           >
-            <span>Our Story</span>
+            <span>{primaryCtaLabel}</span>
             <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5" />
           </a>
 
           <Link
-            href="/projects"
+            href={secondaryCtaHref}
             className="group inline-flex min-h-[48px] items-center justify-center gap-2.5 rounded-[12px] border border-[#DFD0C0] bg-[#FFFDF9] px-5.5 py-3 text-[13.5px] font-semibold tracking-[0.01em] text-[#1A1A1A] shadow-[0_4px_14px_-6px_rgba(26,22,18,0.08)] transition-all duration-300 ease-out hover:-translate-y-0.5 hover:border-[#9B1C1C]/55 hover:text-[#9B1C1C] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#9B1C1C] max-[359px]:w-full"
           >
             <svg
@@ -318,7 +340,7 @@ function HeroContent({
                 fill="currentColor"
               />
             </svg>
-            <span>See Our Work</span>
+            <span>{secondaryCtaLabel}</span>
           </Link>
         </div>
 
@@ -337,7 +359,7 @@ function HeroContent({
               />
               <circle cx="8" cy="6.2" r="1.75" fill="#FAF6F0" />
             </svg>
-            <span>Oshiwara, Andheri West, Mumbai</span>
+            <span>{studioAddress}</span>
           </span>
 
           <span
@@ -473,7 +495,20 @@ function ExpertiseStrip() {
  */
 export function AboutStudioHero() {
   const page = usePageContent("about");
-  const hero = { ...ABOUT_PAGE_CONTENT.hero, ...(page ? { eyebrow: page.hero.eyebrow, headlineLine1: page.hero.heading, supportingText: page.hero.subheading, heroImageUrl: page.hero.posterImage?.secureUrl || ABOUT_PAGE_CONTENT.hero.heroImageUrl } : {}) };
+  const settings = useSiteSettings();
+  const hero = {
+    ...ABOUT_PAGE_CONTENT.hero,
+    ...(page
+      ? {
+          eyebrow: page.hero.eyebrow,
+          headlineLine1: page.hero.heading,
+          supportingText: page.hero.subheading,
+          heroImageUrl:
+            page.hero.posterImage?.secureUrl ||
+            ABOUT_PAGE_CONTENT.hero.heroImageUrl,
+        }
+      : {}),
+  };
 
   const handleScrollToStory = useCallback(
     (e: React.MouseEvent<HTMLAnchorElement>) => {
@@ -546,7 +581,13 @@ export function AboutStudioHero() {
           <HeroContent
             eyebrow={hero.eyebrow}
             headlineLine1={hero.headlineLine1}
+            highlightedText={page?.hero.highlightedText || undefined}
             supportingText={hero.supportingText}
+            primaryCtaLabel={page?.hero.primaryCta.label || "Our Story"}
+            primaryCtaHref={page?.hero.primaryCta.href || "#studio-story"}
+            secondaryCtaLabel={page?.hero.secondaryCta.label || "See Our Work"}
+            secondaryCtaHref={page?.hero.secondaryCta.href || "/projects"}
+            studioAddress={settings?.contact.studioAddress || "Oshiwara, Andheri West, Mumbai"}
             onScrollToStory={handleScrollToStory}
           />
           <HeroImage imageUrl={hero.heroImageUrl} />

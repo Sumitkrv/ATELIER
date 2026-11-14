@@ -267,7 +267,6 @@ function isExempt(src, contexts) {
 
 async function main() {
   const stat = await staticPass();
-  const assetSet = new Map(stat.assets.map((a) => [a.path, a]));
   let runtime = { usages: [], brokenOnPage: [], routes: [] };
   if (!STATIC_ONLY) runtime = await runtimePass();
 
@@ -353,7 +352,7 @@ async function main() {
     await fs.writeFile(
       JSON_OUT,
       JSON.stringify(
-        { summary, crossSection, intentional, exactDuplicates: stat.exactDuplicates, nearDuplicates: stat.nearDuplicates, missing, oddRatios, unusedAssets, usages: runtime.usages, assets: stat.assets.map(({ dhash, ...rest }) => rest) },
+        { summary, crossSection, intentional, exactDuplicates: stat.exactDuplicates, nearDuplicates: stat.nearDuplicates, missing, oddRatios, unusedAssets, usages: runtime.usages, assets: stat.assets.map(({ dhash: _dhash, ...rest }) => { void _dhash; return rest; }) },
         null,
         2
       )

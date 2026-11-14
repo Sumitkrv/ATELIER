@@ -11,6 +11,7 @@ import {
   User,
 } from "lucide-react";
 import { Container } from "@/components/layout/Container";
+import { useSiteSettings } from "@/components/layout/PublicContentProvider";
 import {
   ATELIER_BRAND,
   ATELIER_CONTACTS,
@@ -29,6 +30,7 @@ interface StudioSidebarProps {
 export function StudioInformationSidebar({
   dynamicWhatsAppMessage,
 }: StudioSidebarProps) {
+  const settings = useSiteSettings();
   return (
     <div className="space-y-5 sm:space-y-6">
       {/* ===================================================================
@@ -63,11 +65,17 @@ export function StudioInformationSidebar({
           </h3>
 
           <address className="mt-2.5 text-[13.5px] leading-[1.6] text-[#5B524B] not-italic">
-            {ATELIER_BRAND.address.line1},
-            <br />
-            Anand Nagar, Oshiwara,
-            <br />
-            Andheri West, Mumbai — 400102
+            {settings?.contact.studioAddress ? (
+              settings.contact.studioAddress
+            ) : (
+              <>
+                {ATELIER_BRAND.address.line1},
+                <br />
+                Anand Nagar, Oshiwara,
+                <br />
+                Andheri West, Mumbai — 400102
+              </>
+            )}
           </address>
 
           <div className="mt-4.5">

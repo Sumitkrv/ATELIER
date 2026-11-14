@@ -235,7 +235,7 @@ export function HeroVideoStage({
             className="mt-6 flex flex-col gap-3 min-[460px]:flex-row min-[460px]:flex-wrap min-[460px]:items-center sm:mt-8 sm:gap-4"
           >
             <Link
-              href={DEFAULT_HOMEPAGE_CONTENT.hero.primaryCtaHref}
+              href={primaryCtaHref}
               className="group inline-flex min-h-[48px] w-full items-center justify-center gap-3 rounded-lg border border-[#9B1C1C] bg-[#9B1C1C] px-6 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-[#FAF9F6] shadow-[0_14px_34px_-10px_rgba(155,28,28,0.55)] transition-all duration-300 hover:-translate-y-0.5 hover:border-[#7F1616] hover:bg-[#7F1616] min-[460px]:w-auto sm:px-7 sm:py-3.5"
             >
               <span>{primaryCtaLabel}</span>
@@ -243,7 +243,7 @@ export function HeroVideoStage({
             </Link>
 
             <Link
-              href={DEFAULT_HOMEPAGE_CONTENT.hero.secondaryCtaHref}
+              href={secondaryCtaHref}
               className="group inline-flex min-h-[48px] w-full items-center justify-center gap-3 rounded-lg border border-[#E8E2D9]/45 bg-[#1A1A1A]/55 px-6 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-[#FAF9F6] backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-[#FAF9F6] hover:bg-[#FAF9F6]/12 min-[460px]:w-auto sm:px-7 sm:py-3.5"
             >
               <span>{secondaryCtaLabel}</span>
