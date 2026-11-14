@@ -133,6 +133,33 @@ h4 {
   outline-offset: 2px;
 }
 
+/* Smooth GPU-friendly accordion height transition */
+.atelier-accordion-content {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows 280ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.atelier-accordion-content[data-open="true"] {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.atelier-accordion-inner {
+  overflow: hidden;
+}
+
+/* Tactile active press feedback for touch devices where :hover is absent */
+@media (hover: none) and (pointer: coarse) {
+  button:not(:disabled):active,
+  a[role="button"]:active {
+    transform: scale(0.985);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;

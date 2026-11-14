@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import Link from "next/link";
 import { PortfolioProjectRecord } from "@/lib/projects-catalogue";
 import { ATELIER_BRAND, buildWhatsAppUrl } from "@/lib/brand";
 import { Container } from "@/components/layout/Container";
+import { FadeUp } from "@/components/motion/Reveal";
 import { ProjectMediaModal } from "@/components/projects/ProjectMediaModal";
 import { cn } from "@/lib/cn";
 import {
@@ -12,6 +13,8 @@ import {
   ArrowRight,
   ArrowUpRight,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   Eye,
   Film,
   Image as ImageIcon,
@@ -32,10 +35,24 @@ export function ProjectDetailClient({
 }: ProjectDetailClientProps) {
   const [activeHeroPlateIdx, setActiveHeroPlateIdx] = useState(0);
   const [revealPercent, setRevealPercent] = useState(65);
+  const [isDraggingReveal, setIsDraggingReveal] = useState(false);
   const [lightboxState, setLightboxState] = useState<{
     mediaIndex: number;
     mode: "images" | "video";
   } | null>(null);
+  const heroTouchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const compareStageRef = useRef<HTMLDivElement | null>(null);
+
+  const totalHeroPlates = project.galleryMedia.length;
+
+  const updateRevealFromClientX = useCallback((clientX: number) => {
+    const el = compareStageRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    if (rect.width <= 0) return;
+    const pct = ((clientX - rect.left) / rect.width) * 100;
+    setRevealPercent(Math.round(Math.min(95, Math.max(5, pct))));
+  }, []);
 
   const hasLiveVideoStream = Boolean(
     project.videoAsset?.secureUrl &&
@@ -117,15 +134,77 @@ export function ProjectDetailClient({
           </div>
 
           {/* Large Cover Image Stage */}
-          <div className="relative mt-8 aspect-[16/9] w-full overflow-hidden rounded-2xl border border-[#DDD2C5] bg-[#EBE3D8] shadow-[0_24px_60px_rgba(33,29,26,0.10)]">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={activePlate.secureUrl}
-              alt={activePlate.altText}
-              className="h-full w-full object-cover transition-all duration-500"
-            />
+          <FadeUp className="relative mt-8 aspect-[16/9] w-full overflow-hidden rounded-2xl border border-[#DDD2C5] bg-[#EBE3D8] shadow-[0_24px_60px_rgba(33,29,26,0.10)]">
+            <div
+              style={{ touchAction: "pan-y" }}
+              onTouchStart={(e) => {
+                if (totalHeroPlates <= 1 || e.touches.length !== 1) return;
+                heroTouchStartRef.current = {
+                  x: e.touches[0].clientX,
+                  y: e.touches[0].clientY,
+                };
+              }}
+              onTouchEnd={(e) => {
+                if (!heroTouchStartRef.current) return;
+                const touch = e.changedTouches[0];
+                if (!touch) return;
+                const dx = touch.clientX - heroTouchStartRef.current.x;
+                const dy = touch.clientY - heroTouchStartRef.current.y;
+                heroTouchStartRef.current = null;
+                if (
+                  totalHeroPlates > 1 &&
+                  Math.abs(dx) >= 36 &&
+                  Math.abs(dx) > Math.abs(dy) * 1.2
+                ) {
+                  if (dx < 0) {
+                    setActiveHeroPlateIdx((prev) => (prev + 1) % totalHeroPlates);
+                  } else {
+                    setActiveHeroPlateIdx(
+                      (prev) => (prev - 1 + totalHeroPlates) % totalHeroPlates
+                    );
+                  }
+                }
+              }}
+              className="relative h-full w-full"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={activePlate.secureUrl}
+                alt={activePlate.altText}
+                className="h-full w-full object-cover transition-all duration-500"
+              />
 
-            <div className="absolute bottom-4 right-4 flex flex-wrap items-center gap-2">
+              {totalHeroPlates > 1 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setActiveHeroPlateIdx(
+                        (prev) => (prev - 1 + totalHeroPlates) % totalHeroPlates
+                      )
+                    }
+                    aria-label="Previous project plate"
+                    className="absolute left-3 top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-[#DDD2C5] bg-[#FBF8F3]/90 text-[#211D1A] shadow-sm backdrop-blur-xs transition-colors hover:border-[#9B1C1C] hover:bg-[#9B1C1C] hover:text-[#FAF9F6]"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setActiveHeroPlateIdx(
+                        (prev) => (prev + 1) % totalHeroPlates
+                      )
+                    }
+                    aria-label="Next project plate"
+                    className="absolute right-3 top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-[#DDD2C5] bg-[#FBF8F3]/90 text-[#211D1A] shadow-sm backdrop-blur-xs transition-colors hover:border-[#9B1C1C] hover:bg-[#9B1C1C] hover:text-[#FAF9F6]"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </>
+              )}
+            </div>
+
+            <div className="absolute bottom-3 right-3 z-20 flex flex-wrap items-center gap-2 sm:bottom-4 sm:right-4">
               <button
                 type="button"
                 onClick={() =>
@@ -134,7 +213,7 @@ export function ProjectDetailClient({
                     mode: "images",
                   })
                 }
-                className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-[#DDD2C5] bg-[#FBF8F3]/95 px-4 py-2.5 text-xs font-semibold text-[#211D1A] shadow-md backdrop-blur-md transition-colors hover:border-[#9B1C1C] hover:bg-[#9B1C1C] hover:text-[#FAF9F6]"
+                className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-[#DDD2C5] bg-[#FBF8F3]/95 px-3.5 py-2 text-[11px] font-semibold text-[#211D1A] shadow-md backdrop-blur-md transition-colors hover:border-[#9B1C1C] hover:bg-[#9B1C1C] hover:text-[#FAF9F6] sm:px-4 sm:py-2.5 sm:text-xs"
               >
                 <Eye className="h-4 w-4" />
                 <span>
@@ -148,14 +227,14 @@ export function ProjectDetailClient({
                   onClick={() =>
                     setLightboxState({ mediaIndex: 0, mode: "video" })
                   }
-                  className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-[#DDD2C5] bg-[#FBF8F3]/95 px-4 py-2.5 text-xs font-semibold text-[#211D1A] shadow-md backdrop-blur-md transition-colors hover:border-[#9B1C1C] hover:bg-[#9B1C1C] hover:text-[#FAF9F6]"
+                  className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-[#DDD2C5] bg-[#FBF8F3]/95 px-3.5 py-2 text-[11px] font-semibold text-[#211D1A] shadow-md backdrop-blur-md transition-colors hover:border-[#9B1C1C] hover:bg-[#9B1C1C] hover:text-[#FAF9F6] sm:px-4 sm:py-2.5 sm:text-xs"
                 >
                   <Film className="h-4 w-4 text-[#9B1C1C]" />
                   <span>Watch Reel</span>
                 </button>
               )}
             </div>
-          </div>
+          </FadeUp>
 
           {/* Selectable Thumbnail Strip */}
           {project.galleryMedia.length > 1 && (
@@ -327,12 +406,39 @@ export function ProjectDetailClient({
                   </span>
                 </div>
 
-                <div className="relative aspect-[16/10] w-full overflow-hidden rounded-xl border border-[#DDD2C5] bg-[#EBE3D8]">
+                <div
+                  ref={compareStageRef}
+                  style={{ touchAction: "pan-y" }}
+                  onPointerDown={(e) => {
+                    if (e.pointerType === "mouse" && e.button !== 0) return;
+                    e.currentTarget.setPointerCapture(e.pointerId);
+                    setIsDraggingReveal(true);
+                    updateRevealFromClientX(e.clientX);
+                  }}
+                  onPointerMove={(e) => {
+                    if (!isDraggingReveal) return;
+                    updateRevealFromClientX(e.clientX);
+                  }}
+                  onPointerUp={(e) => {
+                    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+                      e.currentTarget.releasePointerCapture(e.pointerId);
+                    }
+                    setIsDraggingReveal(false);
+                  }}
+                  onPointerCancel={(e) => {
+                    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+                      e.currentTarget.releasePointerCapture(e.pointerId);
+                    }
+                    setIsDraggingReveal(false);
+                  }}
+                  className="relative aspect-[16/10] w-full cursor-ew-resize overflow-hidden rounded-xl border border-[#DDD2C5] bg-[#EBE3D8] select-none"
+                >
                   {/* Bare Substrate Layer */}
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src="/images/atelier/wall-preview-before.jpg"
+                    src={project.beforeAfterMedia.beforeImageUrl}
                     alt={`Prepared ${project.surfaceName} substrate before printing`}
+                    draggable={false}
                     className="h-full w-full object-cover"
                   />
 
@@ -347,6 +453,7 @@ export function ProjectDetailClient({
                     <img
                       src={project.beforeAfterMedia.afterImageUrl}
                       alt={project.beforeAfterMedia.afterLabel}
+                      draggable={false}
                       className="h-full w-full object-cover"
                     />
                   </div>
@@ -355,7 +462,11 @@ export function ProjectDetailClient({
                     aria-hidden="true"
                     className="pointer-events-none absolute inset-y-0 w-[2px] bg-white shadow-md"
                     style={{ left: `${revealPercent}%` }}
-                  />
+                  >
+                    <span className="absolute left-1/2 top-1/2 flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-[#DDD2C5] bg-[#FBF8F3] text-[#9B1C1C] shadow-md">
+                      <SlidersHorizontal className="h-4 w-4" />
+                    </span>
+                  </div>
                 </div>
 
                 <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">

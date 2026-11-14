@@ -160,7 +160,7 @@ export const DEFAULT_HOMEPAGE_CONTENT: HomepageContentConfig = {
       "Operating from Oshiwara, Andheri West, Mumbai, ATELIER — WALL STORY approaches every interior elevation as an integral architectural statement. Through direct-to-surface 3D wall printing, murals and conceptual wall art are printed directly onto walls, tiles, plywood, office blinds, metals, and glass—uniting artistic authorship with material permanence.",
     ctaLabel: "About Us",
     ctaHref: "/about",
-    visualPlaceholderUrl: "/images/atelier/studio-about-interior.jpg",
+    visualPlaceholderUrl: "/images/atelier/home/home-studio-philosophy.webp",
     visualCaption:
       "Architectural Surface & Wall Mural Studio — Oshiwara, Andheri West, Mumbai",
   },

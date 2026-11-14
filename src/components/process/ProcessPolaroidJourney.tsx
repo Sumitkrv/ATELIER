@@ -2,6 +2,7 @@
 
 import React, { useCallback, useRef } from "react";
 import Link from "next/link";
+import { motion, useReducedMotion } from "framer-motion";
 import {
   ArrowLeft,
   ArrowRight,
@@ -10,6 +11,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { Container } from "@/components/layout/Container";
+import { FadeUp } from "@/components/motion/Reveal";
 import {
   PolaroidLineCarousel,
   PolaroidLineCarouselHandle,
@@ -61,9 +63,9 @@ export const ATELIER_POLAROID_PROCESS_STAGES: ReadonlyArray<PolaroidProcessStage
         "Discover compositions, colours, and mural styles",
         "Shortlist artwork suitable for your interiors",
       ],
-      image: "/images/atelier/artwork-lotus-atelier.jpg",
+      image: "/images/atelier/process/process-stage-02-design-exploration.webp",
       imageAlt:
-        "Elegant sunlit living room featuring a sophisticated lotus and sage botanical mural in Atelier's architectural style",
+        "Design exploration flat-lay of watercolour botanical sketches, colour chips and plaster, tile, plywood and metal samples",
       ctaLabel: "Explore Wall Designs",
       ctaHref: "/explore-designs",
     },
@@ -79,9 +81,9 @@ export const ATELIER_POLAROID_PROCESS_STAGES: ReadonlyArray<PolaroidProcessStage
         "Explore design variations and composition",
         "Preview selected artwork on your wall",
       ],
-      image: "/images/atelier/wall-preview-after.jpg",
+      image: "/images/atelier/process/process-stage-03-customization.webp",
       imageAlt:
-        "Sunlit living room wall showing a custom-proportioned botanical mural tailored to the surrounding architecture and furnishings",
+        "Designer scaling a mural artwork onto a wall elevation drawing with a pen tablet, tape measure and proportion studies",
       ctaLabel: "Preview on Your Wall",
       ctaHref: "/visualizer",
     },
@@ -133,6 +135,7 @@ export function ProcessPolaroidJourney({
   onSelectStage,
 }: ProcessPolaroidJourneyProps) {
   const carouselRef = useRef<PolaroidLineCarouselHandle | null>(null);
+  const prefersReducedMotion = useReducedMotion();
   const stages = ATELIER_POLAROID_PROCESS_STAGES;
   const totalCount = stages.length;
   const safeIndex =
@@ -193,7 +196,7 @@ export function ProcessPolaroidJourney({
         {/* ================================================================
             ZONE A — SECTION INTRODUCTION & DYNAMIC PROGRESS INDICATOR
             ================================================================ */}
-        <div className="mb-8 flex flex-col justify-between gap-6 border-b border-[#DED5CB] pb-7 lg:flex-row lg:items-end">
+        <FadeUp className="mb-8 flex flex-col justify-between gap-6 border-b border-[#DED5CB] pb-7 lg:flex-row lg:items-end">
           <div className="max-w-2xl">
             <div className="inline-flex items-center gap-3">
               <span className="h-[1.5px] w-7 bg-[#9B1C1C]" />
@@ -271,12 +274,15 @@ export function ProcessPolaroidJourney({
               })}
             </div>
           </div>
-        </div>
+        </FadeUp>
 
         {/* ================================================================
             UNIFIED STUDIO EXHIBITION FRAME (ZONE B CAROUSEL + ZONE C PANEL)
             ================================================================ */}
-        <div className="overflow-hidden rounded-[30px] border border-[#DED5CB] bg-[#F5F0E9] p-3 shadow-[0_24px_60px_-20px_rgba(26,20,16,0.12)] sm:p-5 lg:p-6">
+        <FadeUp
+          delay={0.08}
+          className="overflow-hidden rounded-[30px] border border-[#DED5CB] bg-[#F5F0E9] p-3 shadow-[0_24px_60px_-20px_rgba(26,20,16,0.12)] sm:p-5 lg:p-6"
+        >
           {/* ZONE B — HANGING POLAROID CAROUSEL */}
           <PolaroidLineCarousel
             ref={carouselRef}
@@ -288,7 +294,7 @@ export function ProcessPolaroidJourney({
               badge: `STAGE ${stage.code}`,
             }))}
             activeIndex={safeIndex}
-            height="clamp(390px, 54svh, 490px)"
+            height="clamp(410px, 55svh, 495px)"
             cardWidth={295}
             sag={42}
             swing={0.85}
@@ -302,11 +308,14 @@ export function ProcessPolaroidJourney({
           />
 
           {/* ZONE C — SELECTED STAGE EDITORIAL INFORMATION PANEL */}
-          <div
+          <motion.div
             key={activeStage.code}
             role="tabpanel"
             aria-label={`Stage ${activeStage.code}: ${activeStage.title}`}
-            className="mt-4 rounded-[24px] border border-[#DED5CB] bg-[#FAF9F6] p-6 shadow-[0_14px_34px_-16px_rgba(26,20,16,0.08)] transition-all duration-300 sm:p-7 lg:mt-5 lg:p-8"
+            initial={prefersReducedMotion ? false : { opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+            className="mt-4 rounded-[24px] border border-[#DED5CB] bg-[#FAF9F6] p-6 shadow-[0_14px_34px_-16px_rgba(26,20,16,0.08)] sm:p-7 lg:mt-5 lg:p-8"
           >
             <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-12 lg:gap-10">
               {/* Left Column (6 cols): Stage Number, Heading, Subtitle & Description */}
@@ -387,8 +396,8 @@ export function ProcessPolaroidJourney({
                 </div>
               </div>
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </FadeUp>
       </Container>
     </section>
   );

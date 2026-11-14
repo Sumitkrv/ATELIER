@@ -167,18 +167,27 @@ export const ZoomSliderComp = forwardRef<
   const easePct = Math.max(20, Number(easeScrollPercentage) || 100);
 
   // Core variable-width geometry from the reference ZoomSliderComp, adapted to container dimensions
-  const initialCardWidth = (isMobile ? 78 : 190) * sizeMultiplier;
-  const maxCardWidth =
-    (isMobile ? 250 : isTablet ? 445 : 585) * sizeMultiplier;
+  const initialCardWidth = (isMobile ? 68 : isTablet ? 140 : 190) * sizeMultiplier;
+  const maxCardWidth = isMobile
+    ? Math.round(
+        Math.min(275, Math.max(198, containerWidth * 0.62)) * sizeMultiplier
+      )
+    : isTablet
+      ? Math.round(
+          Math.min(390, Math.max(290, containerWidth * 0.48)) * sizeMultiplier
+        )
+      : 585 * sizeMultiplier;
   const maxCardHeight = Math.round(
     isMobile
-      ? containerHeight * 0.66 * sizeMultiplier
-      : containerHeight * 0.75 * sizeMultiplier
+      ? containerHeight * 0.59 * sizeMultiplier
+      : isTablet
+        ? containerHeight * 0.68 * sizeMultiplier
+        : containerHeight * 0.75 * sizeMultiplier
   );
-  const minCardHeight = Math.round((isMobile ? 92 : 88) * sizeMultiplier);
+  const minCardHeight = Math.round((isMobile ? 88 : 88) * sizeMultiplier);
   const virtualStep = maxCardWidth;
-  // Slot offset ensures slide index 0 begins in the prominent expanded focal region
-  const focusSlotOffset = isMobile ? 2 : 3;
+  // Responsive slot offset keeps the active expanded focal card fully on-screen across 360px..1440px+
+  const focusSlotOffset = isMobile ? 1 : isTablet ? 2 : 3;
 
   const clampedInitialIdx = useMemo(() => {
     if (!slides.length) return 0;
@@ -361,7 +370,11 @@ export const ZoomSliderComp = forwardRef<
       const totalVirtualWidth = total * virtualStep;
       const W = containerWidth;
       const floorY = containerHeight;
-      const easeZone = 2 * W * (easePct / 100);
+      const easeZone = isMobile
+        ? maxCardWidth * 1.45 * (easePct / 100)
+        : isTablet
+          ? maxCardWidth * 2.45 * (easePct / 100)
+          : 2 * W * (easePct / 100);
 
       const mapVtoX = (v: number): number => {
         if (v <= 0) return 0;
@@ -417,6 +430,7 @@ export const ZoomSliderComp = forwardRef<
       easePct,
       focusSlotOffset,
       isMobile,
+      isTablet,
       maxCardHeight,
       maxCardWidth,
       minCardHeight,
@@ -433,6 +447,9 @@ export const ZoomSliderComp = forwardRef<
     const state = physicsRef.current;
     const totalVirtualWidth = slides.length * virtualStep;
     const intervalMs = Math.max(1000, autoPlayHoldMs);
+    const prefersReducedMotion =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     if (state.lastAutoStepTime === 0) {
       state.lastAutoStepTime = performance.now();
@@ -442,6 +459,7 @@ export const ZoomSliderComp = forwardRef<
       // 1. Automatic 2-second category movement inside the unified RAF loop
       if (
         autoPlay &&
+        !prefersReducedMotion &&
         slides.length > 1 &&
         !state.isDragging &&
         document.visibilityState !== "hidden" &&
@@ -531,7 +549,8 @@ export const ZoomSliderComp = forwardRef<
         state.lastAutoStepTime = now;
       }
 
-      const delta = -dx * directionSign * 1.15;
+      const dragMultiplier = isMobile ? 1.45 : 1.15;
+      const delta = -dx * directionSign * dragMultiplier;
       state.target += delta;
       state.velocity = lerp(state.velocity, delta, 0.5);
       state.lastX = clientX;
@@ -541,6 +560,8 @@ export const ZoomSliderComp = forwardRef<
     const endDrag = () => {
       if (!state.isDragging) return;
       const wasRealDrag = state.dragMovedPx > 9;
+      const netHorizontalSwipe = state.lastX - state.startX;
+      const wasHorizontalTouch = state.touchDirection === "horizontal";
       state.isDragging = false;
       state.touchDirection = "undecided";
       setIsDraggingVisual(false);
@@ -549,6 +570,18 @@ export const ZoomSliderComp = forwardRef<
         const now = performance.now();
         state.pauseUntilTime = now + inactivityResumeMs;
         state.lastAutoStepTime = now;
+      }
+
+      if (wasHorizontalTouch && Math.abs(netHorizontalSwipe) >= 34) {
+        // Responsive touch flick: ensure deliberate swipe advances at least 1 category smoothly
+        const currentBaseSlot = Math.round(state.current / virtualStep);
+        const targetSlot = Math.round(state.target / virtualStep);
+        if (targetSlot === currentBaseSlot) {
+          const stepDir = netHorizontalSwipe < 0 ? 1 : -1;
+          state.velocity = 0;
+          state.target = (currentBaseSlot + stepDir) * virtualStep;
+          return;
+        }
       }
 
       if (Math.abs(state.velocity) <= MIN_VELOCITY) {
@@ -634,6 +667,7 @@ export const ZoomSliderComp = forwardRef<
     autoPlay,
     autoPlayHoldMs,
     inactivityResumeMs,
+    isMobile,
     layoutSlides,
     slides,
     virtualStep,
@@ -643,6 +677,9 @@ export const ZoomSliderComp = forwardRef<
   useEffect(() => {
     if (!slides.length) return;
 
+    const prefersReducedMotion =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const cleanups: Array<() => void> = [];
     revealFnsRef.current = [];
 
@@ -651,11 +688,30 @@ export const ZoomSliderComp = forwardRef<
       const cardBoxEl = cardBoxRefs.current[idx];
       if (!outerEl || !captionEl || !cardBoxEl) return;
 
+      const imgEl = cardBoxEl.querySelector("img");
+      if (imgEl) {
+        gsap.set(imgEl, { opacity: 1 });
+      }
+
       const numberEl = captionEl.querySelector("[data-number]");
       const titleEl = captionEl.querySelector("[data-title]");
       const descEl = captionEl.querySelector("[data-desc]");
       const ctaEl = captionEl.querySelector("[data-cta]");
       if (!numberEl || !titleEl || !descEl) return;
+
+      if (prefersReducedMotion) {
+        gsap.set(captionEl, { autoAlpha: idx === activeIndexRef.current ? 1 : 0 });
+        revealFnsRef.current[idx] = {
+          show: () => {
+            if (!textOnHover) return;
+            gsap.set(captionEl, { autoAlpha: 1 });
+          },
+          hide: () => {
+            gsap.set(captionEl, { autoAlpha: 0 });
+          },
+        };
+        return;
+      }
 
       const targets = ctaEl
         ? [numberEl, titleEl, descEl, ctaEl]
@@ -668,11 +724,6 @@ export const ZoomSliderComp = forwardRef<
 
       gsap.set(split.lines, { yPercent: 100 });
       gsap.set(captionEl, { autoAlpha: 0 });
-
-      const imgEl = cardBoxEl.querySelector("img");
-      if (imgEl) {
-        gsap.set(imgEl, { opacity: 1 });
-      }
 
       const showCaption = () => {
         if (!textOnHover) return;
@@ -846,7 +897,7 @@ export const ZoomSliderComp = forwardRef<
           "relative w-full overflow-hidden outline-none focus-visible:ring-2 focus-visible:ring-[#9B1C1C]",
           isDraggingVisual ? "cursor-grabbing" : "cursor-grab",
           stageHeightClassName ||
-            "h-[340px] sm:h-[395px] lg:h-[450px] xl:h-[470px]"
+            "h-[390px] sm:h-[420px] lg:h-[450px] xl:h-[470px]"
         )}
         style={{ touchAction: "pan-y" }}
       >
@@ -887,16 +938,18 @@ export const ZoomSliderComp = forwardRef<
                   onClick={() => handleCardActivation(item, idx)}
                   className="absolute z-30 flex cursor-pointer flex-col gap-1"
                   style={{
-                    bottom: "calc(100% + 12px)",
+                    bottom: isMobile ? "calc(100% + 8px)" : "calc(100% + 12px)",
                     left: 0,
-                    width: isMobile ? "220px" : "320px",
+                    width: isMobile
+                      ? `${Math.min(252, Math.max(196, containerWidth - 78))}px`
+                      : "320px",
                     padding: "0 0 4px",
                     visibility: "hidden",
                   }}
                 >
                   <p
                     data-number
-                    className="overflow-hidden select-none text-[11px] font-semibold uppercase leading-none tracking-[0.22em] text-[#9B1C1C]"
+                    className="overflow-hidden select-none text-[10.5px] font-semibold uppercase leading-none tracking-[0.2em] text-[#9B1C1C] sm:text-[11px] sm:tracking-[0.22em]"
                   >
                     {item.number} / {totalLabel}
                     {typeof item.artworkCount === "number"
@@ -905,19 +958,19 @@ export const ZoomSliderComp = forwardRef<
                   </p>
                   <p
                     data-title
-                    className="overflow-hidden select-none font-serif text-[22px] font-semibold leading-[1.12] tracking-[-0.01em] text-[#211D1A] sm:text-[26px]"
+                    className="overflow-hidden select-none font-serif text-[20px] font-semibold leading-[1.12] tracking-[-0.01em] text-[#211D1A] sm:text-[26px]"
                   >
                     {item.title}
                   </p>
                   <p
                     data-desc
-                    className="line-clamp-2 overflow-hidden select-none text-[12px] font-normal leading-[1.45] tracking-[0.01em] text-[#6F665E]"
+                    className="line-clamp-2 overflow-hidden select-none text-[11.5px] font-normal leading-[1.42] tracking-[0.01em] text-[#6F665E] sm:text-[12px] sm:leading-[1.45]"
                   >
                     {item.desc}
                   </p>
                   <span
                     data-cta
-                    className="mt-1 inline-flex w-fit items-center gap-1.5 overflow-hidden text-[10.5px] font-semibold uppercase tracking-[0.2em] text-[#211D1A] transition-colors hover:text-[#9B1C1C]"
+                    className="mt-0.5 inline-flex w-fit items-center gap-1.5 overflow-hidden text-[10px] font-semibold uppercase tracking-[0.18em] text-[#211D1A] transition-colors hover:text-[#9B1C1C] sm:mt-1 sm:text-[10.5px] sm:tracking-[0.2em]"
                   >
                     <span>EXPLORE COLLECTION</span>
                     <ArrowUpRight className="h-3.5 w-3.5 text-[#9B1C1C]" />
@@ -973,7 +1026,7 @@ export const ZoomSliderComp = forwardRef<
                         target.src = fallback;
                       }
                     }}
-                    className="pointer-events-none absolute inset-0 h-full w-full select-none object-cover opacity-0"
+                    className="pointer-events-none absolute inset-0 h-full w-full select-none object-cover"
                     style={{
                       transform: "none",
                       objectPosition: "center center",

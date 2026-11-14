@@ -163,8 +163,8 @@ export default function HomePage() {
               <div className="group relative mt-4 h-[210px] w-full overflow-hidden rounded-xl border border-brand-stone/45 bg-brand-charcoal shadow-editorial sm:h-[234px] lg:h-[240px] xl:h-[248px]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src="/images/atelier/artwork-terracotta-wave.jpg"
-                  alt="Direct-to-surface 3D wall printing terracotta relief installation"
+                  src="/images/atelier/home/home-printing-technology-closeup.webp"
+                  alt="Vertical direct-to-wall printer mid-print, laying a sage botanical mural onto a primed interior wall"
                   className="h-full w-full object-cover object-[50%_42%] transition-transform duration-700 ease-out group-hover:scale-[1.02]"
                 />
                 <div className="absolute left-3.5 top-3.5 rounded-full border border-white/15 bg-brand-charcoal/80 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.14em] text-brand-beige backdrop-blur-xs">
@@ -279,8 +279,8 @@ export default function HomePage() {
                 <div className="relative aspect-[16/10] overflow-hidden bg-[#EBE3D8]">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src="/images/atelier/hero-botanical-living.jpg"
-                    alt="Sunlit residential living room botanical mural showcase"
+                    src="/images/atelier/home/home-executed-residential-mural.webp"
+                    alt="Double-height villa stair hall with a banyan root and leaf mural printed directly onto the wall"
                     className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
                   />
                   <div className="absolute left-4 top-4 rounded-full border border-[#DDD2C5] bg-[#FBF8F3]/95 px-3.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-[#211D1A] shadow-xs">
@@ -334,8 +334,8 @@ export default function HomePage() {
                   <div className="mt-5 relative aspect-[16/9] overflow-hidden rounded-xl border border-[#DDD2C5] bg-[#EBE3D8]">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src="/images/atelier/surface-glass-interior.jpg"
-                      alt="Custom printed architectural glass partition"
+                      src="/images/atelier/home/home-executed-glass-partition.webp"
+                      alt="Hotel lobby glass partition printed with a translucent burgundy and gold jaali lattice"
                       className="h-full w-full object-cover"
                     />
                   </div>

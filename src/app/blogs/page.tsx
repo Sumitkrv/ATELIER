@@ -12,6 +12,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { PublicShell } from "@/components/layout/PublicShell";
 import { Container } from "@/components/layout/Container";
+import { FadeUp, StaggerContainer, StaggerItem } from "@/components/motion/Reveal";
 import {
   BLOG_DRAFT_CATEGORIES,
   BlogArticleRecord,
@@ -184,7 +185,7 @@ function BlogsListingWorkspace() {
         />
 
         <Container className="relative z-10">
-          <div className="grid grid-cols-1 items-center gap-8 lg:grid-cols-12 lg:gap-8">
+          <FadeUp className="grid grid-cols-1 items-center gap-8 lg:grid-cols-12 lg:gap-8">
             {/* Left Column (5 cols): Editorial Headline & Supporting Copy */}
             <div className="lg:col-span-5">
               <div className="mb-3.5 flex items-center gap-3">
@@ -246,7 +247,7 @@ function BlogsListingWorkspace() {
                 </div>
               </div>
             </div>
-          </div>
+          </FadeUp>
         </Container>
       </section>
 
@@ -259,7 +260,10 @@ function BlogsListingWorkspace() {
         className="relative z-20 -mt-8 pb-6 lg:-mt-10"
       >
         <Container>
-          <div className="rounded-[26px] border border-[#DED5CB] bg-[#FAF9F6]/95 p-4 shadow-[0_20px_50px_rgba(26,26,26,0.08)] backdrop-blur-md sm:p-6">
+          <FadeUp
+            delay={0.06}
+            className="rounded-[26px] border border-[#DED5CB] bg-[#FAF9F6]/95 p-4 shadow-[0_20px_50px_rgba(26,26,26,0.08)] backdrop-blur-md sm:p-6"
+          >
             <div className="grid grid-cols-1 items-center gap-4 lg:grid-cols-12 lg:gap-6">
               {/* Left: Search Input (5 cols) */}
               <div className="lg:col-span-5">
@@ -365,7 +369,7 @@ function BlogsListingWorkspace() {
                 </div>
               </div>
             </div>
-          </div>
+          </FadeUp>
         </Container>
       </section>
 
@@ -485,19 +489,19 @@ function BlogsListingWorkspace() {
                   ============================================================= */}
               {visibleGridArticles.length > 0 && (
                 <div>
-                  <div className="grid grid-cols-1 gap-7 md:grid-cols-2 lg:grid-cols-3">
+                  <StaggerContainer className="grid grid-cols-1 gap-7 md:grid-cols-2 lg:grid-cols-3">
                     {visibleGridArticles.map((post, idx) => {
                       // Center card in the 3-column row gets a subtle magazine highlight border
                       const isCenterFeature = idx === 1;
                       return (
-                        <article
-                          key={post.id}
-                          className={`group flex flex-col justify-between overflow-hidden rounded-[22px] border bg-[#FAF9F6] transition-all duration-300 hover:-translate-y-1.5 ${
-                            isCenterFeature
-                              ? "border-[#9B1C1C]/45 shadow-[0_20px_45px_rgba(115,23,27,0.1)] lg:-translate-y-2"
-                              : "border-[#DED5CB] shadow-[0_14px_34px_rgba(26,26,26,0.06)] hover:border-[#9B1C1C]/45"
-                          }`}
-                        >
+                        <StaggerItem key={post.id}>
+                          <article
+                            className={`group flex h-full flex-col justify-between overflow-hidden rounded-[22px] border bg-[#FAF9F6] transition-all duration-300 hover:-translate-y-1.5 ${
+                              isCenterFeature
+                                ? "border-[#9B1C1C]/45 shadow-[0_20px_45px_rgba(115,23,27,0.1)] lg:-translate-y-2"
+                                : "border-[#DED5CB] shadow-[0_14px_34px_rgba(26,26,26,0.06)] hover:border-[#9B1C1C]/45"
+                            }`}
+                          >
                           <div>
                             <Link
                               href={`/blogs/${post.slug}`}
@@ -555,10 +559,11 @@ function BlogsListingWorkspace() {
                               <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
                             </Link>
                           </div>
-                        </article>
+                          </article>
+                        </StaggerItem>
                       );
                     })}
-                  </div>
+                  </StaggerContainer>
                 </div>
               )}
             </div>

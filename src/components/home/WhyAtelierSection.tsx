@@ -112,7 +112,7 @@ export function WhyAtelierSection() {
             <motion.div
               initial={prefersReducedMotion ? false : { opacity: 0, y: 16 }}
               whileInView={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-60px" }}
+              viewport={{ once: true, amount: 0.1, margin: "0px 0px -20px 0px" }}
               transition={{ duration: 0.6, ease: ARCHITECTURAL_EASE }}
             >
               <div className="inline-flex items-center gap-3">
@@ -153,7 +153,7 @@ export function WhyAtelierSection() {
                     ? undefined
                     : { opacity: 1, y: 0, scale: 1 }
                 }
-                viewport={{ once: true, margin: "-50px" }}
+                viewport={{ once: true, amount: 0.1, margin: "0px 0px -20px 0px" }}
                 transition={{
                   duration: 0.7,
                   delay: 0.06,
@@ -163,9 +163,9 @@ export function WhyAtelierSection() {
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src="/images/atelier/artwork-terracotta-wave.jpg"
-                  alt="ATELIER — WALL STORY sculpted terracotta wave mural in a sunlit beige architectural living space"
-                  className="h-full w-full object-cover object-[50%_36%] transition-transform duration-700 ease-out group-hover:scale-[1.035] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+                  src="/images/atelier/home/home-why-atelier-completed-wall.webp"
+                  alt="Sea-facing living room with a full wall printed with a muted gold and sage palm-and-peacock garden"
+                  className="h-full w-full object-cover object-[50%_36%] transition-transform duration-700 ease-out group-hover:scale-[1.035] group-active:scale-[1.02] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
                 />
                 {/* Soft bottom vignette to anchor the floating studio card */}
                 <div
@@ -180,7 +180,7 @@ export function WhyAtelierSection() {
                 whileInView={
                   prefersReducedMotion ? undefined : { opacity: 1, y: 0 }
                 }
-                viewport={{ once: true, margin: "-40px" }}
+                viewport={{ once: true, amount: 0.1, margin: "0px 0px -20px 0px" }}
                 transition={{
                   duration: 0.62,
                   delay: 0.16,
@@ -232,7 +232,7 @@ export function WhyAtelierSection() {
           <motion.div
             initial={prefersReducedMotion ? false : "hidden"}
             whileInView={prefersReducedMotion ? undefined : "visible"}
-            viewport={{ once: true, margin: "-50px" }}
+            viewport={{ once: true, amount: 0.08, margin: "0px 0px -20px 0px" }}
             variants={{
               hidden: {},
               visible: {

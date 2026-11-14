@@ -53,7 +53,7 @@ export function Button(props: ButtonProps) {
   } = props;
 
   const sharedClasses = cn(
-    "inline-flex cursor-pointer items-center justify-center gap-2.5 rounded-sm font-sans font-medium uppercase transition-[color,background-color,border-color,box-shadow,transform] duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-crimson disabled:pointer-events-none disabled:opacity-50",
+    "inline-flex cursor-pointer items-center justify-center gap-2.5 rounded-sm font-sans font-medium uppercase transition-[color,background-color,border-color,box-shadow,transform] duration-200 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-crimson disabled:pointer-events-none disabled:opacity-50",
     variantStyles[variant],
     sizeStyles[size],
     className

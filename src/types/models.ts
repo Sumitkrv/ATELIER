@@ -184,6 +184,7 @@ export interface PageContentDocument {
     | "about"
     | "process"
     | "blogs"
+    | "visualizer"
     | "contact";
   hero: {
     eyebrow: string;
@@ -294,7 +295,18 @@ export const enquirySubmissionSchema = z.object({
     .string()
     .trim()
     .min(7, "Please enter a valid contact phone number.")
-    .max(24, "Phone number is too long."),
+    .max(24, "Phone number is too long.")
+    .refine(
+      (val) => {
+        if (!/^\+?[0-9\s\-().]{7,24}$/.test(val)) return false;
+        const digitCount = val.replace(/\D/g, "").length;
+        return digitCount >= 7 && digitCount <= 15;
+      },
+      {
+        message:
+          "Please enter a valid phone number (7–15 digits, with optional country code such as +91).",
+      }
+    ),
   serviceInterest: z
     .string()
     .trim()

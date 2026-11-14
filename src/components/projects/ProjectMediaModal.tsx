@@ -35,6 +35,7 @@ export function ProjectMediaModal({
   const modalRef = useRef<HTMLDivElement | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
 
   const [activeMediaIndex, setActiveMediaIndex] =
     useState<number>(initialMediaIndex);
@@ -246,7 +247,39 @@ export function ProjectMediaModal({
         </div>
 
         {/* Viewport Stage */}
-        <div className="relative flex min-h-[320px] flex-1 items-center justify-center overflow-auto bg-obsidian-950 p-4 sm:min-h-[440px] sm:p-6">
+        <div
+          style={{
+            touchAction:
+              viewMode === "images" && !zoomed ? "pan-y" : "pan-x pan-y",
+          }}
+          onTouchStart={(e) => {
+            if (viewMode !== "images" || zoomed || totalImages <= 1) return;
+            if (e.touches.length !== 1) return;
+            touchStartRef.current = {
+              x: e.touches[0].clientX,
+              y: e.touches[0].clientY,
+            };
+          }}
+          onTouchEnd={(e) => {
+            if (!touchStartRef.current || viewMode !== "images" || zoomed) {
+              touchStartRef.current = null;
+              return;
+            }
+            const touch = e.changedTouches[0];
+            if (!touch) return;
+            const dx = touch.clientX - touchStartRef.current.x;
+            const dy = touch.clientY - touchStartRef.current.y;
+            touchStartRef.current = null;
+            if (Math.abs(dx) >= 38 && Math.abs(dx) > Math.abs(dy) * 1.2) {
+              if (dx < 0) {
+                handleNextImage();
+              } else {
+                handlePrevImage();
+              }
+            }
+          }}
+          className="relative flex min-h-[320px] flex-1 items-center justify-center overflow-auto bg-obsidian-950 p-4 sm:min-h-[440px] sm:p-6"
+        >
           {viewMode === "images" ? (
             <>
               {imageError ? (

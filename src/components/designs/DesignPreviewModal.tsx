@@ -38,6 +38,7 @@ export function DesignPreviewModal({
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
 
   const [prevDesignId, setPrevDesignId] = useState<string | null>(
     design?.id ?? null
@@ -355,7 +356,35 @@ export function DesignPreviewModal({
             </div>
 
             {/* Primary Viewport Stage */}
-            <div className="relative flex min-h-[280px] flex-1 items-center justify-center overflow-auto bg-[#161311] p-4 sm:min-h-[420px] sm:p-6">
+            <div
+              onTouchStart={(e) => {
+                if (zoomLevel > 1 || viewMode !== "images" || !e.touches[0]) return;
+                swipeStartRef.current = {
+                  x: e.touches[0].clientX,
+                  y: e.touches[0].clientY,
+                };
+              }}
+              onTouchEnd={(e) => {
+                if (
+                  !swipeStartRef.current ||
+                  zoomLevel > 1 ||
+                  viewMode !== "images" ||
+                  totalImages <= 1 ||
+                  !e.changedTouches[0]
+                ) {
+                  swipeStartRef.current = null;
+                  return;
+                }
+                const dx = e.changedTouches[0].clientX - swipeStartRef.current.x;
+                const dy = e.changedTouches[0].clientY - swipeStartRef.current.y;
+                swipeStartRef.current = null;
+                if (Math.abs(dx) >= 42 && Math.abs(dx) > Math.abs(dy) * 1.2) {
+                  if (dx < 0) handleNextImage();
+                  else handlePrevImage();
+                }
+              }}
+              className="relative flex min-h-[280px] flex-1 items-center justify-center overflow-auto bg-[#161311] p-4 sm:min-h-[420px] sm:p-6"
+            >
               {viewMode === "images" ? (
                 <>
                   {imageLoading && (

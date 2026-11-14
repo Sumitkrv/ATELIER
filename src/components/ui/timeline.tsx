@@ -207,8 +207,8 @@ export function Timeline({
     const ctx = gsap.context(() => {
       const mm = gsap.matchMedia();
 
-      // DESKTOP & TABLET (>= 768px): Sticky Horizontal ScrollTrigger Journey
-      mm.add("(min-width: 768px)", () => {
+      // DESKTOP (>= 1024px): Sticky Horizontal ScrollTrigger Journey
+      mm.add("(min-width: 1024px)", () => {
         const getTravelDistance = () =>
           Math.max(0, trackEl.scrollWidth - viewportEl.clientWidth + 48);
 
@@ -381,30 +381,79 @@ export function Timeline({
         };
       });
 
-      // MOBILE (< 768px): Clean scroll-triggered reveal on each vertical milestone without 800vw horizontal overflow
-      mm.add("(max-width: 767px)", () => {
+      // MOBILE & TABLET (< 1024px): Touch-native vertical progression with growing crimson spine & bidirectional milestone activation
+      mm.add("(max-width: 1023px)", () => {
         gsap.set(trackEl, { clearProps: "transform" });
-        if (prefersReducedMotion) return;
+
+        if (prefersReducedMotion) {
+          gsap.set(".mobile-journey-line", { scaleY: 1 });
+          milestones.forEach((item) => {
+            gsap.set(`.mobile-stage-${item.id}`, {
+              opacity: 1,
+              clearProps: "transform",
+            });
+            gsap.set(`.mobile-media-${item.id}`, {
+              opacity: 1,
+              clearProps: "transform",
+            });
+          });
+          return;
+        }
+
+        gsap.fromTo(
+          ".mobile-journey-line",
+          { scaleY: 0, transformOrigin: "top center" },
+          {
+            scaleY: 1,
+            ease: "none",
+            scrollTrigger: {
+              trigger: ".mobile-journey-list",
+              start: "top 75%",
+              end: "bottom 65%",
+              scrub: 0.4,
+            },
+          }
+        );
 
         milestones.forEach((item, idx) => {
+          const activate = () => {
+            if (activeStageIdxRef.current !== idx) {
+              activeStageIdxRef.current = idx;
+              setActiveStageIdx(idx);
+              onActiveStageChangeRef.current?.(idx);
+            }
+          };
+
           gsap.fromTo(
             `.mobile-stage-${item.id}`,
-            { opacity: 0.25, y: 20 },
+            { opacity: 0.3, y: 24 },
             {
               opacity: 1,
               y: 0,
-              duration: 0.5,
+              ease: "power2.out",
+              scrollTrigger: {
+                trigger: `.mobile-stage-${item.id}`,
+                start: "top 88%",
+                end: "top 58%",
+                scrub: 0.35,
+                onEnter: activate,
+                onEnterBack: activate,
+              },
+            }
+          );
+
+          gsap.fromTo(
+            `.mobile-media-${item.id}`,
+            { scale: 0.96, opacity: 0.65 },
+            {
+              scale: 1,
+              opacity: 1,
               ease: "power2.out",
               scrollTrigger: {
                 trigger: `.mobile-stage-${item.id}`,
                 start: "top 85%",
-                end: "top 45%",
-                scrub: true,
-                onEnter: () => {
-                  activeStageIdxRef.current = idx;
-                  setActiveStageIdx(idx);
-                  onActiveStageChangeRef.current?.(idx);
-                },
+                end: "top 55%",
+                scrub: 0.35,
               },
             }
           );
@@ -412,13 +461,27 @@ export function Timeline({
       });
     }, sectionEl);
 
+    let lastWidth = window.innerWidth;
+    let resizeTimer: number | null = null;
     const handleResize = () => {
-      ScrollTrigger.refresh();
+      if (window.innerWidth === lastWidth) return;
+      lastWidth = window.innerWidth;
+      if (resizeTimer !== null) {
+        window.clearTimeout(resizeTimer);
+      }
+      resizeTimer = window.setTimeout(() => {
+        ScrollTrigger.refresh();
+      }, 150);
     };
-    window.addEventListener("resize", handleResize);
+    window.addEventListener("resize", handleResize, { passive: true });
+    window.addEventListener("orientationchange", handleResize);
 
     return () => {
       window.removeEventListener("resize", handleResize);
+      window.removeEventListener("orientationchange", handleResize);
+      if (resizeTimer !== null) {
+        window.clearTimeout(resizeTimer);
+      }
       ctx.revert();
     };
   }, [animDuration, milestones, prefersReducedMotion]);
@@ -426,12 +489,18 @@ export function Timeline({
   const scrollToStagePercentage = (idx: number) => {
     const sectionEl = sectionRef.current;
     if (!sectionEl || typeof window === "undefined") return;
+    const scrollBehavior: ScrollBehavior = prefersReducedMotion
+      ? "auto"
+      : "smooth";
 
-    if (window.innerWidth < 768) {
+    if (window.innerWidth < 1024) {
+      activeStageIdxRef.current = idx;
+      setActiveStageIdx(idx);
+      onActiveStageChangeRef.current?.(idx);
       const mobileCard = sectionEl.querySelector(
         `.mobile-stage-${milestones[idx]?.id}`
       );
-      mobileCard?.scrollIntoView({ behavior: "smooth", block: "center" });
+      mobileCard?.scrollIntoView({ behavior: scrollBehavior, block: "center" });
       return;
     }
 
@@ -444,7 +513,7 @@ export function Timeline({
     const ratio =
       milestones.length > 1 ? idx / (milestones.length - 1) : 0;
     const targetY = sectionTop + scrollableDistance * (0.08 + ratio * 0.82);
-    window.scrollTo({ top: targetY, behavior: "smooth" });
+    window.scrollTo({ top: targetY, behavior: scrollBehavior });
   };
 
   return (
@@ -452,18 +521,15 @@ export function Timeline({
       ref={sectionRef}
       id="journey"
       aria-label="From Vision to Wall — 5-Stage Architectural Process Timeline"
-      className={cn(
-        "relative w-full md:h-[320vh] lg:h-[340vh]",
-        className
-      )}
+      className={cn("relative w-full lg:h-[340vh]", className)}
       style={{ color: textColor, backgroundColor }}
     >
       {/* ===================================================================
-          DESKTOP & TABLET STICKY HORIZONTAL TIMELINE STAGE (>= 768px)
+          DESKTOP STICKY HORIZONTAL TIMELINE STAGE (>= 1024px)
           =================================================================== */}
       <div
         ref={viewportRef}
-        className="sticky top-[var(--header-height,74px)] hidden h-[calc(100vh-var(--header-height,74px))] min-h-[620px] w-full flex-col justify-between overflow-hidden md:flex"
+        className="sticky top-[var(--navbar-height,74px)] hidden h-[calc(100svh-var(--navbar-height,74px))] min-h-[620px] w-full flex-col justify-between overflow-hidden lg:flex"
       >
         {/* Subtle Architectural Studio Ambient Glow */}
         <div
@@ -784,9 +850,9 @@ export function Timeline({
       </div>
 
       {/* ===================================================================
-          MOBILE RESPONSIVE TIMELINE EXPERIENCE (< 768px) — Zero 800vw Overflow
+          MOBILE & TABLET RESPONSIVE TIMELINE EXPERIENCE (< 1024px) — Zero Overflow, No Scroll Trapping
           =================================================================== */}
-      <div className="px-5 py-12 sm:px-8 md:hidden">
+      <div className="px-5 py-12 sm:px-8 lg:hidden">
         <div className="border-b border-[#E8E2D9]/15 pb-6">
           <div className="flex items-center gap-2.5">
             <span className="h-[1.5px] w-6 bg-[#9B1C1C]" />
@@ -794,65 +860,117 @@ export function Timeline({
               {periodLabel}
             </span>
           </div>
-          <h2 className="mt-2.5 font-serif text-3xl font-normal text-[#FAF9F6]">
+          <h2 className="mt-2.5 font-serif text-3xl font-normal text-[#FAF9F6] sm:text-4xl">
             {title}
           </h2>
+
+          {/* Interactive Mobile/Tablet Stage Selector Strip */}
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            {milestones.map((item, idx) => {
+              const isCurrent = idx === activeStageIdx;
+              return (
+                <button
+                  key={`mobile-pill-${item.id}`}
+                  type="button"
+                  onClick={() => scrollToStagePercentage(idx)}
+                  aria-current={isCurrent ? "step" : undefined}
+                  className={cn(
+                    "inline-flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] transition-all",
+                    isCurrent
+                      ? "bg-[#9B1C1C] font-semibold text-[#FAF9F6] shadow-sm"
+                      : "border border-[#E8E2D9]/20 bg-[#FAF9F6]/[0.05] text-[#E8E2D9]/75 hover:border-[#E8E2D9]/40"
+                  )}
+                >
+                  <span className="font-mono text-[10px]">
+                    {item.stageNumber}
+                  </span>
+                  <span className="hidden sm:inline">{item.title}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        <div className="relative mt-8 space-y-8 before:absolute before:top-2 before:bottom-2 before:left-3.5 before:w-[2px] before:bg-[#9B1C1C]/60">
-          {milestones.map((item) => (
+        <div className="mobile-journey-list relative mt-8 space-y-8">
+          {/* Track rail + animated scroll-scrubbed crimson line */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute top-2 bottom-2 left-3.5 w-[2px] bg-[#E8E2D9]/15"
+          >
             <div
-              key={`mobile-${item.id}`}
-              className={`mobile-stage-${item.id} relative pl-10`}
-            >
-              {/* Crimson Node Dot */}
+              className="mobile-journey-line h-full w-full rounded-full"
+              style={{ backgroundColor: activeColor }}
+            />
+          </div>
+
+          {milestones.map((item, idx) => {
+            const isCurrent = idx === activeStageIdx;
+            return (
               <div
-                className="absolute top-1.5 left-1.5 h-4 w-4 rounded-full ring-4 ring-[#1A1A1A]"
-                style={{ backgroundColor: activeColor }}
-              />
+                key={`mobile-${item.id}`}
+                className={`mobile-stage-${item.id} relative pl-10`}
+              >
+                {/* Crimson Node Dot */}
+                <div
+                  className={cn(
+                    "absolute top-1.5 left-1.5 h-4 w-4 rounded-full ring-4 ring-[#1A1A1A] transition-transform duration-300",
+                    isCurrent ? "scale-125" : "scale-100 opacity-75"
+                  )}
+                  style={{ backgroundColor: activeColor }}
+                />
 
-              <div className="rounded-2xl border border-[#E8E2D9]/15 bg-[#221C1A] p-4 shadow-lg">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-mono text-[10.5px] font-bold tracking-[0.18em] text-[#D89B8C] uppercase">
-                    {item.stageNumber} • {item.studioLabel}
-                  </span>
-                </div>
-
-                <h3 className="mt-2 font-serif text-2xl font-medium text-[#FAF9F6]">
-                  {item.title}
-                </h3>
-                <p className="mt-0.5 text-[11px] font-semibold tracking-[0.15em] text-[#D89B8C] uppercase">
-                  {item.subtitle}
-                </p>
-                <p
-                  className="mt-2 text-[13.5px] leading-relaxed"
-                  style={{ color: mutedTextColor }}
+                <div
+                  className={cn(
+                    "rounded-2xl border bg-[#221C1A] p-4 shadow-lg transition-colors duration-300 sm:p-6",
+                    isCurrent
+                      ? "border-[#9B1C1C]/65"
+                      : "border-[#E8E2D9]/15"
+                  )}
                 >
-                  {item.description}
-                </p>
-
-                <div className="mt-3.5 overflow-hidden rounded-xl border border-[#E8E2D9]/15">
-                  <img
-                    src={item.imageUrl}
-                    alt={item.imageAlt}
-                    className="aspect-[16/10] w-full object-cover"
-                  />
-                </div>
-
-                {item.ctaLabel && item.ctaHref && (
-                  <div className="mt-4">
-                    <Link
-                      href={item.ctaHref}
-                      className="inline-flex items-center gap-1.5 rounded-full bg-[#9B1C1C] px-4 py-2 text-[11px] font-semibold tracking-[0.16em] text-[#FAF9F6] uppercase"
-                    >
-                      <span>{item.ctaLabel}</span>
-                      <ArrowUpRight className="h-3.5 w-3.5" />
-                    </Link>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-mono text-[10.5px] font-bold tracking-[0.18em] text-[#D89B8C] uppercase">
+                      {item.stageNumber} • {item.studioLabel}
+                    </span>
                   </div>
-                )}
+
+                  <h3 className="mt-2 font-serif text-2xl font-medium text-[#FAF9F6]">
+                    {item.title}
+                  </h3>
+                  <p className="mt-0.5 text-[11px] font-semibold tracking-[0.15em] text-[#D89B8C] uppercase">
+                    {item.subtitle}
+                  </p>
+                  <p
+                    className="mt-2 text-[13.5px] leading-relaxed"
+                    style={{ color: mutedTextColor }}
+                  >
+                    {item.description}
+                  </p>
+
+                  <div
+                    className={`mobile-media-${item.id} mt-3.5 overflow-hidden rounded-xl border border-[#E8E2D9]/15`}
+                  >
+                    <img
+                      src={item.imageUrl}
+                      alt={item.imageAlt}
+                      className="aspect-[16/10] w-full object-cover"
+                    />
+                  </div>
+
+                  {item.ctaLabel && item.ctaHref && (
+                    <div className="mt-4">
+                      <Link
+                        href={item.ctaHref}
+                        className="inline-flex items-center gap-1.5 rounded-full bg-[#9B1C1C] px-4 py-2 text-[11px] font-semibold tracking-[0.16em] text-[#FAF9F6] uppercase"
+                      >
+                        <span>{item.ctaLabel}</span>
+                        <ArrowUpRight className="h-3.5 w-3.5" />
+                      </Link>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>

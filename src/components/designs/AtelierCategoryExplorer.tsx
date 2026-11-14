@@ -400,6 +400,27 @@ export function AtelierCategoryExplorer({
     onSelectCategorySlug("all", { scrollToResults: false });
   }, [onSelectCategorySlug]);
 
+  const handleBridgeSelectCategory = useCallback(
+    (
+      cat: AtelierVaultCategoryItem,
+      index: number,
+      forceOpen: boolean
+    ) => {
+      if (forceOpen || index === focusedIndex) {
+        setFocusedIndex(index);
+        sliderRef.current?.goToIndex(index);
+        onSelectCategorySlug(cat.slug, { scrollToResults: true });
+        return;
+      }
+      setFocusedIndex(index);
+      sliderRef.current?.goToIndex(index);
+    },
+    [focusedIndex, onSelectCategorySlug]
+  );
+
+  const activeFocusedCategory =
+    categories[focusedIndex] ?? categories[0] ?? null;
+
   return (
     <section
       id="atelier-art-vault"
@@ -482,7 +503,7 @@ export function AtelierCategoryExplorer({
             <div
               aria-busy="true"
               aria-label="Loading 13 Worlds of Wall Art gallery"
-              className="flex h-[340px] w-full items-end gap-3 overflow-hidden rounded-2xl border border-[#DDD2C5] bg-[#F2EBE2] p-4 sm:h-[395px] lg:h-[450px]"
+              className="flex h-[390px] w-full items-end gap-3 overflow-hidden rounded-2xl border border-[#DDD2C5] bg-[#F2EBE2] p-4 sm:h-[420px] lg:h-[450px]"
             >
               <div className="h-[25%] w-[8%] animate-pulse rounded-t-xl bg-[#DDD2C5]/60" />
               <div className="h-[45%] w-[15%] animate-pulse rounded-t-xl bg-[#DDD2C5]/70" />
@@ -500,24 +521,52 @@ export function AtelierCategoryExplorer({
               </p>
             </div>
           ) : (
-            <ZoomSliderComp
-              ref={sliderRef}
-              sliderData={zoomSlides}
-              title={ATELIER_ART_VAULT_CONTENT.headline}
-              subheading={ATELIER_ART_VAULT_CONTENT.subheading}
-              scaleOnHover
-              textOnHover
-              size={1}
-              easeScrollPercentage={100}
-              initialIndex={initialIndex}
-              activeIndex={focusedIndex}
-              selectedSlug={activeCategorySlug}
-              autoPlay={!isModalOpen}
-              autoPlayHoldMs={2000}
-              inactivityResumeMs={3500}
-              onActiveIndexChange={handleActiveIndexChange}
-              onSelectItem={handleSlideClick}
-            />
+            <>
+              <ZoomSliderComp
+                ref={sliderRef}
+                sliderData={zoomSlides}
+                title={ATELIER_ART_VAULT_CONTENT.headline}
+                subheading={ATELIER_ART_VAULT_CONTENT.subheading}
+                scaleOnHover
+                textOnHover
+                size={1}
+                easeScrollPercentage={100}
+                initialIndex={initialIndex}
+                activeIndex={focusedIndex}
+                selectedSlug={activeCategorySlug}
+                autoPlay={!isModalOpen}
+                autoPlayHoldMs={2000}
+                inactivityResumeMs={3500}
+                onActiveIndexChange={handleActiveIndexChange}
+                onSelectItem={handleSlideClick}
+              />
+
+              <CategoryCatalogueBridge
+                categories={categories}
+                focusedIndex={focusedIndex}
+                activeCategorySlug={activeCategorySlug}
+                onFocusAndFilterCategory={handleBridgeSelectCategory}
+                onResetCategory={handleResetCategory}
+              />
+
+              {activeFocusedCategory && (
+                <div className="mt-4">
+                  <CategoryActiveDetails
+                    category={activeFocusedCategory}
+                    totalCount={categories.length}
+                    isCurrentlyFiltered={
+                      activeCategorySlug !== "all" &&
+                      activeCategorySlug.toLowerCase() ===
+                        activeFocusedCategory.slug.toLowerCase()
+                    }
+                    onViewDesigns={(cat) =>
+                      onSelectCategorySlug(cat.slug, { scrollToResults: true })
+                    }
+                    onShowAllDesigns={handleResetCategory}
+                  />
+                </div>
+              )}
+            </>
           )}
         </div>
       </Container>

@@ -38,7 +38,7 @@ export function FadeUp({
     <motion.div
       initial={{ opacity: 0, y: yOffset }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-60px" }}
+      viewport={{ once: true, amount: 0.1, margin: "0px 0px -20px 0px" }}
       transition={{
         duration,
         delay,
@@ -72,7 +72,7 @@ export function StaggerContainer({
     <motion.div
       initial="hidden"
       whileInView="visible"
-      viewport={{ once: true, margin: "-50px" }}
+      viewport={{ once: true, amount: 0.08, margin: "0px 0px -20px 0px" }}
       variants={{
         hidden: {},
         visible: {
@@ -138,7 +138,7 @@ export function ArchitecturalMediaFrame({
         className
       )}
     >
-      <div className="h-full w-full transition-transform duration-700 ease-out group-hover:scale-[1.03]">
+      <div className="h-full w-full transition-transform duration-700 ease-out group-hover:scale-[1.03] group-active:scale-[1.02]">
         {children}
       </div>
     </div>

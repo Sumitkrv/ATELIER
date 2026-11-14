@@ -24,7 +24,7 @@ export const ABOUT_PAGE_CONTENT = {
     headlineLine2: "Has a Story.",
     supportingText:
       "A Mumbai-based creative wall-art studio bringing expressive murals, thoughtful design, and multi-surface printing into contemporary spaces.",
-    heroImageUrl: "/images/atelier/about-hero-lotus-arch.jpg",
+    heroImageUrl: "/images/atelier/about-hero-crane-dining.jpg",
     isProvisionalCopy: false,
   },
   studioStory: {
@@ -35,7 +35,7 @@ export const ABOUT_PAGE_CONTENT = {
       "ATELIER — WALL STORY creates expressive wall-art experiences that bring visual identity, texture, and artistic character into architectural spaces.",
     paragraph2:
       "Based in Oshiwara, Andheri West, Mumbai, the studio explores how design and direct-to-surface printing can transform ordinary walls—as well as tiles, plywood, office blinds, metals, and glass—into meaningful visual environments.",
-    archVisualUrl: "/images/atelier/about-story-arch-vase.jpg",
+    archVisualUrl: "/images/atelier/about-story-sculptural-arch.jpg",
     sketchbookVisualUrl: "/images/atelier/about-story-sketchbook.jpg",
     ctaLabel: "Explore Our Services",
     ctaHref: "/services",
@@ -56,7 +56,10 @@ export const ABOUT_PAGE_CONTENT = {
     eyebrow: "OUR PHILOSOPHY",
     heading: "The Principles That Guide Us.",
     supportingText:
-      "Four foundational design principles guide how we curate, scale, and print artwork across architectural interiors.",
+      "A considered approach to surface design — where creativity, material understanding, and spatial balance come together.",
+    ctaLabel: "View Our Approach",
+    ctaHref: "/process",
+    archVisualUrl: "/images/atelier/about-philosophy-arch-alcove.jpg",
     themes: [
       {
         code: "01",
@@ -70,14 +73,14 @@ export const ABOUT_PAGE_CONTENT = {
         icon: "layers" as const,
         title: "Material Awareness",
         description:
-          "Artwork should respond to the characteristics of the surface—across walls, tiles, plywood, blinds, metals, and glass.",
+          "Artwork should respond to the characteristics of the surface.",
       },
       {
         code: "03",
         icon: "cube" as const,
         title: "Spatial Harmony",
         description:
-          "Art, scale, color, and placement should work with the surrounding architecture.",
+          "Art, scale, color, and placement should work with the architecture.",
       },
       {
         code: "04",
@@ -87,6 +90,29 @@ export const ABOUT_PAGE_CONTENT = {
           "Thoughtful visual expression can give ordinary spaces a distinctive identity.",
       },
     ],
+  },
+  peopleBehindStudio: {
+    eyebrow: "THE PEOPLE BEHIND THE STUDIO",
+    supportingText:
+      "A Mumbai studio crafting bespoke murals and direct-to-surface prints with care.",
+    representativeWorkspaces: [
+      {
+        imageUrl: "/images/atelier/about/about-person-saikat-ray.webp",
+        shortRole: "Project Direction",
+        alt: "Saikat Ray — Project Direction at ATELIER — WALL STORY, seated at a sunlit studio consultation desk with travertine samples and architectural elevation plans",
+      },
+      {
+        imageUrl: "/images/atelier/about/about-person-triparna-bardhan.webp",
+        shortRole: "Creative Coordination",
+        alt: "Triparna Bardhan — Creative Coordination at ATELIER — WALL STORY, reviewing mural pigment swatches and a botanical sketchbook in the sunlit Mumbai studio",
+      },
+    ],
+    mumbaiStudio: {
+      eyebrow: "OUR MUMBAI STUDIO",
+      conceptImageUrl: "/images/atelier/about-mumbai-studio-concept.jpg",
+      conceptAlt:
+        "Conceptual luxury Mumbai wall-art studio interior featuring a warm plaster archway, olive tree, curved bouclé seating, and direct-printed terracotta and sage botanical mural",
+    },
   },
   advantageRibbon: {
     eyebrow: "THE ATELIER ADVANTAGE",
@@ -117,32 +143,33 @@ export const ABOUT_PAGE_CONTENT = {
     eyebrow: "OUR CREATIVE EVOLUTION",
     heading: "A Growing Wall Story.",
     supportingText:
-      "Rather than a conventional print shop, ATELIER — WALL STORY brings together curation, multi-surface craft, and spatial visualization.",
+      "A continuous journey of design, technology, and material exploration — expanding what walls can express.",
+    alcoveImageUrl: "/images/atelier/about-evolution-plaster-alcove.png",
     pillars: [
       {
         code: "01",
         label: "Architectural Vision",
-        summary: "Studio founded in Mumbai around expressive wall art",
+        summary: "Studio founded in Mumbai around expressive wall art.",
       },
       {
         code: "02",
         label: "6 Printable Surfaces",
-        summary: "Expanded to walls, tiles, plywood, blinds, metals & glass",
+        summary: "Expanded to walls, tiles, plywood, blinds, metals & glass.",
       },
       {
         code: "03",
         label: "13 Design Categories",
-        summary: "Curated botanical, textured, architectural & mineral collections",
+        summary: "Curated botanical, textured, architectural & mineral collections.",
       },
       {
         code: "04",
         label: "Wall Visualizer",
-        summary: "Interactive room preview for confident scale & placement",
+        summary: "Interactive room preview for confident scale & placement.",
       },
       {
         code: "05",
         label: "Bespoke Spaces",
-        summary: "Continuing to craft expressive residential & commercial walls",
+        summary: "Continuing to craft expressive residential & commercial walls.",
       },
     ],
   },
@@ -151,9 +178,9 @@ export const ABOUT_PAGE_CONTENT = {
     governanceNotice:
       "Guided by architectural restraint, tactile materiality, and bespoke visual storytelling across six distinct interior substrates.",
     mission: {
-      label: "Our Mission",
+      label: "OUR MISSION",
       title: "Bringing Expressive Art Directly to Architectural Surfaces",
-      body: "To transform everyday residential and commercial spaces in Mumbai through direct-to-surface 3D wall printing, thoughtful design curation, and multi-material craftsmanship across walls, tiles, plywood, office blinds, metals, and glass.",
+      body: "Transforming residential and commercial spaces through curated design and multi-surface craftsmanship.",
     },
     vision: {
       label: "Our Vision",
@@ -515,12 +542,12 @@ const RAW_EDITORIAL_FIXTURES: ReadonlyArray<
       "How direct vertical printing transforms prepared walls into seamless murals and conceptual art without pasted wallpaper joints or framing.",
     coverImage: {
       publicId: "blogs/fixture-01-cover",
-      secureUrl: "/images/atelier/artwork-terracotta-wave.jpg",
+      secureUrl: "/images/atelier/journal/journal-direct-to-surface-printing-cover.webp",
       resourceType: "image",
       width: 1600,
       height: 1000,
       format: "jpg",
-      altText: "Architectural terracotta wave relief wall print in a modern living space",
+      altText: "Vertical wall-printing rig three-quarters through a sepia and sage landscape mural in a residential living room",
     },
     sections: [
       {
@@ -530,8 +557,8 @@ const RAW_EDITORIAL_FIXTURES: ReadonlyArray<
           "Direct-to-surface 3D wall printing approaches the vertical plane differently. By printing directly onto the prepared wall surface itself, the artwork becomes part of the room's architecture—respecting ceiling heights, reveals, and ambient light.",
         ],
         figure: {
-          imageUrl: "/images/atelier/artwork-arch-limestone.jpg",
-          altText: "Limestone arch trompe-l'oeil wall mural in a warm living room",
+          imageUrl: "/images/atelier/journal/journal-seamless-wall-detail.webp",
+          altText: "One continuous ochre and charcoal artwork wrapping seamlessly around a window reveal and outside corner",
           caption:
             "Architectural Elevation Study — Balancing Warm Limestone Tones with Sculpted Depth.",
         },
@@ -565,7 +592,7 @@ const RAW_EDITORIAL_FIXTURES: ReadonlyArray<
         "Direct-to-Surface 3D Wall Printing & Interior Architecture | ATELIER — WALL STORY",
       metaDescription:
         "Explore how direct-to-surface 3D wall printing brings seamless murals and conceptual wall art to interior spaces in Mumbai.",
-      ogImageUrl: "/images/atelier/artwork-terracotta-wave.jpg",
+      ogImageUrl: "/images/atelier/journal/journal-direct-to-surface-printing-cover.webp",
     },
   },
   {
@@ -579,12 +606,12 @@ const RAW_EDITORIAL_FIXTURES: ReadonlyArray<
       "A closer look at the six confirmed substrates supported by ATELIER — WALL STORY—and how multi-surface printing unifies residential and commercial interiors.",
     coverImage: {
       publicId: "blogs/fixture-02-cover",
-      secureUrl: "/images/atelier/surface-tiles-interior.jpg",
+      secureUrl: "/images/atelier/journal/journal-six-surfaces-cover.webp",
       resourceType: "image",
       width: 1600,
       height: 1000,
       format: "jpg",
-      altText: "Multi-surface ceramic tile and travertine print study",
+      altText: "Plaster, tile, plywood, blind fabric, metal and glass samples each printed with the same sage leaf motif",
     },
     sections: [
       {
@@ -594,8 +621,8 @@ const RAW_EDITORIAL_FIXTURES: ReadonlyArray<
           "When surface art is restricted to paper or canvas, these materials remain visually disconnected. Direct multi-surface printing allows a curated visual language to flow across all six substrates.",
         ],
         figure: {
-          imageUrl: "/images/atelier/surface-plywood-metal-interior.jpg",
-          altText: "Plywood and brushed metal printed wall panels",
+          imageUrl: "/images/atelier/journal/journal-surface-continuity.webp",
+          altText: "One terracotta botanical artwork flowing from plaster wall across tiled backsplash onto plywood cabinets",
           caption:
             "Multi-Surface Study — Coordinating Wall, Tile, and Plywood Elevations.",
         },
@@ -619,7 +646,7 @@ const RAW_EDITORIAL_FIXTURES: ReadonlyArray<
         "Six Architectural Surfaces for 3D Printing | ATELIER — WALL STORY",
       metaDescription:
         "Discover how ATELIER — WALL STORY prints directly onto walls, tiles, plywood, office blinds, metals, and glass.",
-      ogImageUrl: "/images/atelier/surface-tiles-interior.jpg",
+      ogImageUrl: "/images/atelier/journal/journal-six-surfaces-cover.webp",
     },
   },
   {
@@ -633,12 +660,12 @@ const RAW_EDITORIAL_FIXTURES: ReadonlyArray<
       "How to decide whether your elevation calls for a singular narrative mural or a rhythmic architectural pattern—and how to test both on your wall.",
     coverImage: {
       publicId: "blogs/fixture-03-cover",
-      secureUrl: "/images/atelier/artwork-botanical-canopy.jpg",
+      secureUrl: "/images/atelier/journal/journal-murals-vs-patterns-cover.webp",
       resourceType: "image",
       width: 1600,
       height: 1000,
       format: "jpg",
-      altText: "Botanical Canopy mural in a sunlit dining space",
+      altText: "Two adjoining rooms contrasting a full-wall misty landscape mural with a small repeating geometric pattern",
     },
     sections: [
       {
@@ -667,7 +694,7 @@ const RAW_EDITORIAL_FIXTURES: ReadonlyArray<
         "Full-Wall Murals vs. Repeating Architectural Patterns | ATELIER — WALL STORY",
       metaDescription:
         "Learn how to choose between bespoke murals and repeating patterns for your wall or surface print.",
-      ogImageUrl: "/images/atelier/artwork-botanical-canopy.jpg",
+      ogImageUrl: "/images/atelier/journal/journal-murals-vs-patterns-cover.webp",
     },
   },
   {
@@ -681,12 +708,12 @@ const RAW_EDITORIAL_FIXTURES: ReadonlyArray<
       "Transforming functional commercial glazing and window blinds into refined architectural statements for Mumbai studios and boardrooms.",
     coverImage: {
       publicId: "blogs/fixture-04-cover",
-      secureUrl: "/images/atelier/surface-office-blinds-interior.jpg",
+      secureUrl: "/images/atelier/journal/journal-expressive-workspaces-cover.webp",
       resourceType: "image",
       width: 1600,
       height: 1000,
       format: "jpg",
-      altText: "Panoramic printed office roller blinds in an executive studio",
+      altText: "Office floor with printed frosted glass meeting-room partitions and printed roller blinds along the windows",
     },
     sections: [
       {
@@ -709,7 +736,7 @@ const RAW_EDITORIAL_FIXTURES: ReadonlyArray<
         "Printed Office Blinds & Glass Partitions for Workspaces | ATELIER — WALL STORY",
       metaDescription:
         "Explore how direct surface printing transforms office blinds and glass partitions in modern workspaces.",
-      ogImageUrl: "/images/atelier/surface-office-blinds-interior.jpg",
+      ogImageUrl: "/images/atelier/journal/journal-expressive-workspaces-cover.webp",
     },
   },
   {
@@ -723,12 +750,12 @@ const RAW_EDITORIAL_FIXTURES: ReadonlyArray<
       "An overview of how ATELIER — WALL STORY organizes 13 curated design categories on one page and connects them to interactive wall previews.",
     coverImage: {
       publicId: "blogs/fixture-05-cover",
-      secureUrl: "/images/atelier/wall-preview-after.jpg",
+      secureUrl: "/images/atelier/journal/journal-catalogue-visualizer-cover.webp",
       resourceType: "image",
       width: 1600,
       height: 1000,
       format: "jpg",
-      altText: "Living room wall mural preview representing the 13-category catalogue",
+      altText: "Tablet on a stand previewing a botanical mural over the blank living-room wall behind it",
     },
     sections: [
       {
@@ -751,7 +778,7 @@ const RAW_EDITORIAL_FIXTURES: ReadonlyArray<
         "Unified 13-Category Catalogue & Wall Visualizer | ATELIER — WALL STORY",
       metaDescription:
         "How ATELIER — WALL STORY connects 13 design categories with live wall visualization and direct Mumbai studio consultations.",
-      ogImageUrl: "/images/atelier/wall-preview-after.jpg",
+      ogImageUrl: "/images/atelier/journal/journal-catalogue-visualizer-cover.webp",
     },
   },
 ];

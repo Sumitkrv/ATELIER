@@ -5,7 +5,6 @@ import React, {
   useCallback,
   useEffect,
   useMemo,
-  useRef,
   useState,
 } from "react";
 import Image from "next/image";
@@ -13,9 +12,11 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { PublicShell } from "@/components/layout/PublicShell";
 import { Container } from "@/components/layout/Container";
+import { FadeUp } from "@/components/motion/Reveal";
 import { AtelierCategoryExplorer } from "@/components/designs/AtelierCategoryExplorer";
 import { CategoryDesignsPopupModal } from "@/components/designs/CategoryDesignsPopupModal";
 import { DesignPreviewModal } from "@/components/designs/DesignPreviewModal";
+import { TabletVisualizerShowcase } from "@/components/services/TabletVisualizerShowcase";
 import {
   AtelierVaultCategoryItem,
   buildAtelierVaultCategories,
@@ -33,9 +34,6 @@ import {
 } from "@/lib/visualizer-bridge";
 import {
   ArrowRight,
-  Box,
-  ChevronLeft,
-  ChevronRight,
   Layers,
   PenTool,
   Play,
@@ -175,11 +173,6 @@ function ExploreDesignsWorkspace() {
     );
   }
 
-  // Interactive Before/After wall comparison slider state (0 to 100)
-  const [comparisonSliderPos, setComparisonSliderPos] = useState<number>(50);
-  const [isDraggingSlider, setIsDraggingSlider] = useState<boolean>(false);
-  const comparisonContainerRef = useRef<HTMLDivElement | null>(null);
-
   // Helper to update shareable URL query parameters without full page reload
   const syncUrlParams = useCallback(
     (
@@ -289,45 +282,6 @@ function ExploreDesignsWorkspace() {
     router.push(href);
   };
 
-  // Before / After Slider Pointer Calculation
-  const updateSliderFromClientX = useCallback((clientX: number) => {
-    const container = comparisonContainerRef.current;
-    if (!container) return;
-    const rect = container.getBoundingClientRect();
-    if (rect.width <= 0) return;
-    const rawPct = ((clientX - rect.left) / rect.width) * 100;
-    const clamped = Math.max(0, Math.min(100, rawPct));
-    setComparisonSliderPos(clamped);
-  }, []);
-
-  useEffect(() => {
-    if (!isDraggingSlider) return;
-
-    const handleMouseMove = (e: MouseEvent) => {
-      updateSliderFromClientX(e.clientX);
-    };
-    const handleTouchMove = (e: TouchEvent) => {
-      if (e.touches[0]) {
-        updateSliderFromClientX(e.touches[0].clientX);
-      }
-    };
-    const handleUp = () => {
-      setIsDraggingSlider(false);
-    };
-
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("touchmove", handleTouchMove, { passive: true });
-    window.addEventListener("mouseup", handleUp);
-    window.addEventListener("touchend", handleUp);
-
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("touchmove", handleTouchMove);
-      window.removeEventListener("mouseup", handleUp);
-      window.removeEventListener("touchend", handleUp);
-    };
-  }, [isDraggingSlider, updateSliderFromClientX]);
-
   const handleScrollToCollection = useCallback(
     (e: React.MouseEvent<HTMLAnchorElement>) => {
       const target = document.getElementById("atelier-art-vault");
@@ -359,7 +313,7 @@ function ExploreDesignsWorkspace() {
 
         {/* 1 & 2. LEFT EDITORIAL CONTENT (First in DOM for semantic mobile-first order: Heading -> CTAs -> Image) */}
         <Container className="relative z-10 w-full">
-          <div className="flex flex-col justify-center pt-7 pb-6 sm:pt-10 sm:pb-8 lg:w-[43%] lg:max-w-[500px] lg:py-12 xl:w-[41%] xl:max-w-[520px]">
+          <FadeUp className="flex flex-col justify-center pt-7 pb-6 sm:pt-10 sm:pb-8 lg:w-[43%] lg:max-w-[500px] lg:py-12 xl:w-[41%] xl:max-w-[520px]">
             {/* Eyebrow */}
             <div className="inline-flex items-center gap-3">
               <span className="h-[1.5px] w-7 bg-[#9B1C1C]" />
@@ -403,7 +357,7 @@ function ExploreDesignsWorkspace() {
                 <span>{EXPLORE_DESIGNS_HERO_CONTENT.secondaryCtaLabel}</span>
               </Link>
             </div>
-          </div>
+          </FadeUp>
         </Container>
 
         {/* 3. RIGHT ARCHITECTURAL PHOTOGRAPHY (66–68% on Desktop for full vertical & horizontal room framing, full native aspect below CTAs on Mobile/Tablet) */}
@@ -449,158 +403,11 @@ function ExploreDesignsWorkspace() {
         isModalOpen={Boolean(activePopupCategory || selectedDesign)}
       />
 
-      {/* 03. INTERACTIVE WALL VISUALIZER SECTION — "See It on Your Wall" (Section 11) */}
-      <section className="relative overflow-hidden border-t border-[#DDD2C5] bg-[#F2EBE2] py-14 text-[#211D1A] sm:py-20">
-        <Container>
-          <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-12">
-            {/* Left Description & CTA */}
-            <div className="lg:col-span-5">
-              <div className="inline-flex items-center gap-3">
-                <span className="h-[1.5px] w-7 bg-[#9B1C1C]" />
-                <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#9B1C1C]">
-                  INTERACTIVE PREVIEW
-                </span>
-              </div>
-
-              <h2 className="mt-3 font-serif text-4xl font-medium leading-[1.1] text-[#211D1A] sm:text-5xl">
-                See It on Your Wall
-              </h2>
-
-              <p className="mt-4 max-w-md text-[14.5px] leading-relaxed text-[#6F665E]">
-                Visualize any design in your own space with our interactive wall
-                visualizer — map your wall, adjust scale, and explore how it
-                looks in real time.
-              </p>
-
-              {/* Quick slider preset controls for instant 0% / 50% / 100% comparison */}
-              <div className="mt-5 flex items-center gap-2">
-                <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6F665E]">
-                  Compare:
-                </span>
-                {[
-                  { label: "Before (0%)", value: 100 },
-                  { label: "Split (50%)", value: 50 },
-                  { label: "After (100%)", value: 0 },
-                ].map((preset) => {
-                  const isActivePreset =
-                    Math.abs(comparisonSliderPos - preset.value) <= 6;
-                  return (
-                    <button
-                      key={preset.label}
-                      type="button"
-                      onClick={() => setComparisonSliderPos(preset.value)}
-                      className={`rounded-full border px-3 py-1 text-[11px] font-medium transition-colors ${
-                        isActivePreset
-                          ? "border-[#9B1C1C] bg-[#9B1C1C] text-[#FBF8F3]"
-                          : "border-[#DDD2C5] bg-[#FBF8F3] text-[#6F665E] hover:border-[#9B1C1C]/45 hover:text-[#211D1A]"
-                      }`}
-                    >
-                      {preset.label}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div className="mt-7">
-                <Link
-                  href="/visualizer"
-                  className="inline-flex h-12 items-center gap-2.5 rounded-xl bg-[#9B1C1C] px-6 text-[13px] font-medium text-[#FBF8F3] shadow-md transition-all duration-200 hover:bg-[#73171B] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9B1C1C]"
-                >
-                  <Box className="h-4 w-4" />
-                  <span>Open Wall Visualizer</span>
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </div>
-            </div>
-
-            {/* Right Interactive Draggable Before / After Comparison Slider */}
-            <div className="lg:col-span-7">
-              <div
-                ref={comparisonContainerRef}
-                onMouseDown={(e) => {
-                  setIsDraggingSlider(true);
-                  updateSliderFromClientX(e.clientX);
-                }}
-                onTouchStart={(e) => {
-                  setIsDraggingSlider(true);
-                  if (e.touches[0]) {
-                    updateSliderFromClientX(e.touches[0].clientX);
-                  }
-                }}
-                role="slider"
-                tabIndex={0}
-                aria-label="Before and after wall mural comparison slider"
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-valuenow={Math.round(comparisonSliderPos)}
-                onKeyDown={(e) => {
-                  if (e.key === "ArrowLeft") {
-                    e.preventDefault();
-                    setComparisonSliderPos((prev) => Math.max(0, prev - 5));
-                  } else if (e.key === "ArrowRight") {
-                    e.preventDefault();
-                    setComparisonSliderPos((prev) => Math.min(100, prev + 5));
-                  } else if (e.key === "Home") {
-                    e.preventDefault();
-                    setComparisonSliderPos(0);
-                  } else if (e.key === "End") {
-                    e.preventDefault();
-                    setComparisonSliderPos(100);
-                  }
-                }}
-                className="relative aspect-[4/3] sm:aspect-[16/10] w-full cursor-ew-resize select-none overflow-hidden rounded-2xl border-2 border-[#DDD2C5] bg-[#EBE3D8] shadow-[0_20px_50px_rgba(33,29,26,0.10)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#9B1C1C]"
-              >
-                {/* AFTER Layer (Full width underneath - 100% matched room composition) */}
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/images/atelier/wall-preview-matched-after.jpg"
-                  alt="Living room plaster wall after custom Atelier architectural arch mural installation"
-                  draggable={false}
-                  className="h-full w-full object-cover object-center"
-                />
-
-                {/* BEFORE Layer (Clipped from left to comparisonSliderPos%) */}
-                <div
-                  className="absolute inset-0 overflow-hidden"
-                  style={{
-                    clipPath: `inset(0 ${100 - comparisonSliderPos}% 0 0)`,
-                  }}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src="/images/atelier/wall-preview-before.jpg"
-                    alt="Living room blank plaster wall before mural printing"
-                    draggable={false}
-                    className="h-full w-full object-cover object-center"
-                  />
-                </div>
-
-                {/* Vertical Divider & Circular Handle */}
-                <div
-                  className="pointer-events-none absolute inset-y-0 z-20 w-[2px] bg-white/95 shadow-[0_0_12px_rgba(0,0,0,0.45)]"
-                  style={{ left: `${comparisonSliderPos}%` }}
-                >
-                  <div className="absolute left-1/2 top-1/2 flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-[#DED5CB] bg-[#FDF8F3] text-[#201C1A] shadow-lg">
-                    <ChevronLeft className="-mr-1 h-3.5 w-3.5" />
-                    <ChevronRight className="-ml-1 h-3.5 w-3.5" />
-                  </div>
-                </div>
-
-                {/* Before / After Pill Badges */}
-                <span className="pointer-events-none absolute bottom-3.5 left-4 z-10 rounded-full bg-[#FDF8F3]/95 px-3.5 py-1 text-xs font-semibold text-[#201C1A] shadow-sm">
-                  Before • Blank Plaster Wall
-                </span>
-                <span className="pointer-events-none absolute bottom-3.5 right-4 z-10 rounded-full bg-[#991D20]/95 px-3.5 py-1 text-xs font-semibold text-[#F8F3ED] shadow-sm">
-                  After • Atelier Arch Mural
-                </span>
-              </div>
-            </div>
-          </div>
-        </Container>
-      </section>
+      {/* 03. INTERACTIVE WALL VISUALIZER SHOWCASE — "See It on Your Wall." */}
+      <TabletVisualizerShowcase />
 
       {/* 04. CUSTOM WALL ART COMMISSION SECTION — "Need Something Unique?" (Section 12) */}
-      <section className="border-t border-[#DED5CB] bg-[#F8F3ED] py-12 sm:py-16">
+      <section className="bg-[#F8F3ED] py-12 sm:py-16">
         <Container>
           <div className="grid grid-cols-1 items-center gap-8 lg:grid-cols-12">
             {/* Heading */}

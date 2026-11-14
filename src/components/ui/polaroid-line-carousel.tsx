@@ -141,8 +141,11 @@ export const PolaroidLineCarousel = forwardRef<
     vel: number;
     angles: number[];
     angVels: number[];
+    isPointerDown: boolean;
+    hasCaptured: boolean;
     isDragging: boolean;
     dragStartX: number;
+    dragStartY: number;
     dragStartPos: number;
     lastPointerX: number;
     lastPointerTime: number;
@@ -159,8 +162,11 @@ export const PolaroidLineCarousel = forwardRef<
     vel: 0,
     angles: Array.from({ length: Math.max(count, 5) }, () => 0),
     angVels: Array.from({ length: Math.max(count, 5) }, () => 0),
+    isPointerDown: false,
+    hasCaptured: false,
     isDragging: false,
     dragStartX: 0,
+    dragStartY: 0,
     dragStartPos: initialIdx,
     lastPointerX: 0,
     lastPointerTime: 0,
@@ -508,37 +514,60 @@ export const PolaroidLineCarousel = forwardRef<
     return () => window.clearInterval(timer);
   }, [autoplay, count, prefersReducedMotion]);
 
-  // Pointer drag handlers on the stage
+  // Pointer drag handlers on the stage (defers pointer capture until horizontal drag > 7px so tapping Polaroid buttons works natively)
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (count <= 1) return;
+    if (e.pointerType === "mouse" && e.button !== 0) return;
     // Ignore clicks on explicit control buttons
     const targetEl = e.target as HTMLElement;
     if (targetEl.closest("[data-carousel-control='true']")) return;
 
     const p = physicsRef.current;
-    p.isDragging = true;
+    p.isPointerDown = true;
+    p.hasCaptured = false;
+    p.isDragging = false;
     p.dragStartX = e.clientX;
+    p.dragStartY = e.clientY;
     p.dragStartPos = p.pos;
     p.lastPointerX = e.clientX;
     p.lastPointerTime = performance.now();
     p.pointerVelocityPx = 0;
     p.dragMovedPx = 0;
     p.lastInteractionTime = performance.now();
-    setIsDraggingUI(true);
-
-    try {
-      e.currentTarget.setPointerCapture(e.pointerId);
-    } catch {
-      // Safe fallback if pointer capture is unsupported
-    }
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     const p = physicsRef.current;
-    if (!p.isDragging) return;
+    if (!p.isPointerDown) return;
 
     const now = performance.now();
     const dxTotal = e.clientX - p.dragStartX;
+    const dyTotal = e.clientY - p.dragStartY;
+
+    if (!p.isDragging) {
+      // Allow vertical touch scrolling without interference
+      if (
+        e.pointerType !== "mouse" &&
+        Math.abs(dyTotal) > 10 &&
+        Math.abs(dyTotal) > Math.abs(dxTotal) * 1.15
+      ) {
+        p.isPointerDown = false;
+        return;
+      }
+      if (Math.abs(dxTotal) < 7) {
+        return;
+      }
+      p.isDragging = true;
+      p.dragStartPos = p.pos;
+      setIsDraggingUI(true);
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId);
+        p.hasCaptured = true;
+      } catch {
+        // Safe fallback if pointer capture is unsupported
+      }
+    }
+
     const dxStep = e.clientX - p.lastPointerX;
     const dtStep = Math.max(1, now - p.lastPointerTime);
 
@@ -548,7 +577,11 @@ export const PolaroidLineCarousel = forwardRef<
     p.lastPointerTime = now;
     p.lastInteractionTime = now;
 
-    const indexDelta = -dxTotal / Math.max(180, effectiveSpacing);
+    const dragDistanceScale =
+      stageDims.width < 640
+        ? Math.max(135, effectiveSpacing * 0.78)
+        : Math.max(180, effectiveSpacing);
+    const indexDelta = -dxTotal / dragDistanceScale;
     p.targetPos = p.dragStartPos + indexDelta;
 
     // Live-sync active stage while dragging across centres
@@ -562,24 +595,44 @@ export const PolaroidLineCarousel = forwardRef<
 
   const finishDrag = (e: React.PointerEvent<HTMLDivElement>) => {
     const p = physicsRef.current;
-    if (!p.isDragging) return;
+    if (!p.isPointerDown && !p.isDragging) return;
+    p.isPointerDown = false;
+
+    if (!p.isDragging) {
+      return;
+    }
 
     p.isDragging = false;
     p.lastInteractionTime = performance.now();
     setIsDraggingUI(false);
 
-    try {
-      if (e.currentTarget.hasPointerCapture(e.pointerId)) {
-        e.currentTarget.releasePointerCapture(e.pointerId);
+    if (p.hasCaptured) {
+      p.hasCaptured = false;
+      try {
+        if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+          e.currentTarget.releasePointerCapture(e.pointerId);
+        }
+      } catch {
+        // Ignore
       }
-    } catch {
-      // Ignore
     }
 
     // Apply momentum throw based on release velocity
+    const dragDistanceScale =
+      stageDims.width < 640
+        ? Math.max(135, effectiveSpacing * 0.78)
+        : Math.max(180, effectiveSpacing);
     const velocityIndexThrow =
-      (-p.pointerVelocityPx * 220) / Math.max(180, effectiveSpacing);
-    const snappedVirtual = Math.round(p.targetPos + velocityIndexThrow);
+      (-p.pointerVelocityPx * 220) / dragDistanceScale;
+    let snappedVirtual = Math.round(p.targetPos + velocityIndexThrow);
+
+    // Ensure decisive short horizontal flicks on mobile advance at least one Polaroid
+    const totalDx = e.clientX - p.dragStartX;
+    const startRounded = Math.round(p.dragStartPos);
+    if (snappedVirtual === startRounded && Math.abs(totalDx) >= 36) {
+      snappedVirtual = startRounded + (totalDx < 0 ? 1 : -1);
+    }
+
     p.targetPos = snappedVirtual;
 
     const wrapped = wrapIndex(snappedVirtual, count);
@@ -642,6 +695,7 @@ export const PolaroidLineCarousel = forwardRef<
         height,
         backgroundColor: background,
         color: ink,
+        touchAction: "pan-y",
       }}
       className={cn(
         "relative w-full overflow-hidden select-none rounded-[26px] border border-[#DED5CB] shadow-[inset_0_1px_0_rgba(255,255,255,0.65)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9B1C1C]",
@@ -880,8 +934,11 @@ export const PolaroidLineCarousel = forwardRef<
             <ChevronLeft className="h-4 w-4" />
           </button>
 
-          <div className="hidden items-center gap-2 rounded-full border border-[#DDD2C4] bg-[#FAF9F6]/88 px-3.5 py-1 text-[10px] font-semibold tracking-[0.2em] text-[#5C534C] uppercase shadow-2xs backdrop-blur-md sm:inline-flex">
-            <span>Drag String or Click Print to Explore</span>
+          <div className="inline-flex items-center gap-2 rounded-full border border-[#DDD2C4] bg-[#FAF9F6]/88 px-3 py-1 text-[9.5px] font-semibold tracking-[0.16em] text-[#5C534C] uppercase shadow-2xs backdrop-blur-md sm:px-3.5 sm:text-[10px] sm:tracking-[0.2em]">
+            <span className="sm:hidden">Swipe or Tap Print</span>
+            <span className="hidden sm:inline">
+              Drag String or Click Print to Explore
+            </span>
           </div>
 
           <button

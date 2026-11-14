@@ -1,11 +1,13 @@
-import React from "react";
+import React, { Suspense } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { PublicShell } from "@/components/layout/PublicShell";
 import { BlogArticleDetailClient } from "@/components/blogs/BlogArticleDetailClient";
 import {
   DEVELOPMENT_BLOG_FIXTURES,
   findBlogBySlugOrId,
 } from "@/lib/blogs-catalogue";
+import { findStoredBlogBySlug } from "@/lib/cms-store";
 
 export async function generateStaticParams() {
   return DEVELOPMENT_BLOG_FIXTURES.map((post) => ({
@@ -19,7 +21,8 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const article = findBlogBySlugOrId(slug);
+  const article =
+    (await findStoredBlogBySlug(slug)) ?? findBlogBySlugOrId(slug);
   if (!article) {
     return {
       title: "Article Not Found | ATELIER — WALL STORY",
@@ -46,18 +49,37 @@ export async function generateMetadata({
   };
 }
 
-export default async function BlogArticleDetailPage({
+async function BlogArticleDetailResolved({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const article = findBlogBySlugOrId(slug);
+  const article =
+    (await findStoredBlogBySlug(slug)) ?? findBlogBySlugOrId(slug);
 
   if (!article) {
     notFound();
   }
 
   return <BlogArticleDetailClient article={article} />;
+}
+
+export default function BlogArticleDetailPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  return (
+    <Suspense
+      fallback={
+        <PublicShell>
+          <div className="min-h-[70svh] bg-[#FAF9F6]" />
+        </PublicShell>
+      }
+    >
+      <BlogArticleDetailResolved params={params} />
+    </Suspense>
+  );
 }
 

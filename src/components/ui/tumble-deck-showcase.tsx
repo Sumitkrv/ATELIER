@@ -6,8 +6,10 @@ import React, {
   useEffect,
   useLayoutEffect,
   useRef,
+  useState,
 } from "react";
 import gsap from "gsap";
+import { ChevronLeft, ChevronRight, MoveHorizontal } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 export interface TumbleCard {
@@ -135,7 +137,7 @@ function cardPose(cardIndex: number, pos: number, depth: number): CardPose {
 
 export function TumbleDeckShowcase({
   cards,
-  height = "calc(100svh - var(--atelier-navbar-offset, 4.75rem))",
+  height = "calc(100svh - var(--navbar-height, 74px))",
   aspect = 1.62,
   scrollPerCard = 240,
   depth = 5,
@@ -154,6 +156,8 @@ export function TumbleDeckShowcase({
   const linkRefs = useRef<Array<HTMLAnchorElement | null>>([]);
   const slotVirtualIndexRef = useRef<Array<number | undefined>>([]);
   const stateRef = useRef<{ pos: number }>({ pos: 0 });
+  const activeDisplayIdxRef = useRef<number>(0);
+  const [activeDisplayIdx, setActiveDisplayIdx] = useState<number>(0);
   const metricsRef = useRef<{
     h: number;
     w: number;
@@ -238,6 +242,12 @@ export function TumbleDeckShowcase({
       cardEl.dataset.frontActive =
         pose.contentOpacity > 0.6 ? "true" : "false";
     });
+
+    const nextActiveIdx = wrap(Math.round(pos), count);
+    if (nextActiveIdx !== activeDisplayIdxRef.current) {
+      activeDisplayIdxRef.current = nextActiveIdx;
+      setActiveDisplayIdx(nextActiveIdx);
+    }
   }, [cards, count, depth, poolSize]);
 
   useIsomorphicLayoutEffect(() => {
@@ -264,17 +274,20 @@ export function TumbleDeckShowcase({
           ? Math.min(cw - 64, 960)
           : Math.min(cw - 80, 1240);
 
+      const controlsReserve = isMobile ? 64 : 68;
+      const availableCh = Math.max(260, ch - controlsReserve);
+
       const h = isMobile
-        ? Math.max(250, Math.min(ch * 0.62, w * 0.85, 440))
-        : Math.max(280, Math.min(ch * 0.72, w * 0.56, 620));
+        ? Math.max(235, Math.min(availableCh * 0.68, w * 0.86, 420))
+        : Math.max(280, Math.min(availableCh * 0.76, w * 0.56, 600));
 
       const gapZ = h * 0.16;
       const stepY = h * 0.028;
 
       const stackCrown = h * 0.17;
       const top = Math.max(
-        stackCrown + 16,
-        (ch - (h + stackCrown)) / 2 + stackCrown
+        stackCrown + 14,
+        (availableCh - (h + stackCrown)) / 2 + stackCrown
       );
 
       metricsRef.current = { h, w, gapZ, stepY };
@@ -410,9 +423,13 @@ export function TumbleDeckShowcase({
     } | null = null;
 
     const onDown = (e: PointerEvent) => {
+      if (e.pointerType === "touch") return; // Handled cleanly via axis-locked touch events below
       if (e.button === 0) {
         const target = e.target as HTMLElement | null;
-        if (target?.closest("a.td-card-cta")) {
+        if (
+          target?.closest("a.td-card-cta") ||
+          target?.closest("[data-td-control]")
+        ) {
           return;
         }
         activePointer = {
@@ -428,6 +445,7 @@ export function TumbleDeckShowcase({
     };
 
     const onMove = (e: PointerEvent) => {
+      if (e.pointerType === "touch") return;
       if (!activePointer || e.pointerId !== activePointer.id) return;
       const dy = activePointer.y - e.clientY;
       const dx = activePointer.x - e.clientX;
@@ -457,6 +475,7 @@ export function TumbleDeckShowcase({
     };
 
     const onUp = (e: PointerEvent) => {
+      if (e.pointerType === "touch") return;
       if (!activePointer || e.pointerId !== activePointer.id) return;
       if (didDragRef.current) {
         if (reducedMotion) {
@@ -468,11 +487,100 @@ export function TumbleDeckShowcase({
       activePointer = null;
     };
 
+    // Axis-locked horizontal touch gestures so mobile swipes flip cards smoothly
+    // while vertical swipes scroll the page naturally without trapping or cancelling.
+    let touchGesture: {
+      startX: number;
+      startY: number;
+      lastX: number;
+      startTarget: number;
+      axis: "undecided" | "horizontal" | "vertical";
+    } | null = null;
+
+    const onTouchStart = (e: TouchEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (
+        !e.touches[0] ||
+        target?.closest("a.td-card-cta") ||
+        target?.closest("[data-td-control]")
+      ) {
+        touchGesture = null;
+        return;
+      }
+      clearTimeout(settleTimer);
+      didDragRef.current = false;
+      touchGesture = {
+        startX: e.touches[0].clientX,
+        startY: e.touches[0].clientY,
+        lastX: e.touches[0].clientX,
+        startTarget: targetPos,
+        axis: "undecided",
+      };
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (!touchGesture || !e.touches[0]) return;
+      const cx = e.touches[0].clientX;
+      const cy = e.touches[0].clientY;
+      const totalDx = cx - touchGesture.startX;
+      const totalDy = cy - touchGesture.startY;
+
+      if (touchGesture.axis === "undecided") {
+        if (Math.abs(totalDx) > 7 || Math.abs(totalDy) > 7) {
+          touchGesture.axis =
+            Math.abs(totalDx) >= Math.abs(totalDy) ? "horizontal" : "vertical";
+        }
+      }
+
+      if (touchGesture.axis === "vertical") {
+        touchGesture = null;
+        return;
+      }
+
+      if (touchGesture.axis === "horizontal") {
+        if (e.cancelable) {
+          e.preventDefault();
+        }
+        didDragRef.current = true;
+        touchGesture.lastX = cx;
+        if (!reducedMotion) {
+          const swipeSpan = Math.max(155, metricsRef.current.w * 0.56);
+          push(touchGesture.startTarget - totalDx / swipeSpan);
+        }
+      }
+    };
+
+    const onTouchEnd = () => {
+      if (!touchGesture) return;
+      const totalDx = touchGesture.lastX - touchGesture.startX;
+      const wasHorizontal = touchGesture.axis === "horizontal";
+      const baseCard = Math.round(touchGesture.startTarget);
+      touchGesture = null;
+
+      if (!wasHorizontal) return;
+
+      if (Math.abs(totalDx) >= 32) {
+        const stepDir = totalDx < 0 ? 1 : -1;
+        const snappedTarget = Math.round(targetPos);
+        if (snappedTarget === baseCard) {
+          push(baseCard + stepDir);
+        } else {
+          settle(stepDir);
+        }
+      } else {
+        settle(0);
+      }
+    };
+
     rootEl.addEventListener("wheel", onWheel, { passive: false });
     rootEl.addEventListener("pointerdown", onDown);
     rootEl.addEventListener("pointermove", onMove);
     rootEl.addEventListener("pointerup", onUp);
     rootEl.addEventListener("pointercancel", onUp);
+    rootEl.addEventListener("touchstart", onTouchStart, { passive: true });
+    rootEl.addEventListener("touchmove", onTouchMove, { passive: false });
+    rootEl.addEventListener("touchend", onTouchEnd);
+    rootEl.addEventListener("touchcancel", onTouchEnd);
 
     renderDeck();
 
@@ -484,6 +592,10 @@ export function TumbleDeckShowcase({
       rootEl.removeEventListener("pointermove", onMove);
       rootEl.removeEventListener("pointerup", onUp);
       rootEl.removeEventListener("pointercancel", onUp);
+      rootEl.removeEventListener("touchstart", onTouchStart);
+      rootEl.removeEventListener("touchmove", onTouchMove);
+      rootEl.removeEventListener("touchend", onTouchEnd);
+      rootEl.removeEventListener("touchcancel", onTouchEnd);
     };
   }, [count, renderDeck, scrollPerCard]);
 
@@ -504,7 +616,10 @@ export function TumbleDeckShowcase({
 
   const onClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement | null;
-    if (target?.closest("a.td-card-cta")) {
+    if (
+      target?.closest("a.td-card-cta") ||
+      target?.closest("[data-td-control]")
+    ) {
       return;
     }
     if (didDragRef.current) {
@@ -755,9 +870,61 @@ export function TumbleDeckShowcase({
           );
         })}
       </div>
+
+      {/* Interactive Prev / Next & Live Category Progress Bar */}
+      {count > 1 && (
+        <div
+          data-td-control="true"
+          className="pointer-events-none absolute inset-x-4 bottom-3.5 z-[240] flex items-center justify-center sm:bottom-5"
+        >
+          <div className="pointer-events-auto inline-flex items-center gap-2.5 rounded-full border border-[#DDD2C5] bg-[#FAF9F6]/92 px-2 py-1.5 shadow-[0_12px_30px_-10px_rgba(31,23,20,0.22)] backdrop-blur-md sm:gap-3.5 sm:px-2.5">
+            <button
+              type="button"
+              data-td-control="true"
+              onClick={(e) => {
+                e.stopPropagation();
+                controlsRef.current.step(-1);
+              }}
+              aria-label="Previous wall art category"
+              className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-[#DDD2C5] bg-[#FAF9F6] text-[#211D1A] transition-colors hover:border-[#9B1C1C] hover:bg-[#9B1C1C] hover:text-[#FAF9F6] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9B1C1C]"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+
+            <div className="flex items-center gap-2 px-1">
+              <MoveHorizontal className="h-3.5 w-3.5 text-[#9B1C1C] sm:hidden" />
+              <span className="font-mono text-[11px] font-semibold tracking-[0.18em] text-[#211D1A]">
+                {String(activeDisplayIdx + 1).padStart(2, "0")}{" "}
+                <span className="text-[#6F665E]/60">/</span>{" "}
+                <span className="text-[#9B1C1C]">
+                  {String(count).padStart(2, "0")}
+                </span>
+              </span>
+              <span className="hidden text-[10.5px] font-semibold tracking-[0.16em] text-[#6F665E] uppercase sm:inline">
+                • Swipe or Flip Categories
+              </span>
+            </div>
+
+            <button
+              type="button"
+              data-td-control="true"
+              onClick={(e) => {
+                e.stopPropagation();
+                controlsRef.current.step(1);
+              }}
+              aria-label="Next wall art category"
+              className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-[#DDD2C5] bg-[#FAF9F6] text-[#211D1A] transition-colors hover:border-[#9B1C1C] hover:bg-[#9B1C1C] hover:text-[#FAF9F6] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9B1C1C]"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
       <span className="sr-only" aria-live="polite">
-        {count} curated wall art categories. Scroll, drag, click or press the
-        arrow keys to flip through them.
+        Category {activeDisplayIdx + 1} of {count}:{" "}
+        {cards[activeDisplayIdx]?.title || "Wall Art Category"}. Swipe, scroll,
+        or use previous and next buttons to flip through all {count} categories.
       </span>
     </div>
   );

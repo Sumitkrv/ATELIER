@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { PublicShell } from "@/components/layout/PublicShell";
 import { Container } from "@/components/layout/Container";
+import { FadeUp, StaggerContainer, StaggerItem } from "@/components/motion/Reveal";
 import { ProcessPolaroidJourney } from "@/components/process/ProcessPolaroidJourney";
 import {
   ATELIER_CONTACTS,
@@ -150,7 +151,7 @@ export default function ProcessPage() {
             ================================================================ */}
         <section
           aria-labelledby="process-hero-heading"
-          className="relative overflow-hidden border-b border-[#DED5CB] bg-[#F5EFE6] lg:flex lg:min-h-[clamp(640px,calc(100svh-var(--navbar-height,74px)),860px)] lg:flex-col lg:justify-between"
+          className="relative overflow-hidden border-b border-[#DED5CB] bg-[#F5EFE6] py-7 sm:py-9 lg:py-8 xl:py-9"
         >
           {/* Subtle architectural compass contour arcs in upper-left background */}
           <div
@@ -162,11 +163,11 @@ export default function ProcessPage() {
             className="pointer-events-none absolute -top-16 left-[23%] hidden h-[430px] w-[430px] rounded-full border border-[#DFD4C6]/55 lg:block"
           />
 
-          {/* Upper Split Stage: Left Editorial Copy + Right Uncropped Room Interior */}
-          <div className="relative lg:flex lg:flex-1 lg:items-center">
-            {/* 1–4. LEFT EDITORIAL CONTENT (First in DOM for semantic mobile-first order) */}
-            <Container className="relative z-10 w-full">
-              <div className="flex flex-col justify-center pt-8 pb-6 sm:pt-11 sm:pb-8 lg:w-[43%] lg:max-w-[500px] lg:py-10 xl:w-[41%] xl:max-w-[520px]">
+          <Container className="relative z-10 lg:px-6 xl:px-10">
+            {/* Upper Split Stage: Left Editorial Copy + Right Uncropped Room Interior */}
+            <div className="grid grid-cols-1 items-center gap-7 sm:gap-8 lg:grid-cols-[minmax(0,0.44fr)_minmax(0,0.56fr)] lg:gap-8 xl:gap-10">
+              {/* 1–4. LEFT EDITORIAL CONTENT (First in DOM for semantic mobile-first order) */}
+              <FadeUp className="flex min-w-0 flex-col justify-center">
                 {/* Eyebrow */}
                 <div className="inline-flex items-center gap-3">
                   <span className="h-[1.5px] w-7 bg-[#9B1C1C]" />
@@ -178,12 +179,14 @@ export default function ProcessPage() {
                 {/* Main Editorial Headline */}
                 <h1
                   id="process-hero-heading"
-                  className="mt-4 font-serif text-[clamp(2.05rem,4.45vw,4.25rem)] leading-[1.04] font-semibold tracking-[-0.02em] text-[#1A1A1A] min-[360px]:text-[clamp(2.3rem,4.45vw,4.25rem)] sm:text-[clamp(2.5rem,4.45vw,4.25rem)]"
+                  className="mt-4 font-serif text-[clamp(2rem,4.45vw,3.75rem)] leading-[1.05] font-semibold tracking-[-0.02em] text-[#1A1A1A] min-[390px]:text-[clamp(2.3rem,4.45vw,3.75rem)] sm:text-[clamp(2.5rem,4.45vw,3.75rem)] lg:text-[clamp(2.35rem,3.8vw,3.75rem)]"
                 >
-                  <span className="block whitespace-nowrap">
+                  <span className="block min-[390px]:whitespace-nowrap">
                     From Idea to Wall,
                   </span>
-                  <span className="block whitespace-nowrap">A Thoughtful</span>
+                  <span className="block min-[390px]:whitespace-nowrap">
+                    A Thoughtful
+                  </span>
                   <em className="block font-serif italic font-semibold text-[#9B1C1C]">
                     Process.
                   </em>
@@ -212,48 +215,37 @@ export default function ProcessPage() {
 
                   <Link
                     href="/contact?intent=process"
-                    className="group inline-flex h-12 w-full items-center justify-center gap-2.5 rounded-xl border border-[#D4C5B4] bg-[#FAF9F6]/90 px-5 text-[13.5px] font-medium tracking-[0.01em] text-[#1A1A1A] shadow-2xs backdrop-blur-xs transition-all duration-200 hover:border-[#9B1C1C] hover:bg-[#FAF9F6] hover:text-[#9B1C1C] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9B1C1C] min-[430px]:w-auto"
+                    className="group inline-flex h-12 w-full items-center justify-center gap-2.5 rounded-xl border border-[#D4C5B4] bg-[#FAF9F6]/90 px-5 text-[13.5px] font-medium tracking-[0.01em] text-[#1A1A1A] transition-all duration-200 hover:border-[#9B1C1C] hover:bg-[#FAF9F6] hover:text-[#9B1C1C] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9B1C1C] min-[430px]:w-auto"
                   >
                     <Box className="h-4 w-4 text-[#1A1A1A] transition-colors group-hover:text-[#9B1C1C]" />
                     <span>Start Your Project</span>
                   </Link>
                 </div>
-              </div>
-            </Container>
+              </FadeUp>
 
-            {/* 5. RIGHT ARCHITECTURAL INTERIOR PHOTOGRAPHY (Crisp 1357/708 room region above the 5-stage bar so sofa, coffee table & rug are never covered and bottom blur strip is clipped) */}
-            <div className="relative w-full aspect-[1357/708] min-h-[235px] overflow-hidden lg:absolute lg:inset-y-0 lg:right-0 lg:aspect-auto lg:h-full lg:w-[70%] xl:w-[72%]">
-              <Image
-                src="/images/atelier/process-hero-idea-to-wall.jpg"
-                alt="Sunlit luxury living room framed by a sculptural cream plaster archway featuring a bespoke terracotta, sandstone, and muted olive botanical arch mural behind a curved bouclé sofa"
-                width={1357}
-                height={868}
-                priority
-                unoptimized
-                sizes="(max-width: 1023px) 100vw, 72vw"
-                className="h-[122.6%] w-full max-w-none object-cover object-[64%_0%] lg:object-[66%_0%] xl:object-[64%_0%]"
-              />
-
-              {/* Seamless left-to-right warm ivory gradient blend into editorial canvas */}
-              <div
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-y-0 left-0 hidden w-40 bg-gradient-to-r from-[#F5EFE6] via-[#F5EFE6]/84 via-45% to-transparent lg:block xl:w-52"
-              />
-
-              {/* Mobile/Tablet top feather blend from editorial copy into room photography */}
-              <div
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-x-0 top-0 h-8 bg-gradient-to-b from-[#F5EFE6] via-[#F5EFE6]/45 to-transparent lg:hidden"
-              />
+              {/* 5. RIGHT ARCHITECTURAL INTERIOR PHOTOGRAPHY (Full uncropped 1004x768 Venetian plaster archway & living room mural) */}
+              <FadeUp delay={0.05} className="min-w-0">
+                <div className="overflow-hidden rounded-2xl bg-[#EAE0D3] shadow-[0_22px_50px_-18px_rgba(34,24,16,0.22)]">
+                  <Image
+                    src="/images/atelier/process-hero-living-arch.jpg"
+                    alt="Sunlit luxury living room framed by a complete Venetian plaster archway featuring a bespoke terracotta, warm ochre, and muted olive botanical arch mural behind a curved cream bouclé sofa and travertine coffee table"
+                    width={1004}
+                    height={768}
+                    priority
+                    quality={92}
+                    sizes="(min-width: 1360px) 700px, (min-width: 1024px) 54vw, 94vw"
+                    className="block h-auto w-full"
+                  />
+                </div>
+              </FadeUp>
             </div>
-          </div>
 
-          {/* 6. SIGNATURE FIVE-STAGE PROCESS BAR (Docked cleanly below the room stage so furniture & floor have full breathing room) */}
-          <Container className="relative z-20 pb-6 pt-3 sm:pb-7 lg:pb-7 lg:pt-3">
-            <nav
-              aria-label="Five-stage process milestone shortcuts"
-              className="rounded-[22px] border border-[#DFD4C6] bg-[#F6F0E7]/92 px-5 py-4 shadow-[0_18px_46px_-18px_rgba(26,20,16,0.16)] backdrop-blur-md sm:px-7 sm:py-5 lg:px-8 lg:py-5"
-            >
+            {/* 6. SIGNATURE FIVE-STAGE PROCESS BAR */}
+            <FadeUp delay={0.08} className="mt-6 sm:mt-7 lg:mt-7">
+              <nav
+                aria-label="Five-stage process milestone shortcuts"
+                className="rounded-2xl bg-[#FAF6F0]/95 px-5 py-4 shadow-[0_18px_46px_-18px_rgba(26,20,16,0.16)] backdrop-blur-md sm:px-7 sm:py-5 lg:px-8 lg:py-5"
+              >
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5 lg:gap-3">
                 {HERO_PROCESS_MILESTONES.map((milestone, idx) => {
                   const Icon = milestone.icon;
@@ -319,7 +311,8 @@ export default function ProcessPage() {
                   );
                 })}
               </div>
-            </nav>
+              </nav>
+            </FadeUp>
           </Container>
         </section>
 
@@ -335,7 +328,7 @@ export default function ProcessPage() {
           className="border-b border-[#DED5CB] bg-[#F8F3ED] py-14 lg:py-18"
         >
           <Container>
-            <div className="grid grid-cols-1 items-center gap-8 rounded-[28px] border border-[#DED5CB] bg-[#FAF9F6] p-6 shadow-[0_16px_40px_rgba(32,28,26,0.05)] sm:p-8 lg:grid-cols-12 lg:gap-10">
+            <FadeUp className="grid grid-cols-1 items-center gap-8 rounded-[28px] border border-[#DED5CB] bg-[#FAF9F6] p-6 shadow-[0_16px_40px_rgba(32,28,26,0.05)] sm:p-8 lg:grid-cols-12 lg:gap-10">
               <div className="lg:col-span-7">
                 <div className="mb-2.5 flex items-center gap-3">
                   <span className="h-[1.5px] w-7 bg-[#9B1C1C]" />
@@ -358,11 +351,11 @@ export default function ProcessPage() {
                   approach from our very first conversation.
                 </p>
 
-                <div className="mt-6 grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+                <StaggerContainer className="mt-6 grid grid-cols-1 gap-3.5 sm:grid-cols-2">
                   {CONSULTATION_CHECKLIST.map((item) => {
                     const Icon = item.icon;
                     return (
-                      <div
+                      <StaggerItem
                         key={item.label}
                         className="flex items-start gap-3 rounded-xl border border-[#E5DACE] bg-[#F8F3ED] p-3.5"
                       >
@@ -380,18 +373,18 @@ export default function ProcessPage() {
                             {item.detail}
                           </p>
                         </div>
-                      </div>
+                      </StaggerItem>
                     );
                   })}
-                </div>
+                </StaggerContainer>
               </div>
 
               <div className="lg:col-span-5">
                 <div className="relative overflow-hidden rounded-[22px] border border-[#DED5CB] bg-[#1A1A1A] shadow-md">
                   <div className="aspect-[4/3.2] w-full">
                     <img
-                      src="/images/atelier/process-stage-01-consultation.jpg"
-                      alt="Architectural consultation table with material swatches, sketches, and surface samples"
+                      src="/images/atelier/process/process-brief-checklist.webp"
+                      alt="First-brief kit: a phone photo of a blank wall, tape measure, sketched wall outline, tile sample and fabric swatch"
                       className="h-full w-full object-cover object-center"
                     />
                   </div>
@@ -404,7 +397,7 @@ export default function ProcessPage() {
                   </div>
                 </div>
               </div>
-            </div>
+            </FadeUp>
           </Container>
         </section>
 
@@ -417,7 +410,7 @@ export default function ProcessPage() {
           className="relative overflow-hidden border-t border-[#DDD2C5] bg-[#EBE3D8] py-16 text-[#211D1A] lg:py-20"
         >
           <Container className="relative z-10">
-            <div className="grid grid-cols-1 items-center gap-8 rounded-[28px] border border-[#DDD2C5] bg-[#FBF8F3] p-8 shadow-[0_22px_50px_rgba(33,29,26,0.08)] sm:p-10 lg:grid-cols-12">
+            <FadeUp className="grid grid-cols-1 items-center gap-8 rounded-[28px] border border-[#DDD2C5] bg-[#FBF8F3] p-8 shadow-[0_22px_50px_rgba(33,29,26,0.08)] sm:p-10 lg:grid-cols-12">
               <div className="lg:col-span-7">
                 <div className="mb-3 flex items-center gap-2.5">
                   <span className="h-[1.5px] w-7 bg-[#9B1C1C]" />
@@ -484,7 +477,7 @@ export default function ProcessPage() {
                   <span>WhatsApp Studio</span>
                 </a>
               </div>
-            </div>
+            </FadeUp>
           </Container>
         </section>
       </div>

@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { Container } from "@/components/layout/Container";
 import { Button } from "@/components/ui/Button";
 import { FadeUp } from "@/components/motion/Reveal";
 import { ATELIER_SURFACES } from "@/lib/brand";
 import { DEFAULT_HOMEPAGE_CONTENT } from "@/lib/homepage-content";
 import { cn } from "@/lib/cn";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 
 const PHILOSOPHY_SURFACE_VISUALS: Record<
   string,
@@ -20,7 +20,7 @@ const PHILOSOPHY_SURFACE_VISUALS: Record<
   }
 > = {
   walls: {
-    imageUrl: "/images/atelier/artwork-terracotta-wave.jpg",
+    imageUrl: "/images/atelier/home/home-philosophy-walls.webp",
     objectPosition: "object-center",
     badge: "Surface 01 • Direct-to-Wall Printing",
     kicker: "3D Printing on Walls — Interior & Feature Walls",
@@ -28,7 +28,7 @@ const PHILOSOPHY_SURFACE_VISUALS: Record<
       "Bespoke 3D wall printing, architectural murals, and conceptual wall art printed directly onto prepared interior wall surfaces without seams.",
   },
   tiles: {
-    imageUrl: "/images/atelier/surface-tiles-interior.jpg",
+    imageUrl: "/images/atelier/home/home-philosophy-tiles.webp",
     objectPosition: "object-center",
     badge: "Surface 02 • Ceramic & Stone Tiles",
     kicker: "3D Printing on Tiles — Ceramic, Vitrified & Stone",
@@ -36,7 +36,7 @@ const PHILOSOPHY_SURFACE_VISUALS: Record<
       "Precision UV-cured 3D artwork printed directly across ceramic, vitrified, and natural stone tile elevations with crisp grout-line registration.",
   },
   plywood: {
-    imageUrl: "/images/atelier/surface-plywood-metal-interior.jpg",
+    imageUrl: "/images/atelier/home/home-philosophy-plywood.webp",
     objectPosition: "object-center",
     badge: "Surface 03 • Plywood & Timber Panels",
     kicker: "3D Printing on Plywood — Timber, Veneer & Millwork",
@@ -44,7 +44,7 @@ const PHILOSOPHY_SURFACE_VISUALS: Record<
       "Warm architectural graphics, botanical studies, and geometric reliefs printed directly onto birch plywood, veneers, and custom cabinetry.",
   },
   "office-blinds": {
-    imageUrl: "/images/atelier/surface-office-blinds-interior.jpg",
+    imageUrl: "/images/atelier/home/home-philosophy-blinds.webp",
     objectPosition: "object-center",
     badge: "Surface 04 • Bespoke Office Blinds",
     kicker: "3D Printing on Office Blinds — Roller & Architectural Shades",
@@ -52,7 +52,7 @@ const PHILOSOPHY_SURFACE_VISUALS: Record<
       "Continuous panoramic murals and subtle brand storytelling printed across architectural roller blinds for boardrooms and studios.",
   },
   metals: {
-    imageUrl: "/images/atelier/surface-metals-brushed-bronze.jpg",
+    imageUrl: "/images/atelier/home/home-philosophy-metals.webp",
     objectPosition: "object-center",
     badge: "Surface 05 • Brushed & Coated Metals",
     kicker: "3D Printing on Metals — Aluminum, Brass & Steel Panels",
@@ -60,7 +60,7 @@ const PHILOSOPHY_SURFACE_VISUALS: Record<
       "High-adhesion architectural line art and tonal surface compositions printed directly onto brushed bronze, aluminum, and steel cladding.",
   },
   glass: {
-    imageUrl: "/images/atelier/surface-glass-interior.jpg",
+    imageUrl: "/images/atelier/home/home-philosophy-glass.webp",
     objectPosition: "object-center",
     badge: "Surface 06 • Architectural Glass",
     kicker: "3D Printing on Glass — Partitions & Feature Glazing",
@@ -72,6 +72,20 @@ const PHILOSOPHY_SURFACE_VISUALS: Record<
 export function PhilosophySection() {
   const content = DEFAULT_HOMEPAGE_CONTENT;
   const [activeSurfaceId, setActiveSurfaceId] = useState<string | null>(null);
+  const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
+
+  const cycleSurface = (dir: 1 | -1) => {
+    const ids = ATELIER_SURFACES.map((s) => s.id);
+    if (!ids.length) return;
+    const currentIdx = activeSurfaceId ? ids.indexOf(activeSurfaceId) : -1;
+    const nextIdx =
+      currentIdx < 0
+        ? dir > 0
+          ? 0
+          : ids.length - 1
+        : (currentIdx + dir + ids.length) % ids.length;
+    setActiveSurfaceId(ids[nextIdx]);
+  };
 
   const activeVisual = activeSurfaceId
     ? PHILOSOPHY_SURFACE_VISUALS[activeSurfaceId]
@@ -98,7 +112,28 @@ export function PhilosophySection() {
           {/* Left Column (46%): Interactive Architectural Studio & Surface Visual */}
           <FadeUp>
             <div className="relative">
-              <div className="group relative h-[280px] w-full overflow-hidden rounded-2xl border border-[#DDD2C5] bg-[#EBE3D8] shadow-editorial min-[430px]:h-[320px] sm:h-[380px] lg:h-[495px] xl:h-[510px]">
+              <div
+                onTouchStart={(e) => {
+                  if (!e.touches[0]) return;
+                  swipeStartRef.current = {
+                    x: e.touches[0].clientX,
+                    y: e.touches[0].clientY,
+                  };
+                }}
+                onTouchEnd={(e) => {
+                  if (!swipeStartRef.current || !e.changedTouches[0]) return;
+                  const dx =
+                    e.changedTouches[0].clientX - swipeStartRef.current.x;
+                  const dy =
+                    e.changedTouches[0].clientY - swipeStartRef.current.y;
+                  swipeStartRef.current = null;
+                  if (Math.abs(dx) >= 38 && Math.abs(dx) > Math.abs(dy) * 1.2) {
+                    cycleSurface(dx < 0 ? 1 : -1);
+                  }
+                }}
+                style={{ touchAction: "pan-y" }}
+                className="group relative h-[280px] w-full overflow-hidden rounded-2xl border border-[#DDD2C5] bg-[#EBE3D8] shadow-editorial min-[430px]:h-[320px] sm:h-[380px] lg:h-[495px] xl:h-[510px]"
+              >
                 {/* Preload all 6 surface images + studio image for instant zero-flicker switching */}
                 {[
                   content.philosophy.visualPlaceholderUrl,
@@ -130,10 +165,31 @@ export function PhilosophySection() {
                   className="pointer-events-none absolute inset-0 z-20 bg-gradient-to-t from-brand-charcoal/65 via-transparent to-brand-charcoal/20"
                 />
 
-                {/* Top Studio / Surface Badge */}
-                <div className="absolute left-3.5 top-3.5 z-20 flex items-center gap-2 rounded-full border border-white/15 bg-brand-charcoal/85 px-3.5 py-1 text-[10px] font-medium uppercase tracking-wider text-brand-beige backdrop-blur-sm sm:left-4 sm:top-4">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#9B1C1C]" />
-                  <span>{currentBadge}</span>
+                {/* Top Studio / Surface Badge + Touch Prev/Next Switcher */}
+                <div className="absolute inset-x-3.5 top-3.5 z-20 flex items-center justify-between gap-2 sm:inset-x-4 sm:top-4">
+                  <div className="flex items-center gap-2 rounded-full border border-white/15 bg-brand-charcoal/85 px-3.5 py-1 text-[10px] font-medium uppercase tracking-wider text-brand-beige backdrop-blur-sm">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#9B1C1C]" />
+                    <span>{currentBadge}</span>
+                  </div>
+
+                  <div className="inline-flex items-center gap-1 rounded-full border border-white/15 bg-brand-charcoal/80 p-0.5 backdrop-blur-sm">
+                    <button
+                      type="button"
+                      onClick={() => cycleSurface(-1)}
+                      aria-label="Preview previous architectural surface"
+                      className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full text-brand-offwhite transition-colors hover:bg-brand-crimson"
+                    >
+                      <ChevronLeft className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => cycleSurface(1)}
+                      aria-label="Preview next architectural surface"
+                      className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full text-brand-offwhite transition-colors hover:bg-brand-crimson"
+                    >
+                      <ChevronRight className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
                 </div>
 
                 {/* Bottom Caption Strip */}
@@ -150,7 +206,7 @@ export function PhilosophySection() {
               {/* Compact Architectural Crimson Corner Rule */}
               <div
                 aria-hidden="true"
-                className="pointer-events-none absolute -bottom-2.5 -left-2.5 hidden h-16 w-16 rounded-bl-[18px] border-b-2 border-l-2 border-brand-crimson/85 sm:block"
+                className="pointer-events-none absolute -bottom-2.5 -left-2.5 hidden h-16 w-16 rounded-bl-[18px] border-b border-l border-brand-crimson/70 sm:block"
               />
             </div>
           </FadeUp>
@@ -178,7 +234,7 @@ export function PhilosophySection() {
               </h2>
 
               {/* 3 & 4. Primary Introduction & Secondary Brand Description */}
-              <div className="mt-4 space-y-2.5 border-l-2 border-brand-crimson pl-4 sm:pl-5">
+              <div className="mt-4 space-y-2.5 border-l border-brand-crimson/70 pl-4 sm:pl-5">
                 <p className="text-[15px] font-medium leading-[1.58] text-brand-charcoal sm:text-[15.5px]">
                   {content.philosophy.leadParagraph}
                 </p>
@@ -194,7 +250,7 @@ export function PhilosophySection() {
                     Supported Architectural Printing Surfaces
                   </p>
                   <span className="text-[10px] font-medium text-[#6F665E]">
-                    Click a surface to preview
+                    Tap or select to preview
                   </span>
                 </div>
 

@@ -66,13 +66,15 @@ function lerp(a: number, b: number, t: number): number {
 interface ServicesBackgroundProps {
   reducedMotion: boolean;
   backgroundRef: React.RefObject<HTMLDivElement | null>;
-  onSwiperInit: (swiper: SwiperInstance) => void;
+  onSwiperInit?: (swiper: SwiperInstance) => void;
+  mounted?: boolean;
 }
 
 function ServicesBackground({
   reducedMotion,
   backgroundRef,
   onSwiperInit,
+  mounted = true,
 }: ServicesBackgroundProps) {
   return (
     <div
@@ -80,37 +82,48 @@ function ServicesBackground({
       aria-hidden="true"
       className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
     >
-      <Swiper
-        modules={[Autoplay, EffectFade]}
-        effect="fade"
-        fadeEffect={{ crossFade: true }}
-        speed={1400}
-        loop
-        allowTouchMove={false}
-        autoplay={
-          reducedMotion
-            ? false
-            : {
-                delay: 3800,
-                disableOnInteraction: false,
-              }
-        }
-        onSwiper={onSwiperInit}
-        className="h-full w-full"
-      >
-        {ATELIER_SCROLL_SERVICES.map((service) => (
-          <SwiperSlide key={service.id} className="h-full w-full">
-            <div className="relative h-full w-full">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={service.image}
-                alt=""
-                className="h-full w-full object-cover object-center opacity-35 scale-105"
-              />
-            </div>
-          </SwiperSlide>
-        ))}
-      </Swiper>
+      {mounted ? (
+        <Swiper
+          modules={[Autoplay, EffectFade]}
+          effect="fade"
+          fadeEffect={{ crossFade: true }}
+          speed={1400}
+          loop
+          allowTouchMove={false}
+          autoplay={
+            reducedMotion
+              ? false
+              : {
+                  delay: 3800,
+                  disableOnInteraction: false,
+                }
+          }
+          onSwiper={onSwiperInit}
+          className="h-full w-full"
+        >
+          {ATELIER_SCROLL_SERVICES.map((service) => (
+            <SwiperSlide key={service.id} className="h-full w-full">
+              <div className="relative h-full w-full">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={service.image}
+                  alt=""
+                  className="h-full w-full object-cover object-center opacity-35 scale-105"
+                />
+              </div>
+            </SwiperSlide>
+          ))}
+        </Swiper>
+      ) : (
+        <div className="relative h-full w-full">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={ATELIER_SCROLL_SERVICES[0].image}
+            alt=""
+            className="h-full w-full object-cover object-center opacity-35 scale-105"
+          />
+        </div>
+      )}
 
       {/* Warm Cream & Beige Cinematic Atmospheric Layer */}
       <div
@@ -514,12 +527,15 @@ export function AtelierServicesScrollExperience() {
   const centerSlotRefs = useRef<(HTMLDivElement | null)[]>([]);
   const floatingCardRefs = useRef<(HTMLDivElement | null)[]>([]);
   const floatingCaptionRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const mobileStageRef = useRef<HTMLDivElement | null>(null);
+  const mobileBgRef = useRef<HTMLDivElement | null>(null);
 
   const [selectedService, setSelectedService] =
     useState<AtelierScrollServiceItem | null>(null);
   const [selectedServiceModalKey, setSelectedServiceModalKey] = useState(0);
   const [isDesktopAnimated, setIsDesktopAnimated] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
+  const [hasMounted, setHasMounted] = useState(false);
   const [chipsInteractive, setChipsInteractive] = useState(false);
   const chipsInteractiveRef = useRef(false);
 
@@ -534,7 +550,13 @@ export function AtelierServicesScrollExperience() {
   const handleScrollToShowcase = useCallback(() => {
     const nextSection = document.getElementById("atelier-philosophy");
     if (nextSection) {
-      nextSection.scrollIntoView({ behavior: "smooth", block: "start" });
+      const rm =
+        typeof window !== "undefined" &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      nextSection.scrollIntoView({
+        behavior: rm ? "auto" : "smooth",
+        block: "start",
+      });
     }
   }, []);
 
@@ -550,6 +572,7 @@ export function AtelierServicesScrollExperience() {
       const desk = desktopMq.matches && !rm;
       setReducedMotion(rm);
       setIsDesktopAnimated(desk);
+      setHasMounted(true);
     };
 
     updateFlags();
@@ -835,15 +858,145 @@ export function AtelierServicesScrollExperience() {
       });
     }, sectionWrapperRef);
 
-    const resizeObserver = new ResizeObserver(() => {
-      cacheAllCoordinates();
-      ScrollTrigger.refresh();
+    let lastStageWidth = Math.round(pinnedStage.getBoundingClientRect().width);
+    let refreshTimer: ReturnType<typeof setTimeout> | null = null;
+    const resizeObserver = new ResizeObserver((entries) => {
+      const nextWidth = Math.round(
+        entries[0]?.contentRect.width ?? pinnedStage.getBoundingClientRect().width
+      );
+      if (Math.abs(nextWidth - lastStageWidth) < 2) return;
+      lastStageWidth = nextWidth;
+      if (refreshTimer) clearTimeout(refreshTimer);
+      refreshTimer = setTimeout(() => {
+        cacheAllCoordinates();
+        ScrollTrigger.refresh();
+      }, 120);
     });
     resizeObserver.observe(pinnedStage);
 
     return () => {
+      if (refreshTimer) clearTimeout(refreshTimer);
       resizeObserver.disconnect();
       ctx.revert();
+    };
+  }, [isDesktopAnimated, reducedMotion]);
+
+  // Scoped GSAP matchMedia Engine for Mobile & Tablet (< 1024px)
+  useEffect(() => {
+    if (isDesktopAnimated || reducedMotion) return;
+    const mobileStage = mobileStageRef.current;
+    if (!mobileStage) return;
+
+    gsap.registerPlugin(ScrollTrigger);
+
+    const mm = gsap.matchMedia();
+    mm.add(
+      "(max-width: 1023px) and (prefers-reduced-motion: no-preference)",
+      () => {
+        const introEl = mobileStage.querySelector<HTMLElement>(
+          ".atelier-mobile-intro"
+        );
+        const cards = gsap.utils.toArray<HTMLElement>(
+          ".atelier-mobile-service-card",
+          mobileStage
+        );
+        const statementCard = mobileStage.querySelector<HTMLElement>(
+          ".atelier-mobile-statement"
+        );
+        const chips = gsap.utils.toArray<HTMLElement>(
+          ".atelier-mobile-chip",
+          mobileStage
+        );
+
+        if (introEl) {
+          gsap.fromTo(
+            introEl,
+            { autoAlpha: 0, y: 20 },
+            {
+              autoAlpha: 1,
+              y: 0,
+              duration: 0.65,
+              ease: "power3.out",
+              scrollTrigger: {
+                trigger: introEl,
+                start: "top 88%",
+                once: true,
+              },
+            }
+          );
+        }
+
+        if (cards.length > 0) {
+          gsap.fromTo(
+            cards,
+            {
+              autoAlpha: 0,
+              y: 26,
+              scale: 0.96,
+              rotateX: 7,
+              transformPerspective: 850,
+            },
+            {
+              autoAlpha: 1,
+              y: 0,
+              scale: 1,
+              rotateX: 0,
+              duration: 0.65,
+              stagger: 0.08,
+              ease: "power3.out",
+              clearProps: "transform",
+              scrollTrigger: {
+                trigger: cards[0],
+                start: "top 88%",
+                once: true,
+              },
+            }
+          );
+        }
+
+        if (statementCard) {
+          const tl = gsap.timeline({
+            scrollTrigger: {
+              trigger: statementCard,
+              start: "top 86%",
+              once: true,
+            },
+          });
+
+          tl.fromTo(
+            statementCard,
+            { autoAlpha: 0, y: 24 },
+            {
+              autoAlpha: 1,
+              y: 0,
+              duration: 0.6,
+              ease: "power3.out",
+            }
+          );
+
+          if (chips.length > 0) {
+            tl.fromTo(
+              chips,
+              { scale: 0.78, y: 8, autoAlpha: 0 },
+              {
+                scale: 1,
+                y: 0,
+                autoAlpha: 1,
+                duration: 0.42,
+                stagger: 0.06,
+                ease: "back.out(1.5)",
+                clearProps: "transform",
+              },
+              "-=0.25"
+            );
+          }
+        }
+      },
+      mobileStage
+    );
+
+    return () => {
+      mm.revert();
     };
   }, [isDesktopAnimated, reducedMotion]);
 
@@ -860,7 +1013,7 @@ export function AtelierServicesScrollExperience() {
       {isDesktopAnimated ? (
         <div
           ref={pinnedStageRef}
-          className="relative flex h-screen w-full flex-col justify-between overflow-hidden bg-[#F3E4D5] pt-[var(--header-height,74px)] select-none"
+          className="relative flex h-[100svh] min-h-[640px] w-full flex-col justify-between overflow-hidden bg-[#F3E4D5] pt-[var(--header-height,74px)] select-none"
         >
           {/* Top Subtle Scroll Progress Line (positioned directly below sticky header) */}
           <div
@@ -976,49 +1129,64 @@ export function AtelierServicesScrollExperience() {
            (Section 10: Preserves cinematic reveal, editorial chips, and 6
            services without broken scroll pinning or excessive scroll height)
         ===================================================================== */
-        <div className="relative overflow-hidden bg-[#F3E4D5] py-16 sm:py-20">
+        <div
+          ref={mobileStageRef}
+          className="relative overflow-hidden bg-[#F3E4D5] py-14 sm:py-20"
+        >
+          {/* Subtle Atmospheric Swiper Background on Mobile & Tablet */}
+          <ServicesBackground
+            reducedMotion={reducedMotion}
+            backgroundRef={mobileBgRef}
+            mounted={hasMounted}
+          />
+
           {/* Background Accent Frame */}
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute inset-4 border border-[#681A27]/15 sm:inset-6"
+            className="pointer-events-none absolute inset-3 z-10 border border-[#681A27]/15 sm:inset-6"
           />
 
-          <div className="relative z-10 mx-auto max-w-4xl px-6 text-center">
-            <div className="inline-flex items-center gap-2.5 rounded-sm border border-[#681A27]/25 bg-[#FCF6EF] px-3.5 py-1">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#681A27]" />
-              <span className="font-mono text-[10px] font-medium uppercase tracking-[0.24em] text-[#681A27]">
-                WHAT WE CREATE
-              </span>
+          <div className="relative z-20 mx-auto max-w-4xl px-5 text-center sm:px-6">
+            <div className="atelier-mobile-intro">
+              <div className="inline-flex items-center gap-2.5 rounded-sm border border-[#681A27]/25 bg-[#FCF6EF] px-3.5 py-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#681A27]" />
+                <span className="font-mono text-[10px] font-medium uppercase tracking-[0.24em] text-[#681A27]">
+                  WHAT WE CREATE
+                </span>
+              </div>
+
+              <h2
+                id="atelier-services-scroll-heading"
+                className="mt-4 font-serif text-4xl font-light leading-[1.1] text-[#32191B] sm:text-5xl"
+              >
+                Every Surface Has a Story.
+              </h2>
+
+              <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-[#32191B]/80 sm:text-base">
+                Transforming ordinary spaces into extraordinary expressions of
+                art.
+              </p>
             </div>
 
-            <h2
-              id="atelier-services-scroll-heading"
-              className="mt-4 font-serif text-4xl font-light leading-[1.1] text-[#32191B] sm:text-5xl"
-            >
-              Every Surface Has a Story.
-            </h2>
-
-            <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-[#32191B]/80 sm:text-base">
-              Transforming ordinary spaces into extraordinary expressions of
-              art.
-            </p>
-
-            {/* Mobile/Tablet 6-Thumbnail Visual Strip */}
+            {/* Mobile/Tablet 6-Thumbnail Animated 3D Visual Strip */}
             <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3">
               {ATELIER_SCROLL_SERVICES.map((service) => (
                 <button
                   key={service.id}
                   type="button"
                   onClick={() => handleOpenServiceModal(service)}
-                  className="group relative aspect-[4/3] cursor-pointer overflow-hidden rounded-sm border border-[#681A27]/30 bg-[#32191B] text-left shadow-sm"
+                  className="atelier-mobile-service-card group relative aspect-[4/3] cursor-pointer overflow-hidden rounded-sm border border-[#681A27]/30 bg-[#32191B] text-left shadow-sm transition-transform duration-200 active:scale-[0.98]"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={service.image}
                     alt={service.imageAlt}
                     loading="lazy"
-                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 group-active:scale-105"
                   />
+                  <span className="pointer-events-none absolute top-2 right-2 rounded-full border border-[#FCF6EF]/30 bg-[#32191B]/75 px-2 py-0.5 font-mono text-[8.5px] uppercase tracking-wider text-[#FCF6EF] backdrop-blur-xs">
+                    Inspect
+                  </span>
                   <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#32191B]/95 via-[#32191B]/65 to-transparent p-2.5">
                     <span className="font-mono text-[9px] uppercase tracking-widest text-[#C8A88B]">
                       {service.indexLabel}
@@ -1031,12 +1199,12 @@ export function AtelierServicesScrollExperience() {
               ))}
             </div>
 
-            {/* Mobile/Tablet Editorial Statement with Embedded Artwork Chips */}
-            <div className="mt-10 rounded-sm border border-[#681A27]/20 bg-[#FCF6EF]/90 p-6 shadow-xs sm:p-8">
+            {/* Mobile/Tablet Editorial Statement with Animated Embedded Artwork Chips */}
+            <div className="atelier-mobile-statement mt-9 rounded-sm border border-[#681A27]/20 bg-[#FCF6EF]/92 p-5 shadow-xs backdrop-blur-xs sm:mt-10 sm:p-8">
               <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[#681A27]">
-                From Blank Walls to Living Art
+                From Blank Walls to Living Art • Tap Any Artwork Chip
               </p>
-              <p className="mt-3 font-serif text-xl font-light leading-[1.6] text-[#32191B] sm:text-2xl">
+              <p className="mt-3 font-serif text-xl font-light leading-[1.65] text-[#32191B] sm:text-2xl">
                 {ATELIER_SCROLL_SERVICES.map((service, idx) => (
                   <React.Fragment key={service.id}>
                     <span>
@@ -1047,7 +1215,7 @@ export function AtelierServicesScrollExperience() {
                       type="button"
                       onClick={() => handleOpenServiceModal(service)}
                       aria-label={`Inspect ${service.title}`}
-                      className="mx-1 inline-flex h-7 w-12 translate-y-[-2px] cursor-pointer overflow-hidden rounded-xs border border-[#681A27]/45 align-middle shadow-2xs sm:h-8 sm:w-14"
+                      className="atelier-mobile-chip mx-1 inline-flex h-7 w-12 translate-y-[-2px] cursor-pointer overflow-hidden rounded-xs border border-[#681A27]/45 align-middle shadow-2xs transition-transform active:scale-95 sm:h-8 sm:w-14"
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
@@ -1073,7 +1241,7 @@ export function AtelierServicesScrollExperience() {
                 <button
                   type="button"
                   onClick={handleScrollToShowcase}
-                  className="mt-4 inline-flex cursor-pointer items-center gap-2 rounded-sm bg-[#681A27] px-5 py-2.5 font-mono text-xs uppercase tracking-[0.18em] text-[#FCF6EF]"
+                  className="mt-4 inline-flex cursor-pointer items-center gap-2 rounded-sm bg-[#681A27] px-5 py-2.5 font-mono text-xs uppercase tracking-[0.18em] text-[#FCF6EF] transition-transform active:scale-[0.98]"
                 >
                   <span>Explore Our Services</span>
                   <ArrowDown className="h-3.5 w-3.5" />

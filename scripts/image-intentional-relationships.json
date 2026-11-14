@@ -1,0 +1,120 @@
+{
+  "sharedEntityRelationships": [
+    {
+      "id": "design-catalogue-and-visualizer-handoff",
+      "reason": "13 curated category covers appear in both the Home 3D Wall Art Collection preview deck and /explore-designs category showcase, and the selected design's artwork transfers directly into /visualizer.",
+      "assets": [
+        "/images/atelier/artwork-botanical-canopy.jpg",
+        "/images/atelier/artwork-geometric-harmony.jpg",
+        "/images/atelier/artwork-terracotta-wave.jpg",
+        "/images/atelier/artwork-arch-limestone.jpg",
+        "/images/atelier/cat-mineral-travertine.jpg",
+        "/images/atelier/cat-textured-plaster.jpg",
+        "/images/atelier/explore-designs/abstract/siena-abstract-horizon.webp",
+        "/images/atelier/artwork-mountain-silhouette.jpg",
+        "/images/atelier/artwork-lotus-atelier.jpg",
+        "/images/atelier/surface-office-blinds-interior.jpg",
+        "/images/atelier/surface-tiles-interior.jpg",
+        "/images/atelier/surface-glass-interior.jpg",
+        "/images/atelier/surface-plywood-metal-interior.jpg"
+      ],
+      "allowedContexts": [
+        "^/ :: Atelier 3D Wall Art Collection$",
+        "^/explore-designs :: ",
+        "^/visualizer :: "
+      ]
+    },
+    {
+      "id": "portfolio-project-entity-identity",
+      "reason": "Each of the 6 Studio Surface Studies uses its own canonical cover and detail plate across /projects (exhibition, portfolio grid, signature study) and /projects/[slug] (detail page + related study cards).",
+      "assets": [
+        "/images/atelier/projects/walls-lotus-residence-cover.webp",
+        "/images/atelier/projects/walls-lotus-residence-detail.webp",
+        "/images/atelier/projects/tiles-hospitality-cover.webp",
+        "/images/atelier/projects/tiles-hospitality-detail.webp",
+        "/images/atelier/projects/plywood-retail-cover.webp",
+        "/images/atelier/projects/plywood-retail-detail.webp",
+        "/images/atelier/projects/blinds-office-cover.webp",
+        "/images/atelier/projects/blinds-office-detail.webp",
+        "/images/atelier/projects/metals-lobby-cover.webp",
+        "/images/atelier/projects/metals-lobby-detail.webp",
+        "/images/atelier/projects/glass-partition-cover.webp",
+        "/images/atelier/projects/glass-partition-detail.webp"
+      ],
+      "allowedContexts": [
+        "^/projects :: ",
+        "^/projects/[^/]+ :: "
+      ]
+    },
+    {
+      "id": "journal-article-entity-identity",
+      "reason": "Each of the 5 Journal essays uses its own canonical cover across /blogs (listing/featured card), its own /blogs/[slug] header, and related-essay cards on sibling /blogs/[slug] pages.",
+      "assets": [
+        "/images/atelier/journal/journal-direct-to-surface-printing-cover.webp",
+        "/images/atelier/journal/journal-six-surfaces-cover.webp",
+        "/images/atelier/journal/journal-murals-vs-patterns-cover.webp",
+        "/images/atelier/journal/journal-expressive-workspaces-cover.webp",
+        "/images/atelier/journal/journal-catalogue-visualizer-cover.webp"
+      ],
+      "allowedContexts": [
+        "^/blogs :: ",
+        "^/blogs/[^/]+ :: "
+      ]
+    },
+    {
+      "id": "visualizer-studio-bare-wall-sample-rooms",
+      "reason": "The interactive Wall Visualizer Studio reuses two bare-surface architectural Before photographs (Hospitality Dining Space and Architectural Lounge) alongside its dedicated visualizer sample rooms so visitors can test artwork across living, bedroom, dining, gallery, and lounge elevations without duplicating image files on disk.",
+      "assets": [
+        "/images/atelier/projects/tiles-hospitality-before.webp",
+        "/images/atelier/projects/walls-lotus-residence-before.webp"
+      ],
+      "allowedContexts": [
+        "^/projects :: ",
+        "^/projects/[^/]+ :: ",
+        "^/visualizer :: "
+      ]
+    }
+  ],
+  "beforeAfterPairs": [
+    [
+      "/images/atelier/wall-preview-before.jpg",
+      "/images/atelier/about-harmony-botanical-after.jpg"
+    ],
+    [
+      "/images/atelier/explore-designs/explore-see-it-before.webp",
+      "/images/atelier/explore-designs/explore-see-it-after-lotus.webp"
+    ],
+    [
+      "/images/atelier/explore-designs/explore-see-it-before.webp",
+      "/images/atelier/explore-designs/explore-see-it-after-botanical.webp"
+    ],
+    [
+      "/images/atelier/explore-designs/explore-see-it-before.webp",
+      "/images/atelier/explore-designs/explore-see-it-after-terracotta.webp"
+    ],
+    [
+      "/images/atelier/projects/walls-lotus-residence-before.webp",
+      "/images/atelier/projects/walls-lotus-residence-cover.webp"
+    ],
+    [
+      "/images/atelier/projects/tiles-hospitality-before.webp",
+      "/images/atelier/projects/tiles-hospitality-cover.webp"
+    ],
+    [
+      "/images/atelier/projects/plywood-retail-before.webp",
+      "/images/atelier/projects/plywood-retail-cover.webp"
+    ],
+    [
+      "/images/atelier/projects/blinds-office-before.webp",
+      "/images/atelier/projects/blinds-office-cover.webp"
+    ],
+    [
+      "/images/atelier/projects/metals-lobby-before.webp",
+      "/images/atelier/projects/metals-lobby-cover.webp"
+    ],
+    [
+      "/images/atelier/projects/glass-partition-before.webp",
+      "/images/atelier/projects/glass-partition-cover.webp"
+    ]
+  ]
+}

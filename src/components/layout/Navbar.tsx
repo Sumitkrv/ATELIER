@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ATELIER_BRAND, buildWhatsAppUrl } from "@/lib/brand";
 import { BrandLogo } from "@/components/ui/BrandLogo";
 import { cn } from "@/lib/cn";
@@ -38,6 +39,7 @@ function WhatsAppIcon({ className }: { className?: string }) {
 
 export function Navbar() {
   const pathname = usePathname();
+  const prefersReducedMotion = useReducedMotion();
   const headerBarRef = useRef<HTMLDivElement | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [prevPathname, setPrevPathname] = useState(pathname);
@@ -131,7 +133,7 @@ export function Navbar() {
     >
       <div
         ref={headerBarRef}
-        className="mx-auto flex h-[74px] max-w-[1320px] items-center justify-between px-5 sm:px-8 lg:px-10"
+        className="mx-auto flex h-[74px] max-w-[1320px] items-center justify-between gap-3 px-5 sm:px-8 lg:px-6 xl:px-10"
       >
         {/* Official ATELIER Logo */}
         <Link
@@ -149,7 +151,7 @@ export function Navbar() {
         {/* Center Navigation */}
         <nav
           aria-label="Primary studio navigation"
-          className="hidden lg:flex h-full items-center gap-4 xl:gap-7"
+          className="hidden lg:flex h-full items-center gap-3 xl:gap-7"
         >
           {NAV_LINKS.map((item) => {
             const isActive =
@@ -157,17 +159,17 @@ export function Navbar() {
                 ? pathname === "/"
                 : item.href === "/projects"
                   ? pathname === "/projects" ||
-                    pathname.startsWith("/projects/") ||
-                    pathname === "/our-projects"
+                  pathname.startsWith("/projects/") ||
+                  pathname === "/our-projects"
                   : pathname === item.href ||
-                    pathname.startsWith(`${item.href}/`);
+                  pathname.startsWith(`${item.href}/`);
 
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "relative inline-flex h-full items-center whitespace-nowrap text-[13px] xl:text-[13.5px] font-medium tracking-[0.01em] transition-colors",
+                  "relative inline-flex h-full items-center whitespace-nowrap text-[12.5px] xl:text-[13.5px] font-medium tracking-[0.01em] transition-colors",
                   useLightSurface
                     ? isActive
                       ? "font-semibold text-[#991D20]"
@@ -238,7 +240,7 @@ export function Navbar() {
             mobileMenuOpen ? "Close navigation menu" : "Open navigation menu"
           }
           className={cn(
-            "inline-flex cursor-pointer lg:hidden items-center justify-center rounded-md border p-2 transition-colors",
+            "inline-flex h-10 w-10 cursor-pointer lg:hidden items-center justify-center rounded-md border transition-colors",
             useLightSurface
               ? "border-[#DED5CB] bg-[#FDF8F3] text-[#201C1A] hover:border-[#991D20]"
               : "border-white/20 bg-white/10 text-[#FDF8F3]"
@@ -253,66 +255,72 @@ export function Navbar() {
       </div>
 
       {/* Collapsible Mobile Navigation Drawer (Overlaying below the sticky 74px bar so it never shifts page flow) */}
-      {mobileMenuOpen && (
-        <div
-          id="mobile-navigation-drawer"
-          className="absolute inset-x-0 top-full z-50 max-h-[calc(100dvh-var(--header-height,74px))] overflow-y-auto border-b border-t border-[#DED5CB] bg-[#F8F3ED] px-5 py-5 text-[#201C1A] shadow-2xl lg:hidden"
-        >
-          <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
-            {NAV_LINKS.map((item) => {
-              const isActive =
-                item.href === "/"
-                  ? pathname === "/"
-                  : pathname === item.href ||
+      <AnimatePresence initial={false}>
+        {mobileMenuOpen && (
+          <motion.div
+            id="mobile-navigation-drawer"
+            initial={prefersReducedMotion ? { opacity: 1 } : { opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: -6 }}
+            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+            className="absolute inset-x-0 top-full z-50 max-h-[calc(100svh-var(--header-height,74px))] overflow-y-auto border-b border-t border-[#DED5CB] bg-[#F8F3ED] px-5 py-5 text-[#201C1A] shadow-2xl lg:hidden"
+          >
+            <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+              {NAV_LINKS.map((item) => {
+                const isActive =
+                  item.href === "/"
+                    ? pathname === "/"
+                    : pathname === item.href ||
                     pathname.startsWith(`${item.href}/`);
 
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={cn(
-                    "flex items-center justify-between rounded-lg border px-4 py-3 text-sm font-medium transition-colors",
-                    isActive
-                      ? "border-[#991D20] bg-[#991D20]/8 text-[#991D20]"
-                      : "border-[#DED5CB] bg-[#FDF8F3] text-[#201C1A] hover:border-[#991D20]/50"
-                  )}
-                >
-                  <span>{item.label}</span>
-                  <ArrowRight className="h-3.5 w-3.5 opacity-60" />
-                </Link>
-              );
-            })}
-          </div>
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={cn(
+                      "flex items-center justify-between rounded-lg border px-4 py-3 text-sm font-medium transition-colors",
+                      isActive
+                        ? "border-[#991D20] bg-[#991D20]/8 text-[#991D20]"
+                        : "border-[#DED5CB] bg-[#FDF8F3] text-[#201C1A] hover:border-[#991D20]/50"
+                    )}
+                  >
+                    <span>{item.label}</span>
+                    <ArrowRight className="h-3.5 w-3.5 opacity-60" />
+                  </Link>
+                );
+              })}
+            </div>
 
-          <div className="mt-4 grid grid-cols-1 gap-2.5 border-t border-[#DED5CB] pt-4 sm:grid-cols-3">
-            <Link
-              href="/visualizer"
-              onClick={() => setMobileMenuOpen(false)}
-              className="inline-flex items-center justify-center gap-2 rounded-lg border border-[#DED5CB] bg-[#FDF8F3] px-4 py-2.5 text-xs font-medium text-[#201C1A]"
-            >
-              <Box className="h-4 w-4 text-[#991D20]" />
-              <span>Wall Preview</span>
-            </Link>
-            <a
-              href={buildWhatsAppUrl()}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-2 rounded-lg border border-[#991D20]/35 bg-[#FDF8F3] px-4 py-2.5 text-xs font-medium text-[#991D20]"
-            >
-              <WhatsAppIcon className="h-4 w-4" />
-              <span>WhatsApp</span>
-            </a>
-            <a
-              href="tel:+918591971675"
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#991D20] px-4 py-2.5 text-xs font-medium text-[#FDF8F3]"
-            >
-              <Phone className="h-4 w-4" />
-              <span>Enquire / Call</span>
-            </a>
-          </div>
-        </div>
-      )}
+            <div className="mt-4 grid grid-cols-1 gap-2.5 border-t border-[#DED5CB] pt-4 sm:grid-cols-3">
+              <Link
+                href="/visualizer"
+                onClick={() => setMobileMenuOpen(false)}
+                className="inline-flex items-center justify-center gap-2 rounded-lg border border-[#DED5CB] bg-[#FDF8F3] px-4 py-2.5 text-xs font-medium text-[#201C1A]"
+              >
+                <Box className="h-4 w-4 text-[#991D20]" />
+                <span>Wall Preview</span>
+              </Link>
+              <a
+                href={buildWhatsAppUrl()}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-2 rounded-lg border border-[#991D20]/35 bg-[#FDF8F3] px-4 py-2.5 text-xs font-medium text-[#991D20]"
+              >
+                <WhatsAppIcon className="h-4 w-4" />
+                <span>WhatsApp</span>
+              </a>
+              <a
+                href="tel:+918591971675"
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#991D20] px-4 py-2.5 text-xs font-medium text-[#FDF8F3]"
+              >
+                <Phone className="h-4 w-4" />
+                <span>Enquire / Call</span>
+              </a>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </header>
   );
 }

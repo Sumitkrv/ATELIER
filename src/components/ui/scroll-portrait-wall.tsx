@@ -230,6 +230,7 @@ export function ScrollPortraitWall({
   const rootRef = React.useRef<HTMLDivElement | null>(null);
   const galleryTrackRef = React.useRef<HTMLDivElement | null>(null);
   const hintRef = React.useRef<HTMLDivElement | null>(null);
+  const refreshTimerRef = React.useRef<number | null>(null);
 
   const [activeProjectIndex, setActiveProjectIndex] = React.useState(0);
   const [failedImageIds, setFailedImageIds] = React.useState<
@@ -256,120 +257,152 @@ export function ScrollPortraitWall({
       : 0;
   const activeProject = projects[safeActiveIndex] ?? projects[0] ?? null;
 
+  React.useEffect(() => {
+    return () => {
+      if (refreshTimerRef.current !== null) {
+        window.clearTimeout(refreshTimerRef.current);
+      }
+    };
+  }, []);
+
   useGSAP(
     () => {
       const rootEl = rootRef.current;
       if (!rootEl || projects.length === 0) return;
 
-      const reduceMotion = window.matchMedia(
-        "(prefers-reduced-motion: reduce)"
-      ).matches;
+      const mm = gsap.matchMedia();
 
-      const items = gsap.utils.toArray<HTMLElement>(".spw-item", rootEl);
-
-      if (reduceMotion) {
+      // Accessible reduced-motion fallback
+      mm.add("(prefers-reduced-motion: reduce)", () => {
+        const items = gsap.utils.toArray<HTMLElement>(".spw-item", rootEl);
         gsap.set(items, { scale: 1, autoAlpha: 1, clearProps: "transform" });
         if (hintRef.current) {
-          gsap.set(hintRef.current, { autoAlpha: 1 });
+          gsap.set(hintRef.current, { autoAlpha: 1, clearProps: "transform" });
         }
-        return;
-      }
-
-      // 1. Fade out the scroll hint as the visitor scrolls into the gallery wall
-      if (hintRef.current) {
-        gsap.fromTo(
-          hintRef.current,
-          { autoAlpha: 1, y: 0 },
-          {
-            autoAlpha: 0,
-            y: -18,
-            ease: "none",
-            scrollTrigger: {
-              trigger: rootEl,
-              start: "top 65%",
-              end: "+=320",
-              scrub: true,
-            },
-          }
-        );
-      }
-
-      // 2. Mobile viewport (< 640px): gentle editorial reveal without trapping or hiding cards
-      if (isMobile) {
-        items.forEach((el) => {
-          const itemIdxAttr = el.getAttribute("data-project-index");
-          const parsedIdx = itemIdxAttr ? parseInt(itemIdxAttr, 10) : 0;
-
-          gsap.fromTo(
-            el,
-            { scale: 0.94, autoAlpha: 0.35, y: 20 },
-            {
-              scale: 1,
-              autoAlpha: 1,
-              y: 0,
-              ease: "power2.out",
-              scrollTrigger: {
-                trigger: el,
-                start: "top 92%",
-                end: "top 55%",
-                scrub: 0.4,
-                onEnter: () => setActiveProjectIndex(parsedIdx),
-                onEnterBack: () => setActiveProjectIndex(parsedIdx),
-              },
-            }
-          );
-        });
-
-        ScrollTrigger.refresh();
-        return;
-      }
-
-      // 3. Desktop & Tablet (>= 640px): Signature ScrollPortraitWall scrub animation
-      // Each architectural project scales up from its deterministic transform origin
-      // as it approaches the viewport, peaks near the center, and scales down as it exits.
-      items.forEach((el) => {
-        const itemIdxAttr = el.getAttribute("data-project-index");
-        const parsedIdx = itemIdxAttr ? parseInt(itemIdxAttr, 10) : 0;
-
-        const tl = gsap.timeline({
-          scrollTrigger: {
-            trigger: el,
-            start: "top bottom+=8%",
-            end: "bottom top-=4%",
-            scrub: 0.55,
-            onToggle: (self) => {
-              if (self.isActive) {
-                setActiveProjectIndex(parsedIdx);
-              }
-            },
-          },
-        });
-
-        tl.fromTo(
-          el,
-          { scale: 0.14, autoAlpha: 0.18 },
-          {
-            scale: 1,
-            autoAlpha: 1,
-            ease: "power2.out",
-            duration: 0.44,
-          }
-        )
-          .to(el, {
-            scale: 1,
-            autoAlpha: 1,
-            ease: "none",
-            duration: 0.16,
-          })
-          .to(el, {
-            scale: 0.12,
-            autoAlpha: 0.08,
-            ease: "power2.in",
-            duration: 0.4,
-          });
       });
 
+      // Mobile (< 640px): Smooth scroll-linked scale + elevation reveal per card
+      mm.add(
+        "(max-width: 639px) and (prefers-reduced-motion: no-preference)",
+        () => {
+          const items = gsap.utils.toArray<HTMLElement>(".spw-item", rootEl);
+
+          if (hintRef.current) {
+            gsap.fromTo(
+              hintRef.current,
+              { autoAlpha: 1, y: 0 },
+              {
+                autoAlpha: 0,
+                y: -12,
+                ease: "none",
+                scrollTrigger: {
+                  trigger: rootEl,
+                  start: "top 75%",
+                  end: "+=200",
+                  scrub: true,
+                },
+              }
+            );
+          }
+
+          items.forEach((el) => {
+            const itemIdxAttr = el.getAttribute("data-project-index");
+            const parsedIdx = itemIdxAttr ? parseInt(itemIdxAttr, 10) : 0;
+
+            gsap.fromTo(
+              el,
+              { scale: 0.93, autoAlpha: 0.42, y: 24 },
+              {
+                scale: 1,
+                autoAlpha: 1,
+                y: 0,
+                ease: "power2.out",
+                scrollTrigger: {
+                  trigger: el,
+                  start: "top 95%",
+                  end: "top 68%",
+                  scrub: 0.35,
+                  invalidateOnRefresh: true,
+                  onEnter: () => setActiveProjectIndex(parsedIdx),
+                  onEnterBack: () => setActiveProjectIndex(parsedIdx),
+                },
+              }
+            );
+          });
+        }
+      );
+
+      // Tablet & Desktop (>= 640px): Signature ScrollPortraitWall scattered scrub animation
+      mm.add(
+        "(min-width: 640px) and (prefers-reduced-motion: no-preference)",
+        () => {
+          const items = gsap.utils.toArray<HTMLElement>(".spw-item", rootEl);
+
+          if (hintRef.current) {
+            gsap.fromTo(
+              hintRef.current,
+              { autoAlpha: 1, y: 0 },
+              {
+                autoAlpha: 0,
+                y: -18,
+                ease: "none",
+                scrollTrigger: {
+                  trigger: rootEl,
+                  start: "top 65%",
+                  end: "+=320",
+                  scrub: true,
+                },
+              }
+            );
+          }
+
+          items.forEach((el) => {
+            const itemIdxAttr = el.getAttribute("data-project-index");
+            const parsedIdx = itemIdxAttr ? parseInt(itemIdxAttr, 10) : 0;
+
+            const tl = gsap.timeline({
+              scrollTrigger: {
+                trigger: el,
+                start: "top bottom+=8%",
+                end: "bottom top-=4%",
+                scrub: 0.55,
+                invalidateOnRefresh: true,
+                onToggle: (self) => {
+                  if (self.isActive) {
+                    setActiveProjectIndex(parsedIdx);
+                  }
+                },
+              },
+            });
+
+            tl.fromTo(
+              el,
+              { scale: 0.16, autoAlpha: 0.2 },
+              {
+                scale: 1,
+                autoAlpha: 1,
+                ease: "power2.out",
+                duration: 0.38,
+              }
+            )
+              .to(el, {
+                scale: 1,
+                autoAlpha: 1,
+                ease: "none",
+                duration: 0.28,
+              })
+              .to(el, {
+                scale: 0.14,
+                autoAlpha: 0.1,
+                ease: "power2.in",
+                duration: 0.34,
+              });
+          });
+        }
+      );
+
       ScrollTrigger.refresh();
+      return () => mm.revert();
     },
     {
       scope: rootRef,
@@ -383,7 +416,13 @@ export function ScrollPortraitWall({
   }, []);
 
   const handleImageLoad = React.useCallback(() => {
-    ScrollTrigger.refresh();
+    if (refreshTimerRef.current !== null) {
+      window.clearTimeout(refreshTimerRef.current);
+    }
+    refreshTimerRef.current = window.setTimeout(() => {
+      ScrollTrigger.refresh();
+      refreshTimerRef.current = null;
+    }, 140);
   }, []);
 
   // Tasteful Empty State when no projects match the selected filter combination
@@ -453,11 +492,11 @@ export function ScrollPortraitWall({
         ref={galleryTrackRef}
         className="relative px-4 pt-10 pb-12 sm:px-8 sm:pt-14 sm:pb-20 lg:px-12"
       >
-        {/* Top Gallery Exhibition Bar (Surface Status + Live Counter) */}
-        <div className="relative z-30 mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-[#1A1A1A]/10 pb-4 text-xs">
-          <div className="inline-flex items-center gap-2.5">
-            <span className="h-2 w-2 rounded-full bg-[#9B1C1C]" />
-            <span className="font-mono text-[11px] font-semibold uppercase tracking-[0.2em] text-[#9B1C1C]">
+        {/* Top Gallery Exhibition Bar (Sticky on mobile for readable live status without obscuring artwork; clean header bar on desktop) */}
+        <div className="sticky top-[calc(var(--navbar-height,74px)+8px)] z-30 mb-6 flex flex-wrap items-center justify-between gap-2.5 rounded-2xl border border-[#1A1A1A]/10 bg-[#FAF9F6]/92 px-3.5 py-2.5 text-xs shadow-2xs backdrop-blur-md sm:static sm:rounded-none sm:border-x-0 sm:border-t-0 sm:border-b sm:bg-transparent sm:px-0 sm:pt-0 sm:pb-4 sm:shadow-none sm:backdrop-blur-none">
+          <div className="inline-flex items-center gap-2">
+            <span className="h-2 w-2 shrink-0 rounded-full bg-[#9B1C1C]" />
+            <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-[#9B1C1C] sm:text-[11px] sm:tracking-[0.2em]">
               THE LIVING GALLERY • {activeSurfaceLabel.toUpperCase()}
             </span>
           </div>
@@ -466,14 +505,14 @@ export function ScrollPortraitWall({
           {activeProject && (
             <div
               aria-live="polite"
-              className="inline-flex items-center gap-3 rounded-full border border-[#1A1A1A]/12 bg-[#FAF9F6]/90 px-3.5 py-1.5 backdrop-blur-xs"
+              className="inline-flex max-w-full items-center gap-2.5 rounded-full border border-[#1A1A1A]/12 bg-[#FAF9F6]/95 px-3 py-1 backdrop-blur-xs sm:gap-3 sm:px-3.5 sm:py-1.5"
             >
-              <span className="font-mono text-[11px] font-bold tracking-[0.18em] text-[#9B1C1C]">
+              <span className="font-mono text-[10.5px] font-bold tracking-[0.16em] text-[#9B1C1C] sm:text-[11px] sm:tracking-[0.18em]">
                 {String(safeActiveIndex + 1).padStart(2, "0")} /{" "}
                 {String(projects.length).padStart(2, "0")}
               </span>
               <span aria-hidden="true" className="h-3 w-px bg-[#1A1A1A]/15" />
-              <span className="max-w-[220px] truncate font-serif text-xs font-medium text-[#1A1A1A] sm:max-w-[320px]">
+              <span className="max-w-[165px] truncate font-serif text-xs font-medium text-[#1A1A1A] min-[400px]:max-w-[210px] sm:max-w-[320px]">
                 {activeProject.title}
               </span>
               <span className="hidden rounded-sm bg-[#E8E2D9] px-2 py-0.5 font-mono text-[9.5px] uppercase tracking-wider text-[#1A1A1A] sm:inline-block">
@@ -483,17 +522,18 @@ export function ScrollPortraitWall({
           )}
         </div>
 
-        {/* Sticky Center Typography ("THE WALLS WE TRANSFORM")
-            Remains centered inside the gallery scroll region without overlapping the navbar */}
-        <div className="pointer-events-none sticky top-[calc(var(--header-height,74px)+18vh)] z-20 mx-auto flex max-w-4xl flex-col items-center py-4 text-center select-none">
-          <h3 className="font-serif text-4xl font-semibold leading-[0.94] tracking-[-0.02em] text-[#1A1A1A] drop-shadow-[0_2px_18px_rgba(250,249,246,0.92)] sm:text-6xl md:text-7xl lg:text-[5.5rem]">
+        {/* Center Typography ("THE WALLS WE TRANSFORM")
+            In normal editorial flow on single-column mobile so full-width cards are never covered;
+            sticky inside the multi-column scattered gallery on tablet/desktop without overlapping the navbar */}
+        <div className="pointer-events-none relative z-20 mx-auto flex max-w-4xl flex-col items-center py-3 text-center select-none sm:sticky sm:top-[calc(var(--navbar-height,74px)+16vh)] sm:py-4">
+          <h3 className="rounded-3xl bg-[#FAF9F6]/70 px-4 py-1 font-serif text-4xl font-semibold leading-[0.94] tracking-[-0.02em] text-[#1A1A1A] drop-shadow-[0_2px_18px_rgba(250,249,246,0.96)] backdrop-blur-[2px] sm:bg-[#FAF9F6]/60 sm:px-6 sm:py-2 sm:text-6xl md:text-7xl lg:text-[5.5rem]">
             <span className="block">{titleLine1}</span>
             <span className="mt-1 block italic font-normal text-[#1A1A1A]">
               {titleLine2}
             </span>
           </h3>
 
-          <p className="mt-4 rounded-full border border-[#1A1A1A]/15 bg-[#FAF9F6]/92 px-4 py-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.22em] text-[#1A1A1A] shadow-2xs backdrop-blur-xs sm:text-[11px]">
+          <p className="mt-3.5 rounded-full border border-[#1A1A1A]/15 bg-[#FAF9F6]/92 px-3.5 py-1.5 font-mono text-[9.5px] font-semibold uppercase tracking-[0.18em] text-[#1A1A1A] shadow-2xs backdrop-blur-xs sm:mt-4 sm:px-4 sm:text-[11px] sm:tracking-[0.22em]">
             {subtitle}
           </p>
 
@@ -543,9 +583,12 @@ export function ScrollPortraitWall({
                 const project = projects[projectIdx];
                 if (!project) return null;
 
-                // Deterministic transform origin matching ScrollPortraitWall
-                const origin =
-                  colIndex < cols / 2 ? "right bottom" : "left bottom";
+                // Balanced center transform origin on single-column mobile; directional origin on multi-column scatter
+                const origin = isMobile
+                  ? "center center"
+                  : colIndex < cols / 2
+                    ? "right bottom"
+                    : "left bottom";
                 const aspectClass =
                   ASPECT_CLASS_MAP[project.aspectVariant] || "aspect-[4/3]";
                 const hasFailedImage = Boolean(failedImageIds[project.id]);

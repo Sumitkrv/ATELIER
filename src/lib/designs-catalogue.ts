@@ -37,9 +37,9 @@ export const EXPLORE_DESIGNS_HERO_CONTENT: ExploreDesignsHeroConfig = {
     "A curated collection of murals and surface artworks crafted to bring character, texture, and personality to architectural spaces.",
   primaryCtaLabel: "Browse Collection",
   secondaryCtaLabel: "Preview on Your Wall",
-  heroImage: "/images/atelier/hero-botanical-living.jpg",
+  heroImage: "/images/atelier/explore-designs/explore-hero-curated-gallery.webp",
   heroImageAlt:
-    "Sunlit luxury living room with a botanical wall mural and curved cream boucle sofa by Atelier Wall Story",
+    "Light-filled design showroom with three wall bays printed with botanical, marble-vein and terracotta geometric artworks",
   isProvisionalCopy: false,
 };
 
@@ -87,7 +87,7 @@ const CURATED_CATEGORY_META: ReadonlyArray<{
   {
     name: "Abstract",
     description: "Expressive fluid waves, tonal blocks, and modern abstract wall statements.",
-    imageUrl: "/images/atelier/project-retail-terracotta-arch.jpg",
+    imageUrl: "/images/atelier/explore-designs/abstract/siena-abstract-horizon.webp",
     altText: "Siena abstract terracotta and ochre curved relief composition in a lounge",
   },
   {
@@ -239,16 +239,6 @@ export const DEVELOPMENT_FIXTURE_DESIGNS: ReadonlyArray<CatalogueDesignItem> = [
         "/images/atelier/artwork-terracotta-wave.jpg",
         "Terracotta Wave Relief — Living Room Elevation"
       ),
-      makeMedia(
-        "designs/terracotta-wave-relief-02",
-        "/images/atelier/cat-textured-plaster.jpg",
-        "Terracotta Wave Relief — Plaster Texture Detail"
-      ),
-      makeMedia(
-        "designs/terracotta-wave-relief-03",
-        "/images/atelier/card-01-terracotta-wave.jpg",
-        "Terracotta Wave Relief — Warm Daylight Perspective"
-      ),
     ],
     videoAsset: null,
     aspectRatio: "landscape",
@@ -292,16 +282,6 @@ export const DEVELOPMENT_FIXTURE_DESIGNS: ReadonlyArray<CatalogueDesignItem> = [
         "designs/botanical-canopy-01",
         "/images/atelier/artwork-botanical-canopy.jpg",
         "Botanical Canopy — Dining Room Feature Wall"
-      ),
-      makeMedia(
-        "designs/botanical-canopy-02",
-        "/images/atelier/hero-botanical-living.jpg",
-        "Botanical Canopy — Living Room Perspective"
-      ),
-      makeMedia(
-        "designs/botanical-canopy-03",
-        "/images/atelier/wall-preview-after.jpg",
-        "Botanical Canopy — Direct Wall Print Detail"
       ),
     ],
     videoAsset: null,
@@ -347,11 +327,6 @@ export const DEVELOPMENT_FIXTURE_DESIGNS: ReadonlyArray<CatalogueDesignItem> = [
         "/images/atelier/artwork-arch-limestone.jpg",
         "Arch Series – Limestone — Full Wall Elevation"
       ),
-      makeMedia(
-        "designs/arch-series-limestone-02",
-        "/images/atelier/cat-mineral-travertine.jpg",
-        "Arch Series – Limestone — Stone Tone Study"
-      ),
     ],
     videoAsset: null,
     aspectRatio: "landscape",
@@ -395,11 +370,6 @@ export const DEVELOPMENT_FIXTURE_DESIGNS: ReadonlyArray<CatalogueDesignItem> = [
         "designs/mountain-silhouette-01",
         "/images/atelier/artwork-mountain-silhouette.jpg",
         "Mountain Silhouette — Living Room Elevation"
-      ),
-      makeMedia(
-        "designs/mountain-silhouette-02",
-        "/images/atelier/surface-office-blinds-interior.jpg",
-        "Mountain Silhouette — Printed Office Blinds Application"
       ),
     ],
     videoAsset: null,
@@ -445,11 +415,6 @@ export const DEVELOPMENT_FIXTURE_DESIGNS: ReadonlyArray<CatalogueDesignItem> = [
         "/images/atelier/artwork-lotus-atelier.jpg",
         "Lotus Atelier Study — Feature Wall View"
       ),
-      makeMedia(
-        "designs/lotus-atelier-study-02",
-        "/images/atelier/surface-glass-interior.jpg",
-        "Lotus Atelier Study — Glass Partition Application"
-      ),
     ],
     videoAsset: null,
     aspectRatio: "landscape",
@@ -493,11 +458,6 @@ export const DEVELOPMENT_FIXTURE_DESIGNS: ReadonlyArray<CatalogueDesignItem> = [
         "designs/geometric-harmony-01",
         "/images/atelier/artwork-geometric-harmony.jpg",
         "Geometric Harmony — Sunlit Interior Wall"
-      ),
-      makeMedia(
-        "designs/geometric-harmony-02",
-        "/images/atelier/surface-plywood-metal-interior.jpg",
-        "Geometric Harmony — Plywood & Metal Panel Study"
       ),
     ],
     videoAsset: null,
@@ -543,11 +503,6 @@ export const DEVELOPMENT_FIXTURE_DESIGNS: ReadonlyArray<CatalogueDesignItem> = [
         "/images/atelier/cat-mineral-travertine.jpg",
         "Navona Travertine Strata — Close-Up Stone Grain"
       ),
-      makeMedia(
-        "designs/navona-travertine-strata-02",
-        "/images/atelier/artwork-arch-limestone.jpg",
-        "Navona Travertine Strata — Interior Application"
-      ),
     ],
     videoAsset: null,
     aspectRatio: "landscape",
@@ -583,13 +538,13 @@ export const DEVELOPMENT_FIXTURE_DESIGNS: ReadonlyArray<CatalogueDesignItem> = [
     dimensionsNote: "Custom-proportioned to your architectural wall dimensions",
     coverImage: makeMedia(
       "designs/siena-abstract-horizon",
-      "/images/atelier/card-01-terracotta-wave.jpg",
+      "/images/atelier/explore-designs/abstract/siena-abstract-horizon.webp",
       "Siena Abstract Horizon wall mural"
     ),
     galleryMedia: [
       makeMedia(
         "designs/siena-abstract-horizon-01",
-        "/images/atelier/card-01-terracotta-wave.jpg",
+        "/images/atelier/explore-designs/abstract/siena-abstract-horizon.webp",
         "Siena Abstract Horizon — Elevation Study"
       ),
     ],
@@ -601,10 +556,10 @@ export const DEVELOPMENT_FIXTURE_DESIGNS: ReadonlyArray<CatalogueDesignItem> = [
     isDevelopmentFixture: true,
     visualizerConfig: {
       defaultMode: "mural",
-      textureUrl: "/images/atelier/artwork-terracotta-wave.jpg",
+      textureUrl: "/images/atelier/explore-designs/abstract/siena-abstract-horizon.webp",
       width: 1600,
       height: 1000,
-      mimeType: "image/jpeg",
+      mimeType: "image/webp",
     },
   },
 
@@ -856,11 +811,6 @@ export const DEVELOPMENT_FIXTURE_DESIGNS: ReadonlyArray<CatalogueDesignItem> = [
         "/images/atelier/hero-botanical-living.jpg",
         "Tropical Palm Salon Mural — Living Room View"
       ),
-      makeMedia(
-        "designs/tropical-palm-salon-02",
-        "/images/atelier/wall-preview-after.jpg",
-        "Tropical Palm Salon Mural — Direct Wall Elevation"
-      ),
     ],
     videoAsset: null,
     aspectRatio: "landscape",
@@ -870,7 +820,7 @@ export const DEVELOPMENT_FIXTURE_DESIGNS: ReadonlyArray<CatalogueDesignItem> = [
     isDevelopmentFixture: true,
     visualizerConfig: {
       defaultMode: "mural",
-      textureUrl: "/images/atelier/wall-preview-after.jpg",
+      textureUrl: "/images/atelier/hero-botanical-living.jpg",
       width: 1600,
       height: 1000,
       mimeType: "image/jpeg",
@@ -904,11 +854,6 @@ export const DEVELOPMENT_FIXTURE_DESIGNS: ReadonlyArray<CatalogueDesignItem> = [
         "designs/olive-grove-archway-fresco-01",
         "/images/atelier/process-hero-sculptural-arch.jpg",
         "Olive Grove & Archway Fresco — Archway Perspective"
-      ),
-      makeMedia(
-        "designs/olive-grove-archway-fresco-02",
-        "/images/atelier/artwork-botanical-canopy.jpg",
-        "Olive Grove & Archway Fresco — Botanical Foliage Detail"
       ),
     ],
     videoAsset: null,
@@ -954,11 +899,6 @@ export const DEVELOPMENT_FIXTURE_DESIGNS: ReadonlyArray<CatalogueDesignItem> = [
         "/images/atelier/wall-preview-matched-after.jpg",
         "Bauhaus Terracotta Meridian — Sunlit Plaster Elevation"
       ),
-      makeMedia(
-        "designs/bauhaus-terracotta-meridian-02",
-        "/images/atelier/artwork-geometric-harmony.jpg",
-        "Bauhaus Terracotta Meridian — Living Room Study"
-      ),
     ],
     videoAsset: null,
     aspectRatio: "landscape",
@@ -1003,11 +943,6 @@ export const DEVELOPMENT_FIXTURE_DESIGNS: ReadonlyArray<CatalogueDesignItem> = [
         "/images/atelier/about-story-arch-vase.jpg",
         "Monolith Arch & Shadow Study — Architectural Vignette"
       ),
-      makeMedia(
-        "designs/monolith-arch-shadow-study-02",
-        "/images/atelier/surface-plywood-metal-interior.jpg",
-        "Monolith Arch & Shadow Study — Timber & Metal Application"
-      ),
     ],
     videoAsset: null,
     aspectRatio: "landscape",
@@ -1043,19 +978,14 @@ export const DEVELOPMENT_FIXTURE_DESIGNS: ReadonlyArray<CatalogueDesignItem> = [
     dimensionsNote: "Custom-proportioned to your architectural wall dimensions",
     coverImage: makeMedia(
       "designs/sculpted-dune-ochre-relief",
-      "/images/atelier/project-retail-terracotta-arch.jpg",
+      "/images/atelier/explore-designs/textured/sculpted-dune-ochre-relief.webp",
       "Sculpted Dune & Ochre Relief wall installation in a luxury lounge"
     ),
     galleryMedia: [
       makeMedia(
         "designs/sculpted-dune-ochre-relief-01",
-        "/images/atelier/project-retail-terracotta-arch.jpg",
+        "/images/atelier/explore-designs/textured/sculpted-dune-ochre-relief.webp",
         "Sculpted Dune & Ochre Relief — Lounge Elevation"
-      ),
-      makeMedia(
-        "designs/sculpted-dune-ochre-relief-02",
-        "/images/atelier/artwork-terracotta-wave.jpg",
-        "Sculpted Dune & Ochre Relief — Wave Detail"
       ),
     ],
     videoAsset: null,
@@ -1066,10 +996,10 @@ export const DEVELOPMENT_FIXTURE_DESIGNS: ReadonlyArray<CatalogueDesignItem> = [
     isDevelopmentFixture: true,
     visualizerConfig: {
       defaultMode: "mural",
-      textureUrl: "/images/atelier/project-retail-terracotta-arch.jpg",
+      textureUrl: "/images/atelier/explore-designs/textured/sculpted-dune-ochre-relief.webp",
       width: 1600,
       height: 1000,
-      mimeType: "image/jpeg",
+      mimeType: "image/webp",
     },
   },
 
@@ -1092,13 +1022,13 @@ export const DEVELOPMENT_FIXTURE_DESIGNS: ReadonlyArray<CatalogueDesignItem> = [
     dimensionsNote: "Custom-proportioned to your architectural wall dimensions",
     coverImage: makeMedia(
       "designs/raw-travertine-plaster-ribbons",
-      "/images/atelier/cat-textured-plaster.jpg",
+      "/images/atelier/explore-designs/textured/raw-travertine-plaster-ribbons.webp",
       "Raw Travertine & Plaster Ribbons tactile wall study"
     ),
     galleryMedia: [
       makeMedia(
         "designs/raw-travertine-plaster-ribbons-01",
-        "/images/atelier/cat-textured-plaster.jpg",
+        "/images/atelier/explore-designs/textured/raw-travertine-plaster-ribbons.webp",
         "Raw Travertine & Plaster Ribbons — Surface Relief"
       ),
     ],
@@ -1110,10 +1040,10 @@ export const DEVELOPMENT_FIXTURE_DESIGNS: ReadonlyArray<CatalogueDesignItem> = [
     isDevelopmentFixture: true,
     visualizerConfig: {
       defaultMode: "pattern",
-      textureUrl: "/images/atelier/cat-textured-plaster.jpg",
+      textureUrl: "/images/atelier/explore-designs/textured/raw-travertine-plaster-ribbons.webp",
       width: 1600,
       height: 1000,
-      mimeType: "image/jpeg",
+      mimeType: "image/webp",
     },
   },
 
@@ -1144,11 +1074,6 @@ export const DEVELOPMENT_FIXTURE_DESIGNS: ReadonlyArray<CatalogueDesignItem> = [
         "designs/palladian-vault-rotunda-01",
         "/images/atelier/services-hero-sculptural-lotus.jpg",
         "Palladian Vault & Rotunda — Full Elevation"
-      ),
-      makeMedia(
-        "designs/palladian-vault-rotunda-02",
-        "/images/atelier/artwork-arch-limestone.jpg",
-        "Palladian Vault & Rotunda — Limestone Colonnade Detail"
       ),
     ],
     videoAsset: null,
@@ -1229,19 +1154,14 @@ export const DEVELOPMENT_FIXTURE_DESIGNS: ReadonlyArray<CatalogueDesignItem> = [
     dimensionsNote: "Custom-proportioned to your architectural wall dimensions",
     coverImage: makeMedia(
       "designs/roman-vein-cut-alabaster",
-      "/images/atelier/studio-about-interior.jpg",
+      "/images/atelier/explore-designs/mineral/roman-vein-cut-alabaster.webp",
       "Roman Vein-Cut Alabaster mineral surface study in the Atelier showroom"
     ),
     galleryMedia: [
       makeMedia(
         "designs/roman-vein-cut-alabaster-01",
-        "/images/atelier/studio-about-interior.jpg",
+        "/images/atelier/explore-designs/mineral/roman-vein-cut-alabaster.webp",
         "Roman Vein-Cut Alabaster — Material Table Study"
-      ),
-      makeMedia(
-        "designs/roman-vein-cut-alabaster-02",
-        "/images/atelier/cat-mineral-travertine.jpg",
-        "Roman Vein-Cut Alabaster — Stone Veining Detail"
       ),
     ],
     videoAsset: null,
@@ -1252,10 +1172,10 @@ export const DEVELOPMENT_FIXTURE_DESIGNS: ReadonlyArray<CatalogueDesignItem> = [
     isDevelopmentFixture: true,
     visualizerConfig: {
       defaultMode: "pattern",
-      textureUrl: "/images/atelier/cat-mineral-travertine.jpg",
+      textureUrl: "/images/atelier/explore-designs/mineral/roman-vein-cut-alabaster.webp",
       width: 1600,
       height: 1000,
-      mimeType: "image/jpeg",
+      mimeType: "image/webp",
     },
   },
 
@@ -1278,13 +1198,13 @@ export const DEVELOPMENT_FIXTURE_DESIGNS: ReadonlyArray<CatalogueDesignItem> = [
     dimensionsNote: "Custom-proportioned to your architectural wall dimensions",
     coverImage: makeMedia(
       "designs/raw-umber-sandstone-quarry",
-      "/images/atelier/process-stage-04-approval.jpg",
+      "/images/atelier/explore-designs/mineral/raw-umber-sandstone-quarry.webp",
       "Raw Umber & Sandstone Quarry mineral wall calibration study"
     ),
     galleryMedia: [
       makeMedia(
         "designs/raw-umber-sandstone-quarry-01",
-        "/images/atelier/process-stage-04-approval.jpg",
+        "/images/atelier/explore-designs/mineral/raw-umber-sandstone-quarry.webp",
         "Raw Umber & Sandstone Quarry — Studio Calibration View"
       ),
     ],
@@ -1296,10 +1216,10 @@ export const DEVELOPMENT_FIXTURE_DESIGNS: ReadonlyArray<CatalogueDesignItem> = [
     isDevelopmentFixture: true,
     visualizerConfig: {
       defaultMode: "mural",
-      textureUrl: "/images/atelier/process-stage-04-approval.jpg",
+      textureUrl: "/images/atelier/explore-designs/mineral/raw-umber-sandstone-quarry.webp",
       width: 1600,
       height: 1000,
-      mimeType: "image/jpeg",
+      mimeType: "image/webp",
     },
   },
 
@@ -1322,13 +1242,13 @@ export const DEVELOPMENT_FIXTURE_DESIGNS: ReadonlyArray<CatalogueDesignItem> = [
     dimensionsNote: "Custom-proportioned to your architectural wall dimensions",
     coverImage: makeMedia(
       "designs/crimson-alcove-ochre-study",
-      "/images/atelier/journal-hero-burgundy-alcove.jpg",
+      "/images/atelier/explore-designs/abstract/crimson-alcove-ochre-study.webp",
       "Crimson Alcove & Ochre Study abstract mural in a burgundy architectural alcove"
     ),
     galleryMedia: [
       makeMedia(
         "designs/crimson-alcove-ochre-study-01",
-        "/images/atelier/journal-hero-burgundy-alcove.jpg",
+        "/images/atelier/explore-designs/abstract/crimson-alcove-ochre-study.webp",
         "Crimson Alcove & Ochre Study — Alcove Elevation"
       ),
     ],
@@ -1340,10 +1260,10 @@ export const DEVELOPMENT_FIXTURE_DESIGNS: ReadonlyArray<CatalogueDesignItem> = [
     isDevelopmentFixture: true,
     visualizerConfig: {
       defaultMode: "mural",
-      textureUrl: "/images/atelier/journal-hero-burgundy-alcove.jpg",
+      textureUrl: "/images/atelier/explore-designs/abstract/crimson-alcove-ochre-study.webp",
       width: 1600,
       height: 1000,
-      mimeType: "image/jpeg",
+      mimeType: "image/webp",
     },
   },
 
@@ -1366,13 +1286,13 @@ export const DEVELOPMENT_FIXTURE_DESIGNS: ReadonlyArray<CatalogueDesignItem> = [
     dimensionsNote: "Custom-proportioned to your architectural wall dimensions",
     coverImage: makeMedia(
       "designs/gallery-tonal-planes-study",
-      "/images/atelier/journal-divider-still-life.jpg",
+      "/images/atelier/explore-designs/abstract/gallery-tonal-planes-study.webp",
       "Gallery Tonal Planes Study abstract architectural composition"
     ),
     galleryMedia: [
       makeMedia(
         "designs/gallery-tonal-planes-study-01",
-        "/images/atelier/journal-divider-still-life.jpg",
+        "/images/atelier/explore-designs/abstract/gallery-tonal-planes-study.webp",
         "Gallery Tonal Planes Study — Studio Composition"
       ),
     ],
@@ -1384,10 +1304,10 @@ export const DEVELOPMENT_FIXTURE_DESIGNS: ReadonlyArray<CatalogueDesignItem> = [
     isDevelopmentFixture: true,
     visualizerConfig: {
       defaultMode: "mural",
-      textureUrl: "/images/atelier/journal-divider-still-life.jpg",
+      textureUrl: "/images/atelier/explore-designs/abstract/gallery-tonal-planes-study.webp",
       width: 1600,
       height: 1000,
-      mimeType: "image/jpeg",
+      mimeType: "image/webp",
     },
   },
 
@@ -1410,13 +1330,13 @@ export const DEVELOPMENT_FIXTURE_DESIGNS: ReadonlyArray<CatalogueDesignItem> = [
     dimensionsNote: "Custom-proportioned to your architectural wall dimensions",
     coverImage: makeMedia(
       "designs/backlit-dune-valley-horizon",
-      "/images/atelier/project-boardroom-relief-wall.jpg",
+      "/images/atelier/explore-designs/landscapes/backlit-dune-valley-horizon.webp",
       "Backlit Dune & Valley Horizon panoramic mural in an executive space"
     ),
     galleryMedia: [
       makeMedia(
         "designs/backlit-dune-valley-horizon-01",
-        "/images/atelier/project-boardroom-relief-wall.jpg",
+        "/images/atelier/explore-designs/landscapes/backlit-dune-valley-horizon.webp",
         "Backlit Dune & Valley Horizon — Wide Wall View"
       ),
     ],
@@ -1428,10 +1348,10 @@ export const DEVELOPMENT_FIXTURE_DESIGNS: ReadonlyArray<CatalogueDesignItem> = [
     isDevelopmentFixture: true,
     visualizerConfig: {
       defaultMode: "mural",
-      textureUrl: "/images/atelier/project-boardroom-relief-wall.jpg",
+      textureUrl: "/images/atelier/explore-designs/landscapes/backlit-dune-valley-horizon.webp",
       width: 1600,
       height: 1000,
-      mimeType: "image/jpeg",
+      mimeType: "image/webp",
     },
   },
 
@@ -1454,13 +1374,13 @@ export const DEVELOPMENT_FIXTURE_DESIGNS: ReadonlyArray<CatalogueDesignItem> = [
     dimensionsNote: "Custom-proportioned to your architectural wall dimensions",
     coverImage: makeMedia(
       "designs/kyoto-crane-crimson-sun",
-      "/images/atelier/project-hero-crane-living.jpg",
+      "/images/atelier/explore-designs/landscapes/kyoto-crane-crimson-sun.webp",
       "Kyoto Crane & Crimson Sun panoramic mural in a luxury living room"
     ),
     galleryMedia: [
       makeMedia(
         "designs/kyoto-crane-crimson-sun-01",
-        "/images/atelier/project-hero-crane-living.jpg",
+        "/images/atelier/explore-designs/landscapes/kyoto-crane-crimson-sun.webp",
         "Kyoto Crane & Crimson Sun — Living Room Elevation"
       ),
     ],
@@ -1472,10 +1392,10 @@ export const DEVELOPMENT_FIXTURE_DESIGNS: ReadonlyArray<CatalogueDesignItem> = [
     isDevelopmentFixture: true,
     visualizerConfig: {
       defaultMode: "mural",
-      textureUrl: "/images/atelier/project-hero-crane-living.jpg",
+      textureUrl: "/images/atelier/explore-designs/landscapes/kyoto-crane-crimson-sun.webp",
       width: 1600,
       height: 1000,
-      mimeType: "image/jpeg",
+      mimeType: "image/webp",
     },
   },
 
@@ -1542,13 +1462,13 @@ export const DEVELOPMENT_FIXTURE_DESIGNS: ReadonlyArray<CatalogueDesignItem> = [
     dimensionsNote: "Custom-proportioned to your architectural wall dimensions",
     coverImage: makeMedia(
       "designs/pressed-herbarium-linen-study",
-      "/images/atelier/about-story-sketchbook.jpg",
+      "/images/atelier/explore-designs/floral-studies/pressed-herbarium-linen-study.webp",
       "Pressed Herbarium & Linen Study botanical artwork"
     ),
     galleryMedia: [
       makeMedia(
         "designs/pressed-herbarium-linen-study-01",
-        "/images/atelier/about-story-sketchbook.jpg",
+        "/images/atelier/explore-designs/floral-studies/pressed-herbarium-linen-study.webp",
         "Pressed Herbarium & Linen Study — Studio Detail"
       ),
     ],
@@ -1560,10 +1480,10 @@ export const DEVELOPMENT_FIXTURE_DESIGNS: ReadonlyArray<CatalogueDesignItem> = [
     isDevelopmentFixture: true,
     visualizerConfig: {
       defaultMode: "mural",
-      textureUrl: "/images/atelier/about-story-sketchbook.jpg",
+      textureUrl: "/images/atelier/explore-designs/floral-studies/pressed-herbarium-linen-study.webp",
       width: 1600,
       height: 1000,
-      mimeType: "image/jpeg",
+      mimeType: "image/webp",
     },
   },
 
@@ -1586,13 +1506,13 @@ export const DEVELOPMENT_FIXTURE_DESIGNS: ReadonlyArray<CatalogueDesignItem> = [
     dimensionsNote: "Custom-proportioned to your architectural wall dimensions",
     coverImage: makeMedia(
       "designs/venetian-marmorino-warm-sand",
-      "/images/atelier/wall-preview-before.jpg",
+      "/images/atelier/explore-designs/plaster-lime/venetian-marmorino-warm-sand.webp",
       "Venetian Marmorino & Warm Sand sunlit lime plaster wall"
     ),
     galleryMedia: [
       makeMedia(
         "designs/venetian-marmorino-warm-sand-01",
-        "/images/atelier/wall-preview-before.jpg",
+        "/images/atelier/explore-designs/plaster-lime/venetian-marmorino-warm-sand.webp",
         "Venetian Marmorino & Warm Sand — Sunlit Wall Elevation"
       ),
     ],
@@ -1604,10 +1524,10 @@ export const DEVELOPMENT_FIXTURE_DESIGNS: ReadonlyArray<CatalogueDesignItem> = [
     isDevelopmentFixture: true,
     visualizerConfig: {
       defaultMode: "pattern",
-      textureUrl: "/images/atelier/wall-preview-before.jpg",
+      textureUrl: "/images/atelier/explore-designs/plaster-lime/venetian-marmorino-warm-sand.webp",
       width: 1200,
       height: 896,
-      mimeType: "image/jpeg",
+      mimeType: "image/webp",
     },
   },
 
@@ -1630,13 +1550,13 @@ export const DEVELOPMENT_FIXTURE_DESIGNS: ReadonlyArray<CatalogueDesignItem> = [
     dimensionsNote: "Custom-proportioned to your architectural wall dimensions",
     coverImage: makeMedia(
       "designs/burgundy-lime-alcove-patina",
-      "/images/atelier/visualizer-hero-burgundy-alcove.jpg",
+      "/images/atelier/explore-designs/plaster-lime/burgundy-lime-alcove-patina.webp",
       "Burgundy Lime Alcove Patina plaster wall finish"
     ),
     galleryMedia: [
       makeMedia(
         "designs/burgundy-lime-alcove-patina-01",
-        "/images/atelier/visualizer-hero-burgundy-alcove.jpg",
+        "/images/atelier/explore-designs/plaster-lime/burgundy-lime-alcove-patina.webp",
         "Burgundy Lime Alcove Patina — Interior Alcove"
       ),
     ],
@@ -1648,10 +1568,10 @@ export const DEVELOPMENT_FIXTURE_DESIGNS: ReadonlyArray<CatalogueDesignItem> = [
     isDevelopmentFixture: true,
     visualizerConfig: {
       defaultMode: "pattern",
-      textureUrl: "/images/atelier/visualizer-hero-burgundy-alcove.jpg",
+      textureUrl: "/images/atelier/explore-designs/plaster-lime/burgundy-lime-alcove-patina.webp",
       width: 1600,
       height: 1000,
-      mimeType: "image/jpeg",
+      mimeType: "image/webp",
     },
   },
 
@@ -1674,13 +1594,13 @@ export const DEVELOPMENT_FIXTURE_DESIGNS: ReadonlyArray<CatalogueDesignItem> = [
     dimensionsNote: "Custom-proportioned to your tiled elevation",
     coverImage: makeMedia(
       "designs/amalfi-terracotta-tile-arch",
-      "/images/atelier/contact-studio-dining-mural.jpg",
+      "/images/atelier/explore-designs/tile-editions/amalfi-terracotta-tile-arch.webp",
       "Amalfi Terracotta Tile Arch mural in a dining room"
     ),
     galleryMedia: [
       makeMedia(
         "designs/amalfi-terracotta-tile-arch-01",
-        "/images/atelier/contact-studio-dining-mural.jpg",
+        "/images/atelier/explore-designs/tile-editions/amalfi-terracotta-tile-arch.webp",
         "Amalfi Terracotta Tile Arch — Dining Elevation"
       ),
     ],
@@ -1692,10 +1612,10 @@ export const DEVELOPMENT_FIXTURE_DESIGNS: ReadonlyArray<CatalogueDesignItem> = [
     isDevelopmentFixture: true,
     visualizerConfig: {
       defaultMode: "mural",
-      textureUrl: "/images/atelier/contact-studio-dining-mural.jpg",
+      textureUrl: "/images/atelier/explore-designs/tile-editions/amalfi-terracotta-tile-arch.webp",
       width: 1600,
       height: 1000,
-      mimeType: "image/jpeg",
+      mimeType: "image/webp",
     },
   },
 
@@ -1718,13 +1638,13 @@ export const DEVELOPMENT_FIXTURE_DESIGNS: ReadonlyArray<CatalogueDesignItem> = [
     dimensionsNote: "Custom-proportioned to your tiled elevation",
     coverImage: makeMedia(
       "designs/travertine-lotus-tile-edition",
-      "/images/atelier/process-stage-05-execution.jpg",
+      "/images/atelier/explore-designs/tile-editions/travertine-lotus-tile-edition.webp",
       "Travertine & Lotus Tile Edition precision installation"
     ),
     galleryMedia: [
       makeMedia(
         "designs/travertine-lotus-tile-edition-01",
-        "/images/atelier/process-stage-05-execution.jpg",
+        "/images/atelier/explore-designs/tile-editions/travertine-lotus-tile-edition.webp",
         "Travertine & Lotus Tile Edition — Installation View"
       ),
     ],
@@ -1736,10 +1656,10 @@ export const DEVELOPMENT_FIXTURE_DESIGNS: ReadonlyArray<CatalogueDesignItem> = [
     isDevelopmentFixture: true,
     visualizerConfig: {
       defaultMode: "mural",
-      textureUrl: "/images/atelier/process-stage-05-execution.jpg",
+      textureUrl: "/images/atelier/explore-designs/tile-editions/travertine-lotus-tile-edition.webp",
       width: 1600,
       height: 1000,
-      mimeType: "image/jpeg",
+      mimeType: "image/webp",
     },
   },
 
@@ -1762,13 +1682,13 @@ export const DEVELOPMENT_FIXTURE_DESIGNS: ReadonlyArray<CatalogueDesignItem> = [
     dimensionsNote: "Custom-scaled for architectural glazing and partitions",
     coverImage: makeMedia(
       "designs/fluted-reed-linen-glass-screen",
-      "/images/atelier/process-stage-01-consultation.jpg",
+      "/images/atelier/explore-designs/glass-glazing/fluted-reed-linen-glass-screen.webp",
       "Fluted Reed & Linen Glass Screen studio material study"
     ),
     galleryMedia: [
       makeMedia(
         "designs/fluted-reed-linen-glass-screen-01",
-        "/images/atelier/process-stage-01-consultation.jpg",
+        "/images/atelier/explore-designs/glass-glazing/fluted-reed-linen-glass-screen.webp",
         "Fluted Reed & Linen Glass Screen — Studio Sample"
       ),
     ],
@@ -1780,10 +1700,10 @@ export const DEVELOPMENT_FIXTURE_DESIGNS: ReadonlyArray<CatalogueDesignItem> = [
     isDevelopmentFixture: true,
     visualizerConfig: {
       defaultMode: "pattern",
-      textureUrl: "/images/atelier/surface-glass-interior.jpg",
+      textureUrl: "/images/atelier/explore-designs/glass-glazing/fluted-reed-linen-glass-screen.webp",
       width: 1600,
       height: 1000,
-      mimeType: "image/jpeg",
+      mimeType: "image/webp",
     },
   },
 
@@ -1806,13 +1726,13 @@ export const DEVELOPMENT_FIXTURE_DESIGNS: ReadonlyArray<CatalogueDesignItem> = [
     dimensionsNote: "Custom-scaled for architectural glazing and walls",
     coverImage: makeMedia(
       "designs/translucent-lotus-glazing-mural",
-      "/images/atelier/artwork-lotus-atelier.jpg",
+      "/images/atelier/explore-designs/glass-glazing/translucent-lotus-glazing-mural.webp",
       "Translucent Lotus Glazing Mural botanical study"
     ),
     galleryMedia: [
       makeMedia(
         "designs/translucent-lotus-glazing-mural-01",
-        "/images/atelier/artwork-lotus-atelier.jpg",
+        "/images/atelier/explore-designs/glass-glazing/translucent-lotus-glazing-mural.webp",
         "Translucent Lotus Glazing Mural — Elevation"
       ),
     ],
@@ -1824,10 +1744,10 @@ export const DEVELOPMENT_FIXTURE_DESIGNS: ReadonlyArray<CatalogueDesignItem> = [
     isDevelopmentFixture: true,
     visualizerConfig: {
       defaultMode: "mural",
-      textureUrl: "/images/atelier/artwork-lotus-atelier.jpg",
+      textureUrl: "/images/atelier/explore-designs/glass-glazing/translucent-lotus-glazing-mural.webp",
       width: 1600,
       height: 1000,
-      mimeType: "image/jpeg",
+      mimeType: "image/webp",
     },
   },
 
@@ -1894,13 +1814,13 @@ export const DEVELOPMENT_FIXTURE_DESIGNS: ReadonlyArray<CatalogueDesignItem> = [
     dimensionsNote: "Custom-scaled to timber and metal panel dimensions",
     coverImage: makeMedia(
       "designs/nordic-birch-terracotta-millwork",
-      "/images/atelier/artwork-geometric-harmony.jpg",
+      "/images/atelier/explore-designs/timber-metal/nordic-birch-terracotta-millwork.webp",
       "Nordic Birch & Terracotta Millwork architectural study"
     ),
     galleryMedia: [
       makeMedia(
         "designs/nordic-birch-terracotta-millwork-01",
-        "/images/atelier/artwork-geometric-harmony.jpg",
+        "/images/atelier/explore-designs/timber-metal/nordic-birch-terracotta-millwork.webp",
         "Nordic Birch & Terracotta Millwork — Interior View"
       ),
     ],
@@ -1912,10 +1832,10 @@ export const DEVELOPMENT_FIXTURE_DESIGNS: ReadonlyArray<CatalogueDesignItem> = [
     isDevelopmentFixture: true,
     visualizerConfig: {
       defaultMode: "mural",
-      textureUrl: "/images/atelier/artwork-geometric-harmony.jpg",
+      textureUrl: "/images/atelier/explore-designs/timber-metal/nordic-birch-terracotta-millwork.webp",
       width: 1600,
       height: 1000,
-      mimeType: "image/jpeg",
+      mimeType: "image/webp",
     },
   },
 
@@ -1938,13 +1858,13 @@ export const DEVELOPMENT_FIXTURE_DESIGNS: ReadonlyArray<CatalogueDesignItem> = [
     dimensionsNote: "Custom-aligned across individual or multi-window bays",
     coverImage: makeMedia(
       "designs/botanical-solar-screen-blind-edition",
-      "/images/atelier/artwork-botanical-canopy.jpg",
+      "/images/atelier/explore-designs/window-blinds/botanical-solar-screen-blind.webp",
       "Botanical Solar Screen Blind Edition in a sunlit room"
     ),
     galleryMedia: [
       makeMedia(
         "designs/botanical-solar-screen-blind-edition-01",
-        "/images/atelier/artwork-botanical-canopy.jpg",
+        "/images/atelier/explore-designs/window-blinds/botanical-solar-screen-blind.webp",
         "Botanical Solar Screen Blind Edition — Elevation"
       ),
     ],
@@ -1956,10 +1876,10 @@ export const DEVELOPMENT_FIXTURE_DESIGNS: ReadonlyArray<CatalogueDesignItem> = [
     isDevelopmentFixture: true,
     visualizerConfig: {
       defaultMode: "mural",
-      textureUrl: "/images/atelier/artwork-botanical-canopy.jpg",
+      textureUrl: "/images/atelier/explore-designs/window-blinds/botanical-solar-screen-blind.webp",
       width: 1600,
       height: 1000,
-      mimeType: "image/jpeg",
+      mimeType: "image/webp",
     },
   },
 
@@ -1982,13 +1902,13 @@ export const DEVELOPMENT_FIXTURE_DESIGNS: ReadonlyArray<CatalogueDesignItem> = [
     dimensionsNote: "Custom-aligned across individual or multi-window bays",
     coverImage: makeMedia(
       "designs/architectural-arch-blind-triptych",
-      "/images/atelier/artwork-arch-limestone.jpg",
+      "/images/atelier/explore-designs/window-blinds/architectural-arch-blind-triptych.webp",
       "Architectural Arch Blind Triptych colonnade study"
     ),
     galleryMedia: [
       makeMedia(
         "designs/architectural-arch-blind-triptych-01",
-        "/images/atelier/artwork-arch-limestone.jpg",
+        "/images/atelier/explore-designs/window-blinds/architectural-arch-blind-triptych.webp",
         "Architectural Arch Blind Triptych — Full Elevation"
       ),
     ],
@@ -2000,10 +1920,10 @@ export const DEVELOPMENT_FIXTURE_DESIGNS: ReadonlyArray<CatalogueDesignItem> = [
     isDevelopmentFixture: true,
     visualizerConfig: {
       defaultMode: "mural",
-      textureUrl: "/images/atelier/artwork-arch-limestone.jpg",
+      textureUrl: "/images/atelier/explore-designs/window-blinds/architectural-arch-blind-triptych.webp",
       width: 1600,
       height: 1000,
-      mimeType: "image/jpeg",
+      mimeType: "image/webp",
     },
   },
 ];

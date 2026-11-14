@@ -4,14 +4,22 @@ import { getEnvironmentReadiness } from "@/lib/env";
 import { findDesignBySlugOrId } from "@/lib/designs-catalogue";
 import { findProjectBySlugOrId } from "@/lib/projects-catalogue";
 import {
+  deleteEnquiryRecord,
   listStoredEnquiries,
   saveEnquiryRecord,
   StoredEnquiryRecord,
+  updateEnquiryRecord,
 } from "@/lib/enquiries-store";
+import { requireAdminRequest } from "@/lib/admin-auth";
+import { EnquiryStatus } from "@/types/models";
 
 const MAX_PAYLOAD_BYTES = 16 * 1024; // 16 KB payload limit
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute window
 const MAX_REQUESTS_PER_WINDOW = 8;
+
+function sanitizeText(value: string): string {
+  return value.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "").trim();
+}
 
 const rateLimitStore = new Map<
   string,
@@ -188,9 +196,9 @@ export async function POST(request: Request) {
     const enquiryRecord: StoredEnquiryRecord = {
       id: `enq-${Date.now()}`,
       referenceCode,
-      fullName: parsed.data.fullName,
-      email: parsed.data.email,
-      phone: parsed.data.phone,
+      fullName: sanitizeText(parsed.data.fullName),
+      email: sanitizeText(parsed.data.email).toLowerCase(),
+      phone: sanitizeText(parsed.data.phone),
       interestType: matchedProject
         ? "custom_project"
         : matchedDesign
@@ -198,8 +206,8 @@ export async function POST(request: Request) {
           : parsed.data.serviceInterest
             ? "service"
             : "general",
-      serviceInterest: resolvedServiceInterest,
-      serviceOrDesignInterest: resolvedServiceInterest,
+      serviceInterest: sanitizeText(resolvedServiceInterest),
+      serviceOrDesignInterest: sanitizeText(resolvedServiceInterest),
       selectedDesignId: matchedDesign?.id || null,
       selectedDesignSlug:
         matchedDesign?.slug || parsed.data.selectedDesignSlug || null,
@@ -209,13 +217,15 @@ export async function POST(request: Request) {
         matchedProject?.slug || parsed.data.selectedProjectSlug || null,
       selectedProjectTitle: matchedProject?.title || null,
       selectedDesignReference:
-        parsed.data.selectedDesignReference ||
+        (parsed.data.selectedDesignReference
+          ? sanitizeText(parsed.data.selectedDesignReference)
+          : null) ||
         matchedDesign?.title ||
         matchedProject?.title ||
         null,
       resolvedCategoryCode: matchedDesign?.categoryCode || null,
       resolvedSurfaceName: matchedProject?.surfaceName || null,
-      message: parsed.data.message,
+      message: sanitizeText(parsed.data.message),
       consentGiven: Boolean(parsed.data.consentGiven),
       status: "New",
       adminNotes: [],
@@ -257,4 +267,68 @@ export async function POST(request: Request) {
       { status: 400 }
     );
   }
+}
+
+export async function PATCH(request: Request) {
+  const auth = requireAdminRequest(request);
+  if (!auth.ok) return auth.response;
+
+  try {
+    const body = await request.json();
+    const id = typeof body?.id === "string" ? body.id.trim() : "";
+    if (!id) {
+      return NextResponse.json(
+        { ok: false, error: "Enquiry id is required." },
+        { status: 400 }
+      );
+    }
+
+    const allowedStatuses: EnquiryStatus[] = [
+      "New",
+      "Contacted",
+      "In Progress",
+      "Closed",
+    ];
+    const status = allowedStatuses.includes(body?.status)
+      ? (body.status as EnquiryStatus)
+      : undefined;
+    const note = typeof body?.note === "string" ? body.note : undefined;
+
+    const updated = await updateEnquiryRecord(id, {
+      status,
+      note,
+      authorName: auth.session.email,
+    });
+
+    if (!updated) {
+      return NextResponse.json(
+        { ok: false, error: "Enquiry not found." },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({ ok: true, enquiry: updated });
+  } catch {
+    return NextResponse.json(
+      { ok: false, error: "Unable to update enquiry." },
+      { status: 400 }
+    );
+  }
+}
+
+export async function DELETE(request: Request) {
+  const auth = requireAdminRequest(request);
+  if (!auth.ok) return auth.response;
+
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get("id") || "";
+  if (!id) {
+    return NextResponse.json(
+      { ok: false, error: "Enquiry id is required." },
+      { status: 400 }
+    );
+  }
+
+  const deleted = await deleteEnquiryRecord(id);
+  return NextResponse.json({ ok: deleted });
 }

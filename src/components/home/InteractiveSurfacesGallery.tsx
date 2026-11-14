@@ -1,18 +1,24 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import Link from "next/link";
 import { ATELIER_SURFACES, buildWhatsAppUrl } from "@/lib/brand";
 import { cn } from "@/lib/cn";
-import { ArrowRight, ArrowUpRight, MessageCircle } from "lucide-react";
+import {
+  ArrowRight,
+  ArrowUpRight,
+  ChevronLeft,
+  ChevronRight,
+  MessageCircle,
+} from "lucide-react";
 
 const SURFACE_VISUAL_MAP: Record<string, string> = {
-  walls: "/images/atelier/artwork-terracotta-wave.jpg",
-  tiles: "/images/atelier/surface-tiles-interior.jpg",
-  plywood: "/images/atelier/surface-plywood-metal-interior.jpg",
-  "office-blinds": "/images/atelier/surface-office-blinds-interior.jpg",
-  metals: "/images/atelier/surface-metals-brushed-bronze.jpg",
-  glass: "/images/atelier/surface-glass-interior.jpg",
+  walls: "/images/atelier/home/home-substrate-walls.webp",
+  tiles: "/images/atelier/home/home-substrate-tiles.webp",
+  plywood: "/images/atelier/home/home-substrate-plywood.webp",
+  "office-blinds": "/images/atelier/home/home-substrate-blinds.webp",
+  metals: "/images/atelier/home/home-substrate-metals.webp",
+  glass: "/images/atelier/home/home-substrate-glass.webp",
 };
 
 /**
@@ -22,10 +28,17 @@ const SURFACE_VISUAL_MAP: Record<string, string> = {
  */
 export function InteractiveSurfacesGallery() {
   const [activeIndex, setActiveIndex] = useState(0);
+  const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
+  const totalSurfaces = ATELIER_SURFACES.length;
   const activeSurface = ATELIER_SURFACES[activeIndex] ?? ATELIER_SURFACES[0];
   const activeImage =
-    SURFACE_VISUAL_MAP[activeSurface.id] ??
-    "/images/atelier/artwork-terracotta-wave.jpg";
+    SURFACE_VISUAL_MAP[activeSurface.id] ?? SURFACE_VISUAL_MAP.walls;
+
+  const cycleSurface = (dir: 1 | -1) => {
+    setActiveIndex(
+      (prev) => (prev + dir + totalSurfaces) % totalSurfaces
+    );
+  };
 
   return (
     <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-stretch">
@@ -44,9 +57,13 @@ export function InteractiveSurfacesGallery() {
               role="tab"
               aria-selected={isSelected}
               onClick={() => setActiveIndex(idx)}
-              onMouseEnter={() => setActiveIndex(idx)}
+              onPointerEnter={(e) => {
+                if (e.pointerType === "mouse") {
+                  setActiveIndex(idx);
+                }
+              }}
               className={cn(
-                "group relative flex w-full cursor-pointer flex-col gap-2 py-5 px-4 text-left transition-colors duration-200 sm:px-6",
+                "group relative flex w-full cursor-pointer flex-col gap-1.5 py-5 px-4 text-left transition-colors duration-200 sm:px-6",
                 isSelected
                   ? "bg-[#F6EAE6] text-[#211D1A]"
                   : "bg-[#FBF8F3] text-[#211D1A] hover:bg-[#F2EBE2]"
@@ -86,11 +103,16 @@ export function InteractiveSurfacesGallery() {
                 </span>
               </div>
 
-              {isSelected && (
-                <p className="pl-8 text-xs sm:text-sm leading-relaxed text-[#6F665E]">
-                  {surface.summary}
-                </p>
-              )}
+              <div
+                className="atelier-accordion-content"
+                data-open={isSelected ? "true" : "false"}
+              >
+                <div className="atelier-accordion-inner">
+                  <p className="pt-1 pl-8 text-xs sm:text-sm leading-relaxed text-[#6F665E]">
+                    {surface.summary}
+                  </p>
+                </div>
+              </div>
             </button>
           );
         })}
@@ -109,28 +131,80 @@ export function InteractiveSurfacesGallery() {
             </span>
           </div>
 
-          {/* Photorealistic Surface Interior Stage */}
-          <div className="my-6 relative aspect-[16/10] w-full overflow-hidden rounded-xl border border-[#DDD2C5] bg-[#EBE3D8]">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              key={activeImage}
-              src={activeImage}
-              alt={`3D Printing on ${activeSurface.name}`}
-              className="h-full w-full object-cover transition-transform duration-700 hover:scale-105"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
+          {/* Photorealistic Surface Interior Stage (Swipeable on Touch) */}
+          <div
+            onTouchStart={(e) => {
+              if (!e.touches[0]) return;
+              swipeStartRef.current = {
+                x: e.touches[0].clientX,
+                y: e.touches[0].clientY,
+              };
+            }}
+            onTouchEnd={(e) => {
+              if (!swipeStartRef.current || !e.changedTouches[0]) return;
+              const dx =
+                e.changedTouches[0].clientX - swipeStartRef.current.x;
+              const dy =
+                e.changedTouches[0].clientY - swipeStartRef.current.y;
+              swipeStartRef.current = null;
+              if (Math.abs(dx) >= 38 && Math.abs(dx) > Math.abs(dy) * 1.2) {
+                cycleSurface(dx < 0 ? 1 : -1);
+              }
+            }}
+            style={{ touchAction: "pan-y" }}
+            className="my-6 relative aspect-[16/10] w-full overflow-hidden rounded-xl border border-[#DDD2C5] bg-[#EBE3D8]"
+          >
+            {/* Preload all 6 surface photographs for smooth crossfade */}
+            {ATELIER_SURFACES.map((surface, idx) => {
+              const imgSrc =
+                SURFACE_VISUAL_MAP[surface.id] ?? activeImage;
+              const isCurrent = idx === activeIndex;
+              return (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  key={surface.id}
+                  src={imgSrc}
+                  alt={`3D Printing on ${surface.name}`}
+                  className={cn(
+                    "absolute inset-0 h-full w-full object-cover transition-all duration-500 ease-out hover:scale-105 motion-reduce:transition-none",
+                    isCurrent
+                      ? "z-0 opacity-100 scale-100"
+                      : "pointer-events-none opacity-0 scale-[1.02]"
+                  )}
+                />
+              );
+            })}
+            <div className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
 
-            <div className="absolute inset-x-0 top-0 flex items-center justify-between p-4">
+            <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-between p-3.5 sm:p-4">
               <span className="rounded-full bg-[#9B1C1C] px-3 py-1 text-[10px] font-medium uppercase tracking-wider text-[#FBF8F3]">
                 Direct 3D Print Substrate
               </span>
-              <span className="rounded-full border border-[#DDD2C5]/80 bg-[#FBF8F3]/95 px-2.5 py-0.5 text-xs font-medium text-[#211D1A] shadow-sm">
-                0{activeIndex + 1} / 06
-              </span>
+              <div className="inline-flex items-center gap-1 rounded-full border border-[#DDD2C5]/80 bg-[#FBF8F3]/95 p-0.5 text-xs font-medium text-[#211D1A] shadow-sm">
+                <button
+                  type="button"
+                  onClick={() => cycleSurface(-1)}
+                  aria-label="Previous printing substrate"
+                  className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full text-[#211D1A] transition-colors hover:bg-[#9B1C1C] hover:text-[#FBF8F3]"
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" />
+                </button>
+                <span className="px-1.5 font-mono text-[11px] font-semibold">
+                  0{activeIndex + 1} / 06
+                </span>
+                <button
+                  type="button"
+                  onClick={() => cycleSurface(1)}
+                  aria-label="Next printing substrate"
+                  className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full text-[#211D1A] transition-colors hover:bg-[#9B1C1C] hover:text-[#FBF8F3]"
+                >
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </button>
+              </div>
             </div>
 
-            <div className="absolute inset-x-0 bottom-0 p-5">
-              <h3 className="font-serif text-3xl sm:text-4xl font-medium text-brand-offwhite">
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 p-4 sm:p-5">
+              <h3 className="font-serif text-2xl sm:text-4xl font-medium text-brand-offwhite">
                 3D Printing on {activeSurface.name}
               </h3>
               <p className="mt-1 text-xs text-brand-beige/90">

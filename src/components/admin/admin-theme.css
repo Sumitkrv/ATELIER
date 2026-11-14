@@ -1,0 +1,51 @@
+/* Scoped solely to /admin routes via src/app/admin/layout.tsx */
+.atelier-admin-theme {
+  --admin-background: #faf6f0;
+  --admin-surface: #fffdf9;
+  --admin-surface-muted: #f2eae1;
+  --admin-surface-input: #f6f1ea;
+  --admin-primary: #9b1c1c;
+  --admin-primary-hover: #801619;
+  --admin-primary-soft: rgba(155, 28, 28, 0.08);
+  --admin-text: #1a1a1a;
+  --admin-text-secondary: #746b64;
+  --admin-border: #dfd0c0;
+  --admin-divider: #e8ded3;
+
+  color-scheme: light;
+  background-color: var(--admin-background);
+  color: var(--admin-text);
+}
+
+.atelier-admin-theme ::selection {
+  background-color: var(--admin-primary);
+  color: var(--admin-surface);
+}
+
+.atelier-admin-theme :is(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid rgba(155, 28, 28, 0.45);
+  outline-offset: 2px;
+}
+
+.atelier-admin-theme .admin-tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.atelier-admin-theme ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.atelier-admin-theme ::-webkit-scrollbar-track {
+  background: var(--admin-surface-muted);
+}
+
+.atelier-admin-theme ::-webkit-scrollbar-thumb {
+  background: var(--admin-border);
+  border-radius: 9999px;
+}
+
+.atelier-admin-theme ::-webkit-scrollbar-thumb:hover {
+  background: #cbb6a1;
+}
+

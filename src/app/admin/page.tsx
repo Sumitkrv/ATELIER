@@ -1,195 +1,364 @@
-import React from "react";
+"use client";
+
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { ADMIN_NAV_MODULES } from "@/lib/navigation";
-import { getEnvironmentReadiness } from "@/lib/env";
-import { ATELIER_BRAND } from "@/lib/brand";
+import { AdminAuthBanner } from "@/components/admin/AdminChromeClient";
 import {
+  adminButtonClass,
+  adminCardClass,
+  AdminStatusBadge,
+} from "@/components/admin/AdminUiPrimitives";
+import { StoredEnquiryRecord } from "@/lib/enquiries-store";
+import {
+  ArrowRight,
   ArrowUpRight,
-  Database,
+  BookOpen,
+  Building2,
+  ExternalLink,
+  FileText,
   FolderKanban,
-  Grid,
-  Inbox,
-  KeyRound,
-  Layers,
-  Lock,
-  ShieldCheck,
+  MessageSquare,
+  Palette,
+  Settings,
 } from "lucide-react";
 
-export default function AdminDashboardOverviewPage() {
-  const readiness = getEnvironmentReadiness();
+interface OverviewData {
+  authenticated: boolean;
+  counts: {
+    designsTotal: number;
+    designsPublished: number;
+    categoriesTotal: number;
+    categoriesActive: number;
+    projectsTotal: number;
+    projectsPublished: number;
+    blogsTotal: number;
+    blogsPublished: number;
+    enquiriesTotal: number;
+    enquiriesOpen: number;
+  };
+  recentEnquiries: StoredEnquiryRecord[];
+}
 
-  const kpiSlots = [
+const QUICK_WORKSPACES = [
+  {
+    title: "Pages & Content",
+    description:
+      "Update hero headlines, introductory copy, and call-to-action labels across website routes.",
+    href: "/admin/content",
+    cta: "Edit Pages",
+    Icon: FileText,
+  },
+  {
+    title: "Design Collection",
+    description:
+      "Manage wall murals and patterns, toggle featured items, and assign compatible surfaces.",
+    href: "/admin/designs",
+    cta: "Browse Designs",
+    Icon: Palette,
+  },
+  {
+    title: "Design Categories",
+    description:
+      "Configure category names, URL slugs, display order, active toggles, and cover visuals.",
+    href: "/admin/categories",
+    cta: "Edit Categories",
+    Icon: FolderKanban,
+  },
+  {
+    title: "Portfolio Projects",
+    description:
+      "Curate completed architectural installations across walls, tiles, timber, blinds, and glass.",
+    href: "/admin/projects",
+    cta: "Manage Projects",
+    Icon: Building2,
+  },
+  {
+    title: "Journal Stories",
+    description:
+      "Draft, edit, and publish studio essays, material guides, and interior design perspectives.",
+    href: "/admin/blogs",
+    cta: "Open Journal",
+    Icon: BookOpen,
+  },
+  {
+    title: "Site Settings & SEO",
+    description:
+      "Update studio identity, Mumbai contact numbers, WhatsApp, social links, and search defaults.",
+    href: "/admin/settings",
+    cta: "Studio Settings",
+    Icon: Settings,
+  },
+];
+
+function formatDate(iso?: string): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+export default function AdminDashboardOverviewPage() {
+  const [data, setData] = useState<OverviewData | null>(null);
+  const [pagesCount, setPagesCount] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    Promise.all([
+      fetch("/api/admin/cms?collection=overview", { cache: "no-store" }).then((r) =>
+        r.json()
+      ),
+      fetch("/api/admin/cms?collection=content", { cache: "no-store" }).then((r) =>
+        r.json()
+      ),
+    ])
+      .then(([overviewJson, contentJson]) => {
+        if (!active) return;
+        if (overviewJson?.ok) setData(overviewJson);
+        if (contentJson?.ok && Array.isArray(contentJson.pages)) {
+          setPagesCount(contentJson.pages.length);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const counts = data?.counts;
+
+  const metrics = [
     {
-      label: "Total Designs",
-      collection: "designs",
-      value: readiness.mongodbConfigured ? "Connected" : "Awaiting DB",
+      label: "Published Designs",
+      value: counts ? `${counts.designsPublished}` : loading ? "…" : "—",
+      caption: counts ? `${counts.designsTotal} total artworks` : "Loading count",
       href: "/admin/designs",
-      icon: Layers,
+      Icon: Palette,
     },
     {
-      label: "13 Design Categories",
-      collection: "design_categories",
-      value: "13 Slots Defined",
+      label: "Categories",
+      value: counts ? `${counts.categoriesActive}` : loading ? "…" : "—",
+      caption: counts ? `${counts.categoriesTotal} total categories` : "Loading count",
       href: "/admin/categories",
-      icon: Grid,
+      Icon: FolderKanban,
     },
     {
-      label: "Total Projects",
-      collection: "projects",
-      value: readiness.mongodbConfigured ? "Connected" : "Awaiting DB",
+      label: "Portfolio Projects",
+      value: counts ? `${counts.projectsPublished}` : loading ? "…" : "—",
+      caption: counts ? `${counts.projectsTotal} total studies` : "Loading count",
       href: "/admin/projects",
-      icon: FolderKanban,
+      Icon: Building2,
     },
     {
-      label: "Customer Enquiries",
-      collection: "enquiries",
-      value: readiness.mongodbConfigured ? "Connected" : "Awaiting DB",
+      label: "Journal Articles",
+      value: counts ? `${counts.blogsPublished}` : loading ? "…" : "—",
+      caption: counts ? `${counts.blogsTotal} total stories` : "Loading count",
+      href: "/admin/blogs",
+      Icon: BookOpen,
+    },
+    {
+      label: "Website Pages",
+      value: pagesCount !== null ? `${pagesCount}` : loading ? "…" : "—",
+      caption: "Editable routes",
+      href: "/admin/content",
+      Icon: FileText,
+    },
+    {
+      label: "Open Enquiries",
+      value: counts ? `${counts.enquiriesOpen}` : loading ? "…" : "—",
+      caption: counts ? `${counts.enquiriesTotal} received total` : "Loading count",
       href: "/admin/enquiries",
-      icon: Inbox,
+      Icon: MessageSquare,
     },
   ];
 
   return (
     <div className="space-y-6">
-      {/* Security & Persistence Status Banner */}
-      <div className="rounded-sm border border-brand-crimson/40 bg-obsidian-900 p-6 sm:p-8">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <span className="font-mono text-xs uppercase tracking-[0.2em] text-brand-crimson">
-              Admin Module 01 • Dashboard Overview
-            </span>
-            <h1 className="mt-1 font-serif text-3xl font-light text-brand-offwhite sm:text-4xl">
-              {ATELIER_BRAND.name} — CMS Command Center
+      {data ? <AdminAuthBanner authenticated={data.authenticated} /> : null}
+
+      {/* Editorial Studio Welcome Band */}
+      <section className={`${adminCardClass} p-6 sm:p-8`}>
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between border-b border-[#E8DED3] pb-6">
+          <div className="max-w-2xl">
+            <p className="font-sans text-[11px] font-semibold uppercase tracking-[0.2em] text-[#9B1C1C]">
+              ATELIER Studio Overview
+            </p>
+            <h1 className="mt-1.5 font-serif text-3xl sm:text-4xl font-normal tracking-[-0.02em] text-[#1A1A1A]">
+              Your Creative Workspace.
             </h1>
-            <p className="mt-2 max-w-2xl text-xs sm:text-sm leading-relaxed text-brand-beige/75">
-              Official brand assets, 3D wall printing surface specifications,
-              and Mumbai contact records are integrated. All 8 CMS modules map
-              to persistent MongoDB collections, and write mutations remain
-              locked behind signed authentication and MongoDB connection
-              credentials.
+            <p className="mt-2 font-sans text-sm leading-relaxed text-[#746B64]">
+              Manage your wall design collection, architectural case studies,
+              editorial journal, page copy, and studio client enquiries.
             </p>
           </div>
 
-          <Link
-            href="/admin/login"
-            className="inline-flex shrink-0 items-center gap-2 rounded-sm bg-brand-crimson px-5 py-3 font-mono text-xs font-medium uppercase tracking-wider text-brand-offwhite transition-colors hover:bg-brand-crimson-dark"
-          >
-            <KeyRound className="h-4 w-4" />
-            <span>Inspect Auth Gate</span>
-          </Link>
+          <div className="flex flex-wrap items-center gap-3 shrink-0">
+            <Link href="/admin/content" className={adminButtonClass("primary")}>
+              <span>Edit Website Content</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+            <Link
+              href="/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={adminButtonClass("secondary")}
+            >
+              <span>View Website</span>
+              <ExternalLink className="w-3.5 h-3.5 text-[#746B64]" />
+            </Link>
+          </div>
         </div>
 
-        {/* KPI Metric Slots */}
-        <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {kpiSlots.map((kpi) => {
-            const Icon = kpi.icon;
+        {/* 6 Crisp Ivory Metric Panels */}
+        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+          {metrics.map((metric) => {
+            const Icon = metric.Icon;
             return (
               <Link
-                key={kpi.label}
-                href={kpi.href}
-                className="group rounded-sm border border-white/10 bg-brand-charcoal p-5 transition-colors hover:border-brand-crimson"
+                key={metric.label}
+                href={metric.href}
+                className="group rounded-2xl border border-[#E8DED3] bg-[#FAF6F0]/75 p-4 transition-colors hover:border-[#9B1C1C]/45 hover:bg-[#FFFDF9]"
               >
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-[11px] uppercase tracking-wider text-brand-beige/70">
-                    {kpi.label}
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-sans text-[11px] font-medium text-[#746B64]">
+                    {metric.label}
                   </span>
-                  <Icon className="h-4 w-4 text-brand-crimson" />
+                  <Icon className="w-4 h-4 text-[#9B1C1C] shrink-0" />
                 </div>
-                <p className="mt-3 font-serif text-2xl font-light text-brand-offwhite">
-                  {kpi.value}
+                <p className="mt-3 font-serif text-3xl font-normal text-[#1A1A1A] admin-tabular">
+                  {metric.value}
                 </p>
-                <div className="mt-3 flex items-center justify-between border-t border-white/10 pt-2.5 font-mono text-[10px] text-brand-beige/80">
-                  <span>db.{kpi.collection}</span>
-                  <ArrowUpRight className="h-3.5 w-3.5 text-brand-crimson" />
+                <div className="mt-3 pt-2.5 border-t border-[#E8DED3] flex items-center justify-between gap-2 font-sans text-[11px] text-[#746B64]">
+                  <span className="truncate">{metric.caption}</span>
+                  <ArrowUpRight className="w-3.5 h-3.5 text-[#9B1C1C] shrink-0 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
                 </div>
               </Link>
             );
           })}
         </div>
-      </div>
+      </section>
 
-      {/* All 8 Admin Modules Directory */}
-      <div className="rounded-sm border border-white/10 bg-obsidian-900 p-6 sm:p-8">
-        <div className="flex items-center justify-between border-b border-white/10 pb-4">
-          <div>
-            <h2 className="font-serif text-2xl font-light text-brand-offwhite">
-              CMS Module Architecture & MongoDB Collections
-            </h2>
-            <p className="mt-1 text-xs text-brand-beige/70">
-              Every module persists directly to MongoDB—never ephemeral local
-              browser state.
-            </p>
-          </div>
-          <Database className="h-5 w-5 text-brand-crimson" />
-        </div>
-
-        <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
-          {ADMIN_NAV_MODULES.map((mod, idx) => (
+      {/* Recent Enquiries + Quick Studio Workspaces */}
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
+        {/* Recent Client Enquiries */}
+        <section className={`${adminCardClass} xl:col-span-5 p-6 flex flex-col`}>
+          <div className="flex items-center justify-between gap-3 border-b border-[#E8DED3] pb-4">
+            <div>
+              <h2 className="font-serif text-2xl font-normal text-[#1A1A1A]">
+                Recent Enquiries
+              </h2>
+              <p className="mt-0.5 font-sans text-xs text-[#746B64]">
+                Latest submissions from project & contact pages.
+              </p>
+            </div>
             <Link
-              key={mod.id}
-              href={mod.href}
-              className="group flex flex-col justify-between rounded-sm border border-white/10 bg-brand-charcoal p-5 transition-colors hover:border-brand-crimson"
+              href="/admin/enquiries"
+              className="font-sans text-xs font-medium text-[#9B1C1C] hover:underline shrink-0"
             >
-              <div>
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-[11px] text-brand-crimson">
-                    MODULE 0{idx + 1} • db.{mod.collectionName}
-                  </span>
-                  <Lock className="h-3.5 w-3.5 text-brand-beige/50 group-hover:text-brand-crimson" />
-                </div>
-                <h3 className="mt-2 font-serif text-xl font-light text-brand-offwhite">
-                  {mod.label}
-                </h3>
-                <p className="mt-1.5 text-xs leading-relaxed text-brand-beige/70">
-                  {mod.summary}
+              View All →
+            </Link>
+          </div>
+
+          <div className="mt-4 flex-1 space-y-3">
+            {!data || data.recentEnquiries.length === 0 ? (
+              <div className="rounded-2xl border border-[#E8DED3] bg-[#FAF6F0] p-6 text-center">
+                <MessageSquare className="w-6 h-6 text-[#746B64]/50 mx-auto" />
+                <p className="mt-2 font-sans text-xs text-[#746B64]">
+                  No studio enquiries recorded yet.
                 </p>
               </div>
-              <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between font-mono text-[11px] text-brand-beige">
-                <span>Inspect Module Schema</span>
-                <ArrowUpRight className="h-3.5 w-3.5 text-brand-crimson" />
-              </div>
-            </Link>
-          ))}
-        </div>
-      </div>
+            ) : (
+              data.recentEnquiries.slice(0, 5).map((enq) => {
+                const badgeStatus =
+                  enq.status === "new" ? "New" : enq.status;
+                return (
+                  <Link
+                    key={enq.id}
+                    href="/admin/enquiries"
+                    className="block rounded-2xl border border-[#E8DED3] bg-[#FAF6F0]/70 p-4 transition-colors hover:border-[#9B1C1C]/40 hover:bg-[#FFFDF9]"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="font-sans text-sm font-semibold text-[#1A1A1A] truncate">
+                          {enq.fullName}
+                        </p>
+                        <p className="mt-0.5 font-sans text-xs text-[#746B64] truncate">
+                          {enq.email}
+                        </p>
+                      </div>
+                      <AdminStatusBadge tone={badgeStatus}>
+                        {badgeStatus}
+                      </AdminStatusBadge>
+                    </div>
+                    <div className="mt-2.5 flex items-center justify-between gap-2 text-[11px] font-sans text-[#746B64]">
+                      <span className="truncate">
+                        {enq.serviceOrDesignInterest ||
+                          enq.serviceInterest ||
+                          enq.sourcePage ||
+                          "Studio Enquiry"}
+                      </span>
+                      <span className="shrink-0 admin-tabular">
+                        {formatDate(enq.createdAt)}
+                      </span>
+                    </div>
+                  </Link>
+                );
+              })
+            )}
+          </div>
+        </section>
 
-      {/* Authentication Integration Plan Summary */}
-      <div className="rounded-sm border border-white/10 bg-obsidian-900 p-6 sm:p-8">
-        <div className="flex items-center gap-2.5 font-mono text-xs uppercase tracking-widest text-brand-crimson">
-          <ShieldCheck className="h-4 w-4" />
-          <span>Authentication & Session Security Plan</span>
-        </div>
-        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3 text-xs leading-relaxed text-brand-beige/75">
-          <div className="rounded-sm border border-white/10 bg-brand-charcoal p-4">
-            <strong className="block text-brand-offwhite mb-1">
-              1. Password & Credential Storage
-            </strong>
-            Admin credentials stored in{" "}
-            <code className="font-mono">admin_users</code> with Argon2id/bcrypt
-            password hashing and seeded from{" "}
-            <code className="font-mono">INITIAL_ADMIN_EMAIL</code> /{" "}
-            <code className="font-mono">INITIAL_ADMIN_PASSWORD</code>.
+        {/* Quick Studio Workspaces */}
+        <section className={`${adminCardClass} xl:col-span-7 p-6`}>
+          <div className="border-b border-[#E8DED3] pb-4">
+            <h2 className="font-serif text-2xl font-normal text-[#1A1A1A]">
+              Studio Modules
+            </h2>
+            <p className="mt-0.5 font-sans text-xs text-[#746B64]">
+              Jump directly to any section of ATELIER — WALL STORY&apos;s CMS.
+            </p>
           </div>
-          <div className="rounded-sm border border-white/10 bg-brand-charcoal p-4">
-            <strong className="block text-brand-offwhite mb-1">
-              2. Signed HttpOnly Session Cookies
-            </strong>
-            Cryptographically signed JWT/session tokens using{" "}
-            <code className="font-mono">ADMIN_AUTH_SECRET</code> with{" "}
-            <code className="font-mono">httpOnly</code>,{" "}
-            <code className="font-mono">Secure</code>, and{" "}
-            <code className="font-mono">SameSite=Lax</code> flags.
+
+          <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {QUICK_WORKSPACES.map((item) => {
+              const Icon = item.Icon;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="group rounded-2xl border border-[#E8DED3] bg-[#FAF6F0]/75 p-4 flex flex-col justify-between gap-4 transition-colors hover:border-[#9B1C1C]/45 hover:bg-[#FFFDF9]"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-[#9B1C1C]/10 border border-[#9B1C1C]/20 flex items-center justify-center shrink-0 text-[#9B1C1C]">
+                      <Icon className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h3 className="font-serif text-xl font-normal text-[#1A1A1A]">
+                        {item.title}
+                      </h3>
+                      <p className="mt-1 font-sans text-xs leading-relaxed text-[#746B64]">
+                        {item.description}
+                      </p>
+                    </div>
+                  </div>
+
+                  <span className="inline-flex items-center gap-1.5 font-sans text-xs font-medium text-[#9B1C1C]">
+                    <span>{item.cta}</span>
+                    <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+                  </span>
+                </Link>
+              );
+            })}
           </div>
-          <div className="rounded-sm border border-white/10 bg-brand-charcoal p-4">
-            <strong className="block text-brand-offwhite mb-1">
-              3. Route & API Guard Enforcement
-            </strong>
-            Every <code className="font-mono">/admin/*</code> page and{" "}
-            <code className="font-mono">/api/admin/*</code> endpoint verifies
-            the session token and rejects unauthenticated requests with{" "}
-            <code className="font-mono">401 Unauthorized</code>.
-          </div>
-        </div>
+        </section>
       </div>
     </div>
   );

@@ -46,6 +46,7 @@ export interface PortfolioProjectRecord {
   beforeAfterMedia: {
     beforeLabel: string;
     afterLabel: string;
+    beforeImageUrl: string;
     afterImageUrl: string;
   };
   videoAsset: MediaAssetRef | null;
@@ -120,9 +121,9 @@ export const PROJECTS_HERO_SLIDES: ReadonlyArray<ProjectHeroSlide> = [
     locationOrContext: "Mumbai Studio • Ceramic & Stone Tiles",
     spaceCategory: "Hospitality",
     surfaceName: "Tiles",
-    imageUrl: "/images/atelier/surface-tiles-interior.jpg",
+    imageUrl: "/images/atelier/projects/hero-mediterranean-tile-hospitality.webp",
     imageAlt:
-      "Boutique hospitality elevation with direct-to-tile botanical and terracotta geometric printing",
+      "Resort pool-side lounge bar with a tiled back wall printed with a botanical and terracotta geometric composition",
     projectSlug: "tiles-architectural-elevation-study",
   },
 ];
@@ -143,6 +144,8 @@ const SURFACE_SAMPLE_VISUALS: Record<
   {
     coverUrl: string;
     exhibitionUrl: string;
+    /** Same camera/room as the cover with the artwork removed (matched before/after pair). */
+    beforeUrl: string;
     secondaryUrls: string[];
     studyTitle: string;
     shortTitle: string;
@@ -155,13 +158,10 @@ const SURFACE_SAMPLE_VISUALS: Record<
   }
 > = {
   walls: {
-    coverUrl: "/images/atelier/artwork-lotus-atelier.jpg",
-    exhibitionUrl: "/images/atelier/artwork-lotus-atelier.jpg",
-    secondaryUrls: [
-      "/images/atelier/project-hero-crane-living.jpg",
-      "/images/atelier/artwork-terracotta-wave.jpg",
-      "/images/atelier/artwork-arch-limestone.jpg",
-    ],
+    coverUrl: "/images/atelier/projects/walls-lotus-residence-cover.webp",
+    exhibitionUrl: "/images/atelier/projects/walls-lotus-residence-cover.webp",
+    beforeUrl: "/images/atelier/projects/walls-lotus-residence-before.webp",
+    secondaryUrls: ["/images/atelier/projects/walls-lotus-residence-detail.webp"],
     studyTitle: "Lotus & Botanical Sanctuary — Residential Wall Study",
     shortTitle: "Lotus Residence Study",
     projectType: "Interior Feature Wall • Direct 3D Wall Printing",
@@ -178,13 +178,10 @@ const SURFACE_SAMPLE_VISUALS: Record<
     ],
   },
   tiles: {
-    coverUrl: "/images/atelier/surface-tiles-interior.jpg",
-    exhibitionUrl: "/images/atelier/project-boardroom-relief-wall.jpg",
-    secondaryUrls: [
-      "/images/atelier/cat-mineral-travertine.jpg",
-      "/images/atelier/project-boardroom-relief-wall.jpg",
-      "/images/atelier/artwork-geometric-harmony.jpg",
-    ],
+    coverUrl: "/images/atelier/projects/tiles-hospitality-cover.webp",
+    exhibitionUrl: "/images/atelier/projects/tiles-hospitality-cover.webp",
+    beforeUrl: "/images/atelier/projects/tiles-hospitality-before.webp",
+    secondaryUrls: ["/images/atelier/projects/tiles-hospitality-detail.webp"],
     studyTitle: "Mediterranean Ceramic & Travertine Tile Elevation Study",
     shortTitle: "Hospitality Tile Study",
     projectType: "Tiled Surface Application • Direct 3D Printing",
@@ -201,13 +198,10 @@ const SURFACE_SAMPLE_VISUALS: Record<
     ],
   },
   plywood: {
-    coverUrl: "/images/atelier/project-retail-terracotta-arch.jpg",
-    exhibitionUrl: "/images/atelier/project-retail-terracotta-arch.jpg",
-    secondaryUrls: [
-      "/images/atelier/surface-plywood-metal-interior.jpg",
-      "/images/atelier/artwork-terracotta-wave.jpg",
-      "/images/atelier/artwork-arch-limestone.jpg",
-    ],
+    coverUrl: "/images/atelier/projects/plywood-retail-cover.webp",
+    exhibitionUrl: "/images/atelier/projects/plywood-retail-cover.webp",
+    beforeUrl: "/images/atelier/projects/plywood-retail-before.webp",
+    secondaryUrls: ["/images/atelier/projects/plywood-retail-detail.webp"],
     studyTitle: "Sculpted Terracotta Arch & Timber Millwork Study",
     shortTitle: "Retail Experience Study",
     projectType: "Plywood & Timber Panels • Direct 3D Printing",
@@ -224,13 +218,10 @@ const SURFACE_SAMPLE_VISUALS: Record<
     ],
   },
   "office-blinds": {
-    coverUrl: "/images/atelier/surface-office-blinds-interior.jpg",
-    exhibitionUrl: "/images/atelier/surface-office-blinds-interior.jpg",
-    secondaryUrls: [
-      "/images/atelier/artwork-mountain-silhouette.jpg",
-      "/images/atelier/project-boardroom-relief-wall.jpg",
-      "/images/atelier/artwork-geometric-harmony.jpg",
-    ],
+    coverUrl: "/images/atelier/projects/blinds-office-cover.webp",
+    exhibitionUrl: "/images/atelier/projects/blinds-office-cover.webp",
+    beforeUrl: "/images/atelier/projects/blinds-office-before.webp",
+    secondaryUrls: ["/images/atelier/projects/blinds-office-detail.webp"],
     studyTitle: "Panoramic Mountain Horizon Study for Office Blinds",
     shortTitle: "Office Workspace Study",
     projectType: "Office Window Blinds • Direct Surface Printing",
@@ -247,13 +238,10 @@ const SURFACE_SAMPLE_VISUALS: Record<
     ],
   },
   metals: {
-    coverUrl: "/images/atelier/surface-metals-brushed-bronze.jpg",
-    exhibitionUrl: "/images/atelier/surface-metals-brushed-bronze.jpg",
-    secondaryUrls: [
-      "/images/atelier/surface-plywood-metal-interior.jpg",
-      "/images/atelier/cat-mineral-travertine.jpg",
-      "/images/atelier/artwork-geometric-harmony.jpg",
-    ],
+    coverUrl: "/images/atelier/projects/metals-lobby-cover.webp",
+    exhibitionUrl: "/images/atelier/projects/metals-lobby-cover.webp",
+    beforeUrl: "/images/atelier/projects/metals-lobby-before.webp",
+    secondaryUrls: ["/images/atelier/projects/metals-lobby-detail.webp"],
     studyTitle: "Brushed Bronze & Metallic Cladding Elevation Study",
     shortTitle: "Metallic Cladding Study",
     projectType: "Architectural Metals • Direct Surface Printing",
@@ -270,12 +258,10 @@ const SURFACE_SAMPLE_VISUALS: Record<
     ],
   },
   glass: {
-    coverUrl: "/images/atelier/surface-glass-interior.jpg",
-    exhibitionUrl: "/images/atelier/surface-glass-interior.jpg",
-    secondaryUrls: [
-      "/images/atelier/artwork-botanical-canopy.jpg",
-      "/images/atelier/artwork-lotus-atelier.jpg",
-    ],
+    coverUrl: "/images/atelier/projects/glass-partition-cover.webp",
+    exhibitionUrl: "/images/atelier/projects/glass-partition-cover.webp",
+    beforeUrl: "/images/atelier/projects/glass-partition-before.webp",
+    secondaryUrls: ["/images/atelier/projects/glass-partition-detail.webp"],
     studyTitle: "Botanical Relief & Frosted Glazing Partition Study",
     shortTitle: "Glass Partition Study",
     projectType: "Architectural Glass • Direct Surface Printing",
@@ -343,6 +329,7 @@ export const DEVELOPMENT_PROJECT_FIXTURES: ReadonlyArray<PortfolioProjectRecord>
       beforeAfterMedia: {
         beforeLabel: `Prepared ${surface.name} Substrate (Before Printing)`,
         afterLabel: `3D Printed ${surface.name} Elevation`,
+        beforeImageUrl: spec.beforeUrl,
         afterImageUrl: spec.coverUrl,
       },
       videoAsset:

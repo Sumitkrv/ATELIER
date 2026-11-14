@@ -128,7 +128,7 @@ export function AtelierTumbleGallery() {
     >
       <TumbleDeckShowcase
         cards={tumbleCards}
-        height="calc(100svh - var(--atelier-navbar-offset, 4.75rem))"
+        height="calc(100svh - var(--navbar-height, 74px))"
         aspect={1.62}
         scrollPerCard={240}
         depth={5}

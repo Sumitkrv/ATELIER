@@ -5,6 +5,7 @@
 
 export interface EnvironmentReadiness {
   mongodbConfigured: boolean;
+  localCmsEnabled: boolean;
   adminAuthConfigured: boolean;
   cloudinaryConfigured: boolean;
   emailConfigured: boolean;
@@ -17,9 +18,15 @@ export function getEnvironmentReadiness(): EnvironmentReadiness {
     process.env.MONGODB_URI && process.env.MONGODB_URI.trim().length > 0
   );
 
+  const localCmsEnabled =
+    process.env.LOCAL_CMS_ENABLED === "true" ||
+    process.env.NODE_ENV !== "production";
+
   const adminAuthConfigured = Boolean(
     process.env.ADMIN_AUTH_SECRET &&
-      process.env.ADMIN_AUTH_SECRET.trim().length >= 16
+      process.env.ADMIN_AUTH_SECRET.trim().length >= 16 &&
+      process.env.INITIAL_ADMIN_EMAIL &&
+      process.env.INITIAL_ADMIN_PASSWORD
   );
 
   const cloudinaryConfigured = Boolean(
@@ -43,10 +50,11 @@ export function getEnvironmentReadiness(): EnvironmentReadiness {
 
   const visualizerUrl =
     process.env.NEXT_PUBLIC_WALL_VISUALIZER_URL?.trim() ||
-    "http://localhost:3001/visualizer";
+    "http://localhost:3000/visualizer";
 
   return {
     mongodbConfigured,
+    localCmsEnabled,
     adminAuthConfigured,
     cloudinaryConfigured,
     emailConfigured,
@@ -54,4 +62,3 @@ export function getEnvironmentReadiness(): EnvironmentReadiness {
     visualizerUrl,
   };
 }
-

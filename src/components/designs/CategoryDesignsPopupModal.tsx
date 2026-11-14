@@ -272,7 +272,7 @@ export function CategoryDesignsPopupModal({
                   type="button"
                   onClick={handlePrevCategory}
                   aria-label="Previous category"
-                  className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-[#211D1A] transition-colors hover:bg-[#9B1C1C] hover:text-[#FAF9F6] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9B1C1C]"
+                  className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-[#211D1A] transition-colors hover:bg-[#9B1C1C] hover:text-[#FAF9F6] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9B1C1C]"
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </button>
@@ -283,7 +283,7 @@ export function CategoryDesignsPopupModal({
                   type="button"
                   onClick={handleNextCategory}
                   aria-label="Next category"
-                  className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-[#211D1A] transition-colors hover:bg-[#9B1C1C] hover:text-[#FAF9F6] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9B1C1C]"
+                  className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-[#211D1A] transition-colors hover:bg-[#9B1C1C] hover:text-[#FAF9F6] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9B1C1C]"
                 >
                   <ChevronRight className="h-4 w-4" />
                 </button>
@@ -399,7 +399,7 @@ export function CategoryDesignsPopupModal({
                         const target = e.currentTarget;
                         const fallback =
                           category.fallbackImage ||
-                          "/images/atelier/hero-botanical-living.jpg";
+                          design.visualizerConfig.textureUrl;
                         if (target.src && !target.src.endsWith(fallback)) {
                           target.src = fallback;
                         }

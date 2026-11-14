@@ -14,6 +14,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { Container } from "@/components/layout/Container";
+import { FadeUp } from "@/components/motion/Reveal";
 
 interface VisualizerPreset {
   id: string;
@@ -29,24 +30,24 @@ const VISUALIZER_PRESETS: VisualizerPreset[] = [
     id: "lotus",
     title: "Lotus Atelier Study",
     category: "Botanical • Walls & Glass",
-    beforeImage: "/images/atelier/wall-preview-before.jpg",
-    afterImage: "/images/atelier/artwork-lotus-atelier.jpg",
+    beforeImage: "/images/atelier/explore-designs/explore-see-it-before.webp",
+    afterImage: "/images/atelier/explore-designs/explore-see-it-after-lotus.webp",
     designSlug: "lotus-atelier-study",
   },
   {
     id: "botanical",
     title: "Botanical Canopy",
     category: "Botanical • Walls & Tiles",
-    beforeImage: "/images/atelier/wall-preview-before.jpg",
-    afterImage: "/images/atelier/wall-preview-after.jpg",
+    beforeImage: "/images/atelier/explore-designs/explore-see-it-before.webp",
+    afterImage: "/images/atelier/explore-designs/explore-see-it-after-botanical.webp",
     designSlug: "botanical-canopy",
   },
   {
     id: "terracotta",
     title: "Terracotta Wave Relief",
     category: "Textured • Walls & Plywood",
-    beforeImage: "/images/atelier/wall-preview-before.jpg",
-    afterImage: "/images/atelier/artwork-terracotta-wave.jpg",
+    beforeImage: "/images/atelier/explore-designs/explore-see-it-before.webp",
+    afterImage: "/images/atelier/explore-designs/explore-see-it-after-terracotta.webp",
     designSlug: "terracotta-wave-relief",
   },
 ];
@@ -129,7 +130,7 @@ export function TabletVisualizerShowcase() {
       className="relative overflow-hidden border-b border-[#E3D7C7] bg-[#F7F1E8] py-14 lg:py-20"
     >
       <Container>
-        <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-12 lg:gap-8">
+        <FadeUp className="grid grid-cols-1 items-center gap-10 lg:grid-cols-12 lg:gap-8">
           {/* Left Column: Editorial Intro & CTAs (3.5 cols -> 4 cols on lg) */}
           <div className="lg:col-span-4">
             <div className="mb-3 flex items-center gap-3">
@@ -140,7 +141,8 @@ export function TabletVisualizerShowcase() {
             </div>
 
             <h2 className="font-serif text-[clamp(2.1rem,3.5vw,3.1rem)] leading-[1.06] font-normal tracking-[-0.02em] text-[#1D1815]">
-              See It on <br className="hidden sm:inline" />
+              See It on{" "}
+              <br className="hidden sm:inline" />
               <span className="italic text-[#9E1B24]">Your Wall.</span>
             </h2>
 
@@ -222,9 +224,11 @@ export function TabletVisualizerShowcase() {
                   aria-valuemin={8}
                   aria-valuemax={92}
                   aria-valuenow={sliderPosition}
+                  style={{ touchAction: "pan-y" }}
                   onPointerDown={handlePointerDown}
                   onPointerMove={handlePointerMove}
                   onPointerUp={handlePointerUp}
+                  onPointerCancel={handlePointerUp}
                   onKeyDown={handleKeyDown}
                   className="relative aspect-[16/10.5] w-full cursor-ew-resize overflow-hidden rounded-[20px] select-none focus:ring-2 focus:ring-[#9E1B24] focus:outline-none"
                 >
@@ -266,7 +270,7 @@ export function TabletVisualizerShowcase() {
                     className="pointer-events-none absolute inset-y-0 z-20 w-[2px] bg-white/95 shadow-[0_0_12px_rgba(0,0,0,0.45)]"
                     style={{ left: `${sliderPosition}%` }}
                   >
-                    <div className="absolute top-1/2 left-1/2 flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-[#E5D8C7] bg-white text-[#1D1815] shadow-[0_6px_18px_rgba(0,0,0,0.32)]">
+                    <div className="absolute top-1/2 left-1/2 flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-[#E5D8C7] bg-white text-[#1D1815] shadow-[0_6px_18px_rgba(0,0,0,0.32)]">
                       <ChevronsLeftRight className="h-4 w-4 text-[#9E1B24]" />
                     </div>
                   </div>
@@ -311,7 +315,7 @@ export function TabletVisualizerShowcase() {
               })}
             </div>
           </div>
-        </div>
+        </FadeUp>
       </Container>
     </section>
   );
