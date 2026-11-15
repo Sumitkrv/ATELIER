@@ -14,6 +14,7 @@ import {
 import {
   filterPortfolioProjects,
   PortfolioProjectRecord,
+  PROJECTS_HERO_SLIDES,
   type ProjectHeroSlide,
   PROJECTS_PAGE_CONTENT,
 } from "@/lib/projects-catalogue";
@@ -61,6 +62,7 @@ export default function ProjectsPage() {
   const [projectsData, setProjectsData] = useState<
     ReadonlyArray<PortfolioProjectRecord>
   >([]);
+  const [heroSlideIndex, setHeroSlideIndex] = useState<number>(0);
 
   useEffect(() => {
     let active = true;
@@ -72,6 +74,7 @@ export default function ProjectsPage() {
           ? (payload.approvedClientProjects as PortfolioProjectRecord[])
           : [];
         if (Array.isArray(payload.approvedClientProjects)) {
+          setHeroSlideIndex(0);
           setProjectsData(clientList);
         }
       })
@@ -84,9 +87,26 @@ export default function ProjectsPage() {
   }, []);
 
   // Section 01: Hero Carousel State
-  const [heroSlideIndex, setHeroSlideIndex] = useState<number>(0);
   const heroTouchStartRef = useRef<{ x: number; y: number } | null>(null);
-  const projectHeroSlides = useMemo<ProjectHeroSlide[]>(() => projectsData.length ? projectsData.map((project, index) => ({ id: project.id, slideNumber: String(index + 1).padStart(2, "0"), title: project.title, classification: project.recordClassification || "Verified Completed Installation", locationOrContext: project.locationNote, spaceCategory: project.spaceCategory || "Residential", surfaceName: project.surfaceName, imageUrl: project.coverImage.secureUrl, imageAlt: project.coverImage.altText, projectSlug: project.slug })) : [{ id: "studio-illustration", slideNumber: "01", title: "Architectural Surface Art", classification: "Illustrative Application", locationOrContext: "ATELIER — WALL STORY", spaceCategory: "Residential", surfaceName: "Walls", imageUrl: "/images/atelier/project-hero-crane-living.jpg", imageAlt: "Illustrative architectural mural in a living space", projectSlug: "" }], [projectsData]);
+  const projectHeroSlides = useMemo<ProjectHeroSlide[]>(
+    () =>
+      projectsData.length
+        ? projectsData.map((project, index) => ({
+            id: project.id,
+            slideNumber: String(index + 1).padStart(2, "0"),
+            title: project.title,
+            classification:
+              project.recordClassification || "Verified Completed Installation",
+            locationOrContext: project.locationNote,
+            spaceCategory: project.spaceCategory || "Residential",
+            surfaceName: project.surfaceName,
+            imageUrl: project.coverImage.secureUrl,
+            imageAlt: project.coverImage.altText,
+            projectSlug: project.slug,
+          }))
+        : [...PROJECTS_HERO_SLIDES],
+    [projectsData]
+  );
   const totalHeroSlides = projectHeroSlides.length;
   const activeHeroSlide =
     projectHeroSlides[heroSlideIndex] ?? projectHeroSlides[0];
@@ -401,7 +421,7 @@ export default function ProjectsPage() {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               key={activeHeroSlide.imageUrl}
-              src={pageContent?.hero.posterImage?.secureUrl || activeHeroSlide.imageUrl}
+              src={activeHeroSlide.imageUrl}
               alt={activeHeroSlide.imageAlt}
               className="h-full w-full object-cover object-[66%_86%] transition-opacity duration-700 lg:object-[70%_88%] xl:object-[68%_88%]"
             />
@@ -409,7 +429,7 @@ export default function ProjectsPage() {
             {/* Seamless Multi-Stop Warm Cream Gradient Blend on Left & Top */}
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute inset-y-0 left-0 hidden w-60 bg-gradient-to-r from-[#F7F3ED] via-[#F7F3ED]/90 via-38% to-transparent lg:block xl:w-72"
+              className="pointer-events-none absolute inset-y-0 left-0 hidden w-[420px] bg-gradient-to-r from-[#F7F3ED] via-[#F7F3ED]/90 via-38% to-transparent lg:block xl:w-[520px]"
             />
             <div
               aria-hidden="true"
