@@ -4,7 +4,7 @@
     "cms-publish-and-email-retries": {
       "path": "/api/internal/publish",
       "requestMethod": "GET",
-      "schedule": "*/5 * * * *"
+      "schedule": "*/15 * * * *"
     }
   }
 }
