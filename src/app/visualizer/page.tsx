@@ -25,7 +25,9 @@ import { VisualizerHowItWorks } from "@/components/visualizer/VisualizerHowItWor
 import {
   CatalogueCategoryRecord,
   CatalogueDesignItem,
+  DESIGN_CATEGORY_RECORDS,
   findDesignBySlugOrId,
+  VISUALIZER_SAMPLE_DESIGNS,
 } from "@/lib/designs-catalogue";
 import {
   readStagedDesignFromSession,
@@ -53,10 +55,11 @@ function VisualizerExperienceWorkspace() {
   // Synchronize published designs, 13 categories & optional CMS hero/process copy
   const [catalogueCategories, setCatalogueCategories] = useState<
     ReadonlyArray<CatalogueCategoryRecord>
-  >([]);
+  >(DESIGN_CATEGORY_RECORDS);
   const [catalogueDesigns, setCatalogueDesigns] = useState<
     ReadonlyArray<CatalogueDesignItem>
-  >([]);
+  >(VISUALIZER_SAMPLE_DESIGNS);
+  const [isShowingSampleArtwork, setIsShowingSampleArtwork] = useState(true);
   const [visualizerPageContent, setVisualizerPageContent] =
     useState<PageContentDocument | null>(null);
 
@@ -71,17 +74,20 @@ function VisualizerExperienceWorkspace() {
         if (Array.isArray(data?.categories)) {
           setCatalogueCategories(data.categories);
         }
-        const combinedDesigns: CatalogueDesignItem[] = [
-          ...(Array.isArray(data?.approvedClientDesigns)
-            ? data.approvedClientDesigns
-            : []),
-          ...(Array.isArray(data?.developmentFixtures)
-            ? data.developmentFixtures
-            : []),
-        ];
-        if (Array.isArray(data?.approvedClientDesigns)) {
-          setCatalogueDesigns(combinedDesigns);
-        }
+        const publishedDesigns: CatalogueDesignItem[] = Array.isArray(
+          data?.approvedClientDesigns
+        )
+          ? data.approvedClientDesigns
+          : [];
+        const sampleDesigns: CatalogueDesignItem[] = Array.isArray(
+          data?.visualizerSamples
+        )
+          ? data.visualizerSamples
+          : VISUALIZER_SAMPLE_DESIGNS;
+        setCatalogueDesigns(
+          publishedDesigns.length > 0 ? publishedDesigns : sampleDesigns
+        );
+        setIsShowingSampleArtwork(publishedDesigns.length === 0);
         if (data?.visualizerPageContent) {
           setVisualizerPageContent(data.visualizerPageContent);
         }
@@ -94,10 +100,10 @@ function VisualizerExperienceWorkspace() {
     };
   }, []);
 
-  if (!catalogueDesigns.length) return <div className="mx-auto max-w-2xl px-5 py-24 text-center"><h1 className="font-serif text-3xl">Choose your wall art</h1><p className="mt-4">The artwork catalogue is loading or has no published designs yet.</p><Link className="mt-5 inline-block underline" href="/explore-designs">Explore designs</Link></div>;
-  return <VisualizerWithCatalogue catalogueCategories={catalogueCategories} catalogueDesigns={catalogueDesigns} visualizerPageContent={visualizerPageContent} />;
+  if (!catalogueDesigns.length) return <div className="mx-auto max-w-2xl px-5 py-24 text-center"><h1 className="font-serif text-3xl">Choose your wall art</h1><p className="mt-4">No artwork is available to preview right now.</p><Link className="mt-5 inline-block underline" href="/explore-designs">Explore designs</Link></div>;
+  return <VisualizerWithCatalogue catalogueCategories={catalogueCategories} catalogueDesigns={catalogueDesigns} visualizerPageContent={visualizerPageContent} isShowingSampleArtwork={isShowingSampleArtwork} />;
 }
-function VisualizerWithCatalogue({ catalogueCategories, catalogueDesigns, visualizerPageContent }: { catalogueCategories: ReadonlyArray<CatalogueCategoryRecord>; catalogueDesigns: ReadonlyArray<CatalogueDesignItem>; visualizerPageContent: PageContentDocument | null }) {
+function VisualizerWithCatalogue({ catalogueCategories, catalogueDesigns, visualizerPageContent, isShowingSampleArtwork }: { catalogueCategories: ReadonlyArray<CatalogueCategoryRecord>; catalogueDesigns: ReadonlyArray<CatalogueDesignItem>; visualizerPageContent: PageContentDocument | null; isShowingSampleArtwork: boolean }) {
   const searchParams = useSearchParams();
 
   const rawDesignParam =
@@ -377,6 +383,15 @@ function VisualizerWithCatalogue({ catalogueCategories, catalogueDesigns, visual
 
   return (
     <>
+      {isShowingSampleArtwork && (
+        <div
+          role="status"
+          className="border-b border-[#E5D8C9] bg-[#F7F0E8] px-5 py-2.5 text-center text-xs text-[#5C534C]"
+        >
+          Previewing studio sample artwork. Published designs will appear here
+          when available.
+        </div>
+      )}
       {studioModalOpen ? (
         <InteractiveWallVisualizerModal
           isOpen={studioModalOpen}

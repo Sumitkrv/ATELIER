@@ -1929,6 +1929,25 @@ export const DEVELOPMENT_FIXTURE_DESIGNS: ReadonlyArray<CatalogueDesignItem> = [
 ];
 
 /**
+ * Small, curated artwork set for the wall visualizer when the CMS has no
+ * published designs. These stay explicitly marked as samples and are not
+ * exposed as published catalogue records.
+ */
+const VISUALIZER_SAMPLE_DESIGN_IDS = new Set([
+  "design-slot-1",
+  "design-slot-2",
+  "design-slot-3",
+  "design-slot-4",
+  "design-slot-7",
+  "design-slot-8",
+]);
+
+export const VISUALIZER_SAMPLE_DESIGNS: ReadonlyArray<CatalogueDesignItem> =
+  DEVELOPMENT_FIXTURE_DESIGNS.filter((design) =>
+    VISUALIZER_SAMPLE_DESIGN_IDS.has(design.id)
+  ).sort((a, b) => a.sortOrder - b.sortOrder);
+
+/**
  * Resolves a category record from URL query parameters (`?category=cat-01`, `?category=botanical`, or `?slot=1`).
  */
 export function resolveCategoryFromQuery(params: {
