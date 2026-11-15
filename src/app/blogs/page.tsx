@@ -58,11 +58,9 @@ function BlogsListingWorkspace() {
     INITIAL_GRID_PAGE_SIZE
   );
   const [liveDbArticles, setLiveDbArticles] =
-    useState<ReadonlyArray<BlogArticleRecord> | null>(() =>
-      process.env.NODE_ENV === "development"
-        ? [...DEVELOPMENT_BLOG_FIXTURES]
-        : null
-    );
+    useState<ReadonlyArray<BlogArticleRecord> | null>([
+      ...DEVELOPMENT_BLOG_FIXTURES,
+    ]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {

@@ -50,18 +50,10 @@ function ExploreDesignsWorkspace() {
   // Live CMS / API synchronized categories & designs (initialized from canonical registry for zero layout shift)
   const [catalogueCategories, setCatalogueCategories] = useState<
     ReadonlyArray<CatalogueCategoryRecord>
-  >(() =>
-    process.env.NODE_ENV === "development"
-      ? [...DESIGN_CATEGORY_RECORDS]
-      : []
-  );
+  >([...DESIGN_CATEGORY_RECORDS]);
   const [catalogueDesigns, setCatalogueDesigns] = useState<
     ReadonlyArray<CatalogueDesignItem>
-  >(() =>
-    process.env.NODE_ENV === "development"
-      ? [...DEVELOPMENT_FIXTURE_DESIGNS]
-      : []
-  );
+  >([...DEVELOPMENT_FIXTURE_DESIGNS]);
   const [cmsErrorMessage, setCmsErrorMessage] = useState<string | null>(null);
 
 

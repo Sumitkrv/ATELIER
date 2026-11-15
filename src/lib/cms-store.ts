@@ -154,7 +154,7 @@ export async function getPublishedCmsSiteSettings():Promise<SiteSettingsDocument
 }
 export async function getPublishedCmsHomePageContent():Promise<HomepageContentConfig>{
   const home=(await getPublishedCmsCollection<PageContentDocument>("pages")).find(p=>p.pageKey==="home");
-  if(!home)return {...DEFAULT_HOMEPAGE_CONTENT,collectionPreview:{...DEFAULT_HOMEPAGE_CONTENT.collectionPreview,sampleItems:[]}};
+  if(!home)return structuredClone(DEFAULT_HOMEPAGE_CONTENT);
   const result={...DEFAULT_HOMEPAGE_CONTENT,...home.homepage};
   const hero=home.hero;
   return {...result,hero:{...result.hero,headlineLine1:hero.heading,headlineLine2:hero.highlightedText||"",subheading:hero.subheading,primaryCtaLabel:hero.primaryCta.label,primaryCtaHref:hero.primaryCta.href,secondaryCtaLabel:hero.secondaryCta.label,secondaryCtaHref:hero.secondaryCta.href,videoUrl:hero.videoAsset?.secureUrl||result.hero.videoUrl,posterUrl:hero.posterImage?.secureUrl||result.hero.posterUrl}};

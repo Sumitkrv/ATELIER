@@ -62,11 +62,7 @@ export default function ProjectsPage() {
   // Live API-backed project records (preserving MongoDB /api/projects contract)
   const [projectsData, setProjectsData] = useState<
     ReadonlyArray<PortfolioProjectRecord>
-  >(() =>
-    process.env.NODE_ENV === "development"
-      ? [...DEVELOPMENT_PROJECT_FIXTURES]
-      : []
-  );
+  >([...DEVELOPMENT_PROJECT_FIXTURES]);
   const [heroSlideIndex, setHeroSlideIndex] = useState<number>(0);
 
   useEffect(() => {

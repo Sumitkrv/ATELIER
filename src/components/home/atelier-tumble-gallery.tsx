@@ -32,18 +32,10 @@ const CATEGORY_SHOWCASE_HEADLINES: Record<string, string> = {
 export function AtelierTumbleGallery() {
   const [catalogueCategories, setCatalogueCategories] = useState<
     ReadonlyArray<CatalogueCategoryRecord>
-  >(() =>
-    process.env.NODE_ENV === "development"
-      ? [...DESIGN_CATEGORY_RECORDS]
-      : []
-  );
+  >([...DESIGN_CATEGORY_RECORDS]);
   const [catalogueDesigns, setCatalogueDesigns] = useState<
     ReadonlyArray<CatalogueDesignItem>
-  >(() =>
-    process.env.NODE_ENV === "development"
-      ? [...DEVELOPMENT_FIXTURE_DESIGNS]
-      : []
-  );
+  >([...DEVELOPMENT_FIXTURE_DESIGNS]);
 
   useEffect(() => {
     let cancelled = false;

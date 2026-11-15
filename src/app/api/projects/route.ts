@@ -7,9 +7,7 @@ export async function GET() {
     return NextResponse.json({
       status: "ok",
       approvedClientProjects: items.filter(item => !item.isDevelopmentFixture),
-      developmentFixtures: process.env.NODE_ENV === "development"
-        ? items.filter(item => item.isDevelopmentFixture)
-        : [],
+      developmentFixtures: items.filter(item => item.isDevelopmentFixture),
     }, { headers: { "Cache-Control": "private, no-store" } });
   } catch {
     return NextResponse.json({ error: "Content is temporarily unavailable." }, { status: 503, headers: { "Cache-Control": "no-store" } });

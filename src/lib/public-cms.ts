@@ -37,29 +37,23 @@ export const isPrivatePreview = cache(async () => {
 });
 
 export const getPublicCategories = cache(async () => {
-  const localCategories =
-    process.env.NODE_ENV === "development" ? [...DESIGN_CATEGORY_RECORDS] : [];
   try {
     const categories = (await isPrivatePreview())
       ? await listStoredCategories()
       : await getPublishedCmsCollection<Awaited<ReturnType<typeof listStoredCategories>>[number]>("categories");
-    return categories.length ? categories : localCategories;
+    return categories.length ? categories : [...DESIGN_CATEGORY_RECORDS];
   } catch (error) {
     return usePublicFallback("categories", error, [...DESIGN_CATEGORY_RECORDS]);
   }
 });
 export const getPublicDesigns = cache(async () => {
-  const localFixtures =
-    process.env.NODE_ENV === "development" ? [...DEVELOPMENT_FIXTURE_DESIGNS] : [];
+  const localFixtures = [...DEVELOPMENT_FIXTURE_DESIGNS];
   try {
     const [preview, categories] = await Promise.all([isPrivatePreview(), getPublicCategories()]);
     const storedDesigns = preview
       ? (await listStoredDesigns()).map(item => ({ ...item, published: true }))
       : await getPublishedCmsCollection<Awaited<ReturnType<typeof listStoredDesigns>>[number]>("designs");
-    const visibleDesigns = storedDesigns.filter(
-      design => process.env.NODE_ENV === "development" || !design.isDevelopmentFixture
-    );
-    const designs = visibleDesigns.length ? visibleDesigns : localFixtures;
+    const designs = storedDesigns.length ? storedDesigns : localFixtures;
     return designs.flatMap(design => {
       const category = categories.find(item => item.id === design.categoryId && item.isActive);
       return category ? [{ ...design, categorySlug: category.slug, categoryLabel: category.name, categorySlotNumber: category.slotNumber, categoryCode: category.slotCode }] : [];
@@ -69,40 +63,38 @@ export const getPublicDesigns = cache(async () => {
   }
 });
 export const getPublicProjects = cache(async () => {
-  const localFixtures =
-    process.env.NODE_ENV === "development"
-      ? [...DEVELOPMENT_PROJECT_FIXTURES]
-      : [];
+  const localFixtures = [...DEVELOPMENT_PROJECT_FIXTURES];
   try {
     const storedProjects = (await isPrivatePreview())
       ? (await listStoredProjects()).map(item => ({ ...item, published: true }))
       : await getPublishedCmsCollection<Awaited<ReturnType<typeof listStoredProjects>>[number]>("projects");
-    const projects = storedProjects.filter(
-      project => process.env.NODE_ENV === "development" || !project.isDevelopmentFixture
-    );
-    return projects.length ? projects : localFixtures;
+    return storedProjects.length ? storedProjects : localFixtures;
   } catch (error) {
     return usePublicFallback("projects", error, localFixtures);
   }
 });
 export const getPublicBlogs = cache(async () => {
-  const localFixtures =
-    process.env.NODE_ENV === "development" ? [...DEVELOPMENT_BLOG_FIXTURES] : [];
+  const localFixtures = [...DEVELOPMENT_BLOG_FIXTURES];
   try {
     const storedBlogs = (await isPrivatePreview())
       ? (await listStoredBlogs()).map(item => ({ ...item, published: true }))
       : await getPublishedCmsCollection<Awaited<ReturnType<typeof listStoredBlogs>>[number]>("blogs");
-    const blogs = storedBlogs.filter(
-      article => process.env.NODE_ENV === "development" || !article.isEditorialFixture
-    );
-    return blogs.length ? blogs : localFixtures;
+    return storedBlogs.length ? storedBlogs : localFixtures;
   } catch (error) {
     return usePublicFallback("blogs", error, localFixtures);
   }
 });
 export const getPublicPages = cache(async () => {
   try {
-    return (await isPrivatePreview()) ? await listStoredPageContents() : await getPublishedCmsCollection<PageContentDocument>("pages");
+    const pages = (await isPrivatePreview())
+      ? await listStoredPageContents()
+      : await getPublishedCmsCollection<PageContentDocument>("pages");
+    return [
+      ...pages,
+      ...buildDefaultPageContents().filter(
+        page => !pages.some(publishedPage => publishedPage.pageKey === page.pageKey)
+      ),
+    ];
   } catch (error) {
     return usePublicFallback("pages", error, buildDefaultPageContents());
   }

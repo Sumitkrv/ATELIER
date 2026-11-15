@@ -12,9 +12,7 @@ export async function GET() {
       categories: activeCategories,
       totalCategorySlots: activeCategories.length,
       approvedClientDesigns: visibleDesigns.filter(design => !design.isDevelopmentFixture),
-      developmentFixtures: process.env.NODE_ENV === "development"
-        ? visibleDesigns.filter(design => design.isDevelopmentFixture)
-        : [],
+      developmentFixtures: visibleDesigns.filter(design => design.isDevelopmentFixture),
       visualizerPageContent: pages.find(page => page.pageKey === "visualizer") || null,
     }, { headers: { "Cache-Control": "private, no-store" } });
   } catch {
