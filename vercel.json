@@ -1,3 +1,10 @@
 {
-  "crons": [{ "path": "/api/internal/publish", "schedule": "*/5 * * * *" }]
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "schedules": {
+    "cms-publish-and-email-retries": {
+      "path": "/api/internal/publish",
+      "requestMethod": "GET",
+      "schedule": "*/5 * * * *"
+    }
+  }
 }
