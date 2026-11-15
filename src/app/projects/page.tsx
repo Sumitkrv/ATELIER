@@ -15,6 +15,7 @@ import {
   filterPortfolioProjects,
   PortfolioProjectRecord,
   PROJECTS_HERO_SLIDES,
+  DEVELOPMENT_PROJECT_FIXTURES,
   type ProjectHeroSlide,
   PROJECTS_PAGE_CONTENT,
 } from "@/lib/projects-catalogue";
@@ -61,7 +62,11 @@ export default function ProjectsPage() {
   // Live API-backed project records (preserving MongoDB /api/projects contract)
   const [projectsData, setProjectsData] = useState<
     ReadonlyArray<PortfolioProjectRecord>
-  >([]);
+  >(() =>
+    process.env.NODE_ENV === "development"
+      ? [...DEVELOPMENT_PROJECT_FIXTURES]
+      : []
+  );
   const [heroSlideIndex, setHeroSlideIndex] = useState<number>(0);
 
   useEffect(() => {
@@ -73,13 +78,19 @@ export default function ProjectsPage() {
         const clientList = Array.isArray(payload.approvedClientProjects)
           ? (payload.approvedClientProjects as PortfolioProjectRecord[])
           : [];
-        if (Array.isArray(payload.approvedClientProjects)) {
+        const developmentList = Array.isArray(payload.developmentFixtures)
+          ? (payload.developmentFixtures as PortfolioProjectRecord[])
+          : [];
+        if (
+          Array.isArray(payload.approvedClientProjects) ||
+          Array.isArray(payload.developmentFixtures)
+        ) {
           setHeroSlideIndex(0);
-          setProjectsData(clientList);
+          setProjectsData([...clientList, ...developmentList]);
         }
       })
       .catch(() => {
-        // Keep the empty state when the catalogue cannot be loaded.
+        // Keep local development fixtures visible if the request fails.
       });
     return () => {
       active = false;

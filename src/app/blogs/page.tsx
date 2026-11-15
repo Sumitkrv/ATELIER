@@ -18,6 +18,7 @@ import {
   BLOG_DRAFT_CATEGORIES,
   BlogArticleRecord,
   BLOGS_PAGE_CONTENT,
+  DEVELOPMENT_BLOG_FIXTURES,
   filterBlogArticles,
 } from "@/lib/blogs-catalogue";
 import {
@@ -57,7 +58,11 @@ function BlogsListingWorkspace() {
     INITIAL_GRID_PAGE_SIZE
   );
   const [liveDbArticles, setLiveDbArticles] =
-    useState<ReadonlyArray<BlogArticleRecord> | null>(null);
+    useState<ReadonlyArray<BlogArticleRecord> | null>(() =>
+      process.env.NODE_ENV === "development"
+        ? [...DEVELOPMENT_BLOG_FIXTURES]
+        : null
+    );
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -78,7 +83,7 @@ function BlogsListingWorkspace() {
         }
       })
       .catch(() => {
-        // Keep the catalogue empty until published articles can be loaded.
+        // Keep local editorial fixtures visible if the request fails.
       });
     return () => {
       active = false;

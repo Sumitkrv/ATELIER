@@ -13,10 +13,15 @@ import {
   listStoredPageContents,
   listStoredProjects,
 } from "@/lib/cms-store";
-import { DESIGN_CATEGORY_RECORDS } from "@/lib/designs-catalogue";
+import {
+  DEVELOPMENT_FIXTURE_DESIGNS,
+  DESIGN_CATEGORY_RECORDS,
+} from "@/lib/designs-catalogue";
 import { StorageUnavailableError } from "@/lib/mongodb";
 import { ADMIN_SESSION_COOKIE, requireAdminRequest } from "@/lib/admin-auth";
 import { DEFAULT_HOMEPAGE_CONTENT, type HomepageContentConfig } from "@/lib/homepage-content";
+import { DEVELOPMENT_BLOG_FIXTURES } from "@/lib/blogs-catalogue";
+import { DEVELOPMENT_PROJECT_FIXTURES } from "@/lib/projects-catalogue";
 import type { PageContentDocument } from "@/types/models";
 
 function usePublicFallback<T>(section: string, error: unknown, fallback: T): T {
@@ -32,36 +37,67 @@ export const isPrivatePreview = cache(async () => {
 });
 
 export const getPublicCategories = cache(async () => {
+  const localCategories =
+    process.env.NODE_ENV === "development" ? [...DESIGN_CATEGORY_RECORDS] : [];
   try {
-    return (await isPrivatePreview()) ? await listStoredCategories() : await getPublishedCmsCollection<Awaited<ReturnType<typeof listStoredCategories>>[number]>("categories");
+    const categories = (await isPrivatePreview())
+      ? await listStoredCategories()
+      : await getPublishedCmsCollection<Awaited<ReturnType<typeof listStoredCategories>>[number]>("categories");
+    return categories.length ? categories : localCategories;
   } catch (error) {
     return usePublicFallback("categories", error, [...DESIGN_CATEGORY_RECORDS]);
   }
 });
 export const getPublicDesigns = cache(async () => {
+  const localFixtures =
+    process.env.NODE_ENV === "development" ? [...DEVELOPMENT_FIXTURE_DESIGNS] : [];
   try {
     const [preview, categories] = await Promise.all([isPrivatePreview(), getPublicCategories()]);
-    const designs = preview ? (await listStoredDesigns()).map(item => ({ ...item, published: true })) : await getPublishedCmsCollection<Awaited<ReturnType<typeof listStoredDesigns>>[number]>("designs");
+    const storedDesigns = preview
+      ? (await listStoredDesigns()).map(item => ({ ...item, published: true }))
+      : await getPublishedCmsCollection<Awaited<ReturnType<typeof listStoredDesigns>>[number]>("designs");
+    const visibleDesigns = storedDesigns.filter(
+      design => process.env.NODE_ENV === "development" || !design.isDevelopmentFixture
+    );
+    const designs = visibleDesigns.length ? visibleDesigns : localFixtures;
     return designs.flatMap(design => {
       const category = categories.find(item => item.id === design.categoryId && item.isActive);
       return category ? [{ ...design, categorySlug: category.slug, categoryLabel: category.name, categorySlotNumber: category.slotNumber, categoryCode: category.slotCode }] : [];
     });
   } catch (error) {
-    return usePublicFallback("designs", error, []);
+    return usePublicFallback("designs", error, localFixtures);
   }
 });
 export const getPublicProjects = cache(async () => {
+  const localFixtures =
+    process.env.NODE_ENV === "development"
+      ? [...DEVELOPMENT_PROJECT_FIXTURES]
+      : [];
   try {
-    return (await isPrivatePreview()) ? (await listStoredProjects()).map(item => ({ ...item, published: true })) : await getPublishedCmsCollection<Awaited<ReturnType<typeof listStoredProjects>>[number]>("projects");
+    const storedProjects = (await isPrivatePreview())
+      ? (await listStoredProjects()).map(item => ({ ...item, published: true }))
+      : await getPublishedCmsCollection<Awaited<ReturnType<typeof listStoredProjects>>[number]>("projects");
+    const projects = storedProjects.filter(
+      project => process.env.NODE_ENV === "development" || !project.isDevelopmentFixture
+    );
+    return projects.length ? projects : localFixtures;
   } catch (error) {
-    return usePublicFallback("projects", error, []);
+    return usePublicFallback("projects", error, localFixtures);
   }
 });
 export const getPublicBlogs = cache(async () => {
+  const localFixtures =
+    process.env.NODE_ENV === "development" ? [...DEVELOPMENT_BLOG_FIXTURES] : [];
   try {
-    return (await isPrivatePreview()) ? (await listStoredBlogs()).map(item => ({ ...item, published: true })) : await getPublishedCmsCollection<Awaited<ReturnType<typeof listStoredBlogs>>[number]>("blogs");
+    const storedBlogs = (await isPrivatePreview())
+      ? (await listStoredBlogs()).map(item => ({ ...item, published: true }))
+      : await getPublishedCmsCollection<Awaited<ReturnType<typeof listStoredBlogs>>[number]>("blogs");
+    const blogs = storedBlogs.filter(
+      article => process.env.NODE_ENV === "development" || !article.isEditorialFixture
+    );
+    return blogs.length ? blogs : localFixtures;
   } catch (error) {
-    return usePublicFallback("blogs", error, []);
+    return usePublicFallback("blogs", error, localFixtures);
   }
 });
 export const getPublicPages = cache(async () => {
