@@ -498,8 +498,8 @@ export default function ProjectsPage() {
 
           {/* Warm Ivory Project Caption & Controls — Below photo on Mobile/Tablet so furniture is never covered; compact floating card on Desktop */}
           <div className="relative z-20 border-t border-[#DDD2C5]/80 bg-[#FBF8F3] px-4 py-3 text-[#211D1A] sm:px-6 lg:absolute lg:bottom-5 lg:right-6 lg:left-auto lg:min-w-[380px] lg:max-w-[440px] lg:rounded-xl lg:border lg:border-[#DDD2C5] lg:bg-[#FBF8F3]/95 lg:px-4.5 lg:py-3 lg:shadow-[0_16px_36px_rgba(33,29,26,0.15)] lg:backdrop-blur-md">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="min-w-0 flex-1">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="w-full min-w-0 sm:flex-1">
                 <div className="flex items-center gap-2">
                   <Link
                     href={activeHeroSlide.projectSlug ? `/projects/${activeHeroSlide.projectSlug}` : "/projects"}
@@ -518,12 +518,12 @@ export default function ProjectsPage() {
                 </div>
               </div>
 
-              <div className="flex shrink-0 items-center gap-2">
+              <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:shrink-0">
                 {/* Mobile/Tablet 01-04 slide indicators */}
                 <div
                   role="tablist"
                   aria-label="Select project slide"
-                  className="mr-1 flex items-center gap-1.5 lg:hidden"
+                  className="flex items-center gap-1.5 sm:mr-1 lg:hidden"
                 >
                   {projectHeroSlides.map((slide, idx) => {
                     const isCurrent = idx === heroSlideIndex;

@@ -920,7 +920,7 @@ export const PolaroidLineCarousel = forwardRef<
       {showControls && count > 1 && (
         <div
           data-carousel-control="true"
-          className="pointer-events-none absolute inset-x-4 bottom-3.5 z-40 flex items-center justify-between sm:inset-x-6"
+          className="pointer-events-none absolute inset-x-4 bottom-3.5 z-[60] flex items-center justify-between sm:inset-x-6"
         >
           <button
             type="button"
@@ -934,7 +934,7 @@ export const PolaroidLineCarousel = forwardRef<
             <ChevronLeft className="h-4 w-4" />
           </button>
 
-          <div className="inline-flex items-center gap-2 rounded-full border border-[#DDD2C4] bg-[#FAF9F6]/88 px-3 py-1 text-[9.5px] font-semibold tracking-[0.16em] text-[#5C534C] uppercase shadow-2xs backdrop-blur-md sm:px-3.5 sm:text-[10px] sm:tracking-[0.2em]">
+          <div className="inline-flex items-center gap-2 rounded-full border border-[#DDD2C4] bg-[#FAF9F6]/96 px-3 py-1 text-[9.5px] font-semibold tracking-[0.16em] text-[#5C534C] uppercase shadow-2xs backdrop-blur-md sm:px-3.5 sm:text-[10px] sm:tracking-[0.2em]">
             <span className="sm:hidden">Swipe or Tap Print</span>
             <span className="hidden sm:inline">
               Drag String or Click Print to Explore

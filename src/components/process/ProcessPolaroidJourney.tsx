@@ -296,7 +296,7 @@ export function ProcessPolaroidJourney({
               badge: `STAGE ${stage.code}`,
             }))}
             activeIndex={safeIndex}
-            height="clamp(410px, 55svh, 495px)"
+            height="calc(clamp(410px, 55svh, 495px) + 52px)"
             cardWidth={295}
             sag={42}
             swing={0.85}
