@@ -30,6 +30,7 @@ import {
   ArtworkSwatchThumbnail,
   SelectedArtworkSelectorModal,
 } from "@/components/visualizer/SelectedArtworkSelector";
+import { analyzeWallPhoto } from "@/lib/wall-auto-fit";
 import {
   InspectorPrimaryTab,
   StudioKeyboardShortcutsPopover,
@@ -696,6 +697,9 @@ export function InteractiveWallVisualizerModal({
   const inspectorContainerRef = useRef<HTMLDivElement | null>(null);
 
   const [inputMode, setInputMode] = useState<"camera" | "photo">(initialMode);
+  const [immersiveCameraMode, setImmersiveCameraMode] = useState(
+    isOpen && initialMode === "camera"
+  );
   const [prevOpenAndMode, setPrevOpenAndMode] = useState<string>(
     `${isOpen}:${initialMode}`
   );
@@ -704,6 +708,9 @@ export function InteractiveWallVisualizerModal({
     setPrevOpenAndMode(openAndModeKey);
     if (isOpen) {
       setInputMode(initialMode);
+      setImmersiveCameraMode(initialMode === "camera");
+    } else {
+      setImmersiveCameraMode(false);
     }
   }
 
@@ -943,6 +950,19 @@ export function InteractiveWallVisualizerModal({
     w: number;
     h: number;
   } | null>(null);
+  const [cameraViewportSize, setCameraViewportSize] = useState({
+    width: 0,
+    height: 0,
+  });
+  const [cameraSwitchAvailable, setCameraSwitchAvailable] = useState(false);
+  const [cameraZoom, setCameraZoom] = useState(1);
+  const [cameraDetectionBusy, setCameraDetectionBusy] = useState(false);
+  const [cameraRequestVersion, setCameraRequestVersion] = useState(0);
+  const [cameraModeFeedback, setCameraModeFeedback] = useState<string | null>(
+    null
+  );
+  const pinchOriginRef = useRef<{ distance: number; zoom: number } | null>(null);
+  const draggingPointerIdRef = useRef<number | null>(null);
 
   // Loaded HTMLImageElements for canvas rendering
   const [artworkImageEl, setArtworkImageEl] =
@@ -952,6 +972,21 @@ export function InteractiveWallVisualizerModal({
   const stageRef = useRef<HTMLDivElement | null>(null);
   const overlayCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const attachCameraVideo = useCallback((node: HTMLVideoElement | null) => {
+    videoRef.current = node;
+    const stream = streamRef.current;
+    if (!node || !stream) return;
+    node.srcObject = stream;
+    const updateNaturalSize = () => {
+      if (node.videoWidth > 0 && node.videoHeight > 0) {
+        setVideoNaturalSize({ w: node.videoWidth, h: node.videoHeight });
+      }
+    };
+    node.onloadedmetadata = updateNaturalSize;
+    node.onresize = updateNaturalSize;
+    void node.play().catch(() => {});
+  }, []);
 
   const activeRoomImageUrl =
     uploadedRoomDataUrl || activeSampleRoom.imageUrl;
@@ -1056,6 +1091,8 @@ export function InteractiveWallVisualizerModal({
       streamRef.current = null;
     }
     if (videoRef.current) {
+      videoRef.current.onloadedmetadata = null;
+      videoRef.current.onresize = null;
       videoRef.current.srcObject = null;
     }
   }, []);
@@ -1086,8 +1123,10 @@ export function InteractiveWallVisualizerModal({
 
       setCameraState("requesting");
       setCameraErrorMsg(null);
+      setVideoNaturalSize(null);
 
       let mediaStream: MediaStream | null = null;
+      let cameraFailure: unknown = null;
       try {
         mediaStream = await navigator.mediaDevices.getUserMedia({
           video: {
@@ -1097,18 +1136,32 @@ export function InteractiveWallVisualizerModal({
           },
           audio: false,
         });
-      } catch {
+      } catch (error) {
+        cameraFailure = error;
         try {
           mediaStream = await navigator.mediaDevices.getUserMedia({
             video: true,
             audio: false,
           });
-        } catch {
+        } catch (fallbackError) {
           if (!cancelled) {
             setCameraState("denied");
-            setCameraErrorMsg(
-              "Camera permission was declined or no camera hardware was detected. Upload a room photo or choose a sample room below."
-            );
+            const errorName =
+              fallbackError instanceof DOMException ||
+              fallbackError instanceof Error
+                ? fallbackError.name
+                : cameraFailure instanceof Error
+                  ? cameraFailure.name
+                  : "";
+            const message =
+              errorName === "NotAllowedError" || errorName === "SecurityError"
+                ? "Camera permission was blocked. Allow camera access in your browser settings, then try again."
+                : errorName === "NotFoundError" || errorName === "DevicesNotFoundError"
+                  ? "No camera was found on this device. You can return to the studio and use a room photo."
+                  : errorName === "NotReadableError" || errorName === "TrackStartError"
+                    ? "The camera is busy in another app. Close the other camera app and try again."
+                    : "Camera access is unavailable right now. Check your camera connection or browser permission and try again.";
+            setCameraErrorMsg(message);
           }
           return;
         }
@@ -1121,16 +1174,7 @@ export function InteractiveWallVisualizerModal({
 
       streamRef.current = mediaStream;
       if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-        videoRef.current.onloadedmetadata = () => {
-          if (videoRef.current && videoRef.current.videoWidth > 0) {
-            setVideoNaturalSize({
-              w: videoRef.current.videoWidth,
-              h: videoRef.current.videoHeight,
-            });
-          }
-        };
-        await videoRef.current.play().catch(() => {});
+        attachCameraVideo(videoRef.current);
       }
       setCameraState("active");
     }
@@ -1141,7 +1185,84 @@ export function InteractiveWallVisualizerModal({
       cancelled = true;
       stopCameraStream();
     };
-  }, [isOpen, inputMode, cameraFacingMode, cameraStopped, stopCameraStream]);
+  }, [
+    isOpen,
+    inputMode,
+    cameraFacingMode,
+    cameraStopped,
+    stopCameraStream,
+    attachCameraVideo,
+    cameraRequestVersion,
+  ]);
+
+  useEffect(() => {
+    if (!isOpen || inputMode !== "camera" || !navigator.mediaDevices?.enumerateDevices) return;
+    let cancelled = false;
+    const updateCameraAvailability = async () => {
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        if (!cancelled) {
+          setCameraSwitchAvailable(
+            devices.filter((device) => device.kind === "videoinput").length > 1
+          );
+        }
+      } catch {
+        if (!cancelled) setCameraSwitchAvailable(false);
+      }
+    };
+    void updateCameraAvailability();
+    navigator.mediaDevices.addEventListener?.("devicechange", updateCameraAvailability);
+    return () => {
+      cancelled = true;
+      navigator.mediaDevices.removeEventListener?.("devicechange", updateCameraAvailability);
+    };
+  }, [isOpen, inputMode, cameraState]);
+
+  useEffect(() => {
+    if (!immersiveCameraMode) return;
+    const updateViewport = () => {
+      const viewport = window.visualViewport;
+      setCameraViewportSize({
+        width: Math.max(1, viewport?.width ?? window.innerWidth),
+        height: Math.max(1, viewport?.height ?? window.innerHeight),
+      });
+    };
+    updateViewport();
+    window.addEventListener("resize", updateViewport);
+    window.addEventListener("orientationchange", updateViewport);
+    window.visualViewport?.addEventListener("resize", updateViewport);
+    return () => {
+      window.removeEventListener("resize", updateViewport);
+      window.removeEventListener("orientationchange", updateViewport);
+      window.visualViewport?.removeEventListener("resize", updateViewport);
+    };
+  }, [immersiveCameraMode]);
+
+  useEffect(() => {
+    if (!immersiveCameraMode) return;
+    const previousOverflow = document.body.style.overflow;
+    const previousOverscroll = document.body.style.overscrollBehavior;
+    document.body.style.overflow = "hidden";
+    document.body.style.overscrollBehavior = "none";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.body.style.overscrollBehavior = previousOverscroll;
+    };
+  }, [immersiveCameraMode]);
+
+  useEffect(() => {
+    if (!immersiveCameraMode || cameraState !== "active") return;
+    const onVisibilityChange = () => {
+      const paused = document.visibilityState === "hidden";
+      streamRef.current?.getVideoTracks().forEach((track) => {
+        track.enabled = !paused;
+      });
+      if (paused) videoRef.current?.pause();
+      else void videoRef.current?.play().catch(() => {});
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", onVisibilityChange);
+  }, [cameraState, immersiveCameraMode]);
 
   // Native Fullscreen synchronization
   useEffect(() => {
@@ -1214,11 +1335,112 @@ export function InteractiveWallVisualizerModal({
   const handleSwitchCameraFacing = useCallback(() => {
     setFrozenFrameDataUrl(null);
     setFrozenFrameImgEl(null);
+    setVideoNaturalSize(null);
     setCameraStopped(false);
     setCameraFacingMode((prev) =>
       prev === "environment" ? "user" : "environment"
     );
   }, []);
+
+  const handleEnterImmersiveCamera = useCallback(() => {
+    setInputMode("camera");
+    setCameraStopped(false);
+    setFrozenFrameDataUrl(null);
+    setFrozenFrameImgEl(null);
+    setVideoNaturalSize(null);
+    setCameraZoom(1);
+    setCameraModeFeedback(null);
+    setImmersiveCameraMode(true);
+  }, []);
+
+  const handleExitImmersiveCamera = useCallback(() => {
+    if (cameraState === "active" && !frozenFrameDataUrl) {
+      handleToggleFreezeFrame();
+    }
+    stopCameraStream();
+    setCameraStopped(true);
+    setCameraState("stopped");
+    setCameraZoom(1);
+    setImmersiveCameraMode(false);
+    setIsFallbackFullscreen(false);
+    if (typeof document !== "undefined" && document.fullscreenElement) {
+      void document.exitFullscreen().catch(() => {});
+    }
+  }, [
+    cameraState,
+    frozenFrameDataUrl,
+    handleToggleFreezeFrame,
+    stopCameraStream,
+  ]);
+
+  const handleDetectCameraWall = useCallback(async () => {
+    const video = videoRef.current;
+    const source =
+      video && video.videoWidth > 0
+        ? video
+        : frozenFrameImgEl && frozenFrameImgEl.naturalWidth > 0
+          ? frozenFrameImgEl
+          : null;
+    const width = source === video ? video?.videoWidth : frozenFrameImgEl?.naturalWidth;
+    const height = source === video ? video?.videoHeight : frozenFrameImgEl?.naturalHeight;
+    if (!source || !width || !height) {
+      setCameraModeFeedback("Wait for the camera image, then try wall detection again.");
+      return;
+    }
+
+    setCameraDetectionBusy(true);
+    setCameraModeFeedback("Looking for wall edges…");
+    try {
+      const result = await analyzeWallPhoto(source, width, height);
+      const candidate = result.candidates[0];
+      if (result.confident && candidate && isConvexValidQuad(candidate.corners)) {
+        pushHistory(captureSnapshot());
+        setCorners(cloneCorners(candidate.corners));
+        setLayers((previous) => ({ ...previous, guidesVisible: true }));
+        setShowBeforeRoomOnly(false);
+        setCameraModeFeedback(
+          `Wall outline detected · ${Math.round(result.confidence * 100)}% confidence`
+        );
+        setIsSessionDirty(true);
+      } else {
+        setCameraModeFeedback(
+          "No clear wall outline found. Drag the four pins to fit the wall."
+        );
+      }
+    } catch (error) {
+      setCameraModeFeedback(
+        error instanceof Error
+          ? error.message
+          : "Wall detection could not analyze this camera frame."
+      );
+    } finally {
+      setCameraDetectionBusy(false);
+    }
+  }, [captureSnapshot, frozenFrameImgEl, pushHistory]);
+
+  const handleCameraStageTouchMove = useCallback(
+    (event: React.TouchEvent<HTMLDivElement>) => {
+      if (event.touches.length < 2) {
+        pinchOriginRef.current = null;
+        return;
+      }
+      event.preventDefault();
+      const [first, second] = Array.from(event.touches).slice(0, 2);
+      const distance = Math.hypot(
+        first.clientX - second.clientX,
+        first.clientY - second.clientY
+      );
+      if (!pinchOriginRef.current) {
+        pinchOriginRef.current = { distance, zoom: cameraZoom };
+        return;
+      }
+      const origin = pinchOriginRef.current;
+      setCameraZoom(
+        Math.max(1, Math.min(2.5, origin.zoom * (distance / origin.distance)))
+      );
+    },
+    [cameraZoom]
+  );
 
   // Render perspective-warped artwork onto the overlay canvas
   const renderOverlay = useCallback(() => {
@@ -1301,7 +1523,7 @@ export function InteractiveWallVisualizerModal({
       renderOverlay();
     });
     return () => cancelAnimationFrame(raf);
-  }, [isOpen, renderOverlay]);
+  }, [isOpen, immersiveCameraMode, renderOverlay]);
 
   useEffect(() => {
     const stage = stageRef.current;
@@ -1311,7 +1533,7 @@ export function InteractiveWallVisualizerModal({
     });
     ro.observe(stage);
     return () => ro.disconnect();
-  }, [isOpen, renderOverlay]);
+  }, [isOpen, immersiveCameraMode, renderOverlay]);
 
   // Keyboard shortcuts (Section 30): never intercept while typing in form inputs
   useEffect(() => {
@@ -1344,6 +1566,10 @@ export function InteractiveWallVisualizerModal({
         }
         if (artworkPickerOpen) {
           setArtworkPickerOpen(false);
+          return;
+        }
+        if (immersiveCameraMode) {
+          if (!document.fullscreenElement) handleExitImmersiveCamera();
           return;
         }
         if (isFallbackFullscreen) {
@@ -1380,8 +1606,8 @@ export function InteractiveWallVisualizerModal({
       }
 
       if (
-        !layers.guidesLocked &&
-        layers.guidesVisible &&
+        (!layers.guidesLocked || immersiveCameraMode) &&
+        (layers.guidesVisible || immersiveCameraMode) &&
         ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key)
       ) {
         e.preventDefault();
@@ -1412,6 +1638,8 @@ export function InteractiveWallVisualizerModal({
     newSessionDialogOpen,
     savedPreviewsOpen,
     artworkPickerOpen,
+    immersiveCameraMode,
+    handleExitImmersiveCamera,
     isFallbackFullscreen,
     onClose,
     handleUndo,
@@ -1427,14 +1655,28 @@ export function InteractiveWallVisualizerModal({
   const handleStagePointerMove = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
       if (!stageRef.current) return;
+      if (immersiveCameraMode && pinchOriginRef.current) return;
+      if (
+        draggingCornerIndex !== null &&
+        draggingPointerIdRef.current !== null &&
+        e.pointerId !== draggingPointerIdRef.current
+      ) {
+        return;
+      }
       const rect = stageRef.current.getBoundingClientRect();
+      const xInset = immersiveCameraMode
+        ? Math.min(0.12, (cameraZoom * 29) / rect.width)
+        : 0.01;
+      const yInset = immersiveCameraMode
+        ? Math.min(0.12, (cameraZoom * 29) / rect.height)
+        : 0.01;
       const nx = Math.max(
-        0.01,
-        Math.min(0.99, (e.clientX - rect.left) / rect.width)
+        xInset,
+        Math.min(1 - xInset, (e.clientX - rect.left) / rect.width)
       );
       const ny = Math.max(
-        0.01,
-        Math.min(0.99, (e.clientY - rect.top) / rect.height)
+        yInset,
+        Math.min(1 - yInset, (e.clientY - rect.top) / rect.height)
       );
 
       if (draggingSplitBar) {
@@ -1477,22 +1719,43 @@ export function InteractiveWallVisualizerModal({
         return;
       }
 
-      if (draggingCornerIndex === null || layers.guidesLocked) return;
+      if (
+        draggingCornerIndex === null ||
+        (layers.guidesLocked && !immersiveCameraMode)
+      ) return;
       setCorners((prev) => {
         const candidate: QuadCorners = cloneCorners(prev);
         candidate[draggingCornerIndex] = { x: nx, y: ny };
         return isConvexValidQuad(candidate) ? candidate : prev;
       });
+      setIsSessionDirty(true);
     },
-    [draggingCornerIndex, draggingMaskMode, draggingSplitBar, layers.guidesLocked]
+    [
+      draggingCornerIndex,
+      draggingMaskMode,
+      draggingSplitBar,
+      cameraZoom,
+      immersiveCameraMode,
+      layers.guidesLocked,
+    ]
   );
 
-  const handleStagePointerUp = useCallback(() => {
+  const handleStagePointerUp = useCallback((event?: React.PointerEvent<Element>) => {
+    if (
+      draggingCornerIndex !== null &&
+      event &&
+      draggingPointerIdRef.current !== null &&
+      event.pointerId !== draggingPointerIdRef.current
+    ) {
+      return;
+    }
     if (draggingCornerIndex !== null) {
       if (dragSnapshotRef.current) {
         pushHistory(dragSnapshotRef.current);
         dragSnapshotRef.current = null;
       }
+      setIsSessionDirty(true);
+      draggingPointerIdRef.current = null;
       setDraggingCornerIndex(null);
     }
     if (draggingSplitBar) {
@@ -1598,6 +1861,7 @@ export function InteractiveWallVisualizerModal({
 
   const handleRestoreDefaultCorners = useCallback(() => {
     pushHistory(captureSnapshot());
+    setIsSessionDirty(true);
     if (uploadedRoomDataUrl) {
       setCorners([
         { x: 0.18, y: 0.12 },
@@ -2341,8 +2605,7 @@ export function InteractiveWallVisualizerModal({
                   <button
                     type="button"
                     onClick={() => {
-                      setCameraStopped(false);
-                      setInputMode("camera");
+                      handleEnterImmersiveCamera();
                       setRoomDropdownOpen(false);
                     }}
                     className={cn(
@@ -2525,7 +2788,11 @@ export function InteractiveWallVisualizerModal({
 
                       <button
                         type="button"
-                        onClick={handleToggleStopStartCamera}
+                        onClick={() =>
+                          cameraStopped
+                            ? handleEnterImmersiveCamera()
+                            : handleToggleStopStartCamera()
+                        }
                         className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-[#DFD0C0] bg-[#FAF6F0] px-2.5 py-1.5 text-xs font-medium text-[#1A1A1A] hover:border-[#9B1C1C]"
                       >
                         {cameraStopped ? (
@@ -2840,6 +3107,7 @@ export function InteractiveWallVisualizerModal({
                                   e.currentTarget as HTMLElement
                                 ).setPointerCapture(e.pointerId);
                                 setSelectedCornerIndex(idx);
+                                draggingPointerIdRef.current = e.pointerId;
                                 dragSnapshotRef.current = captureSnapshot();
                                 setDraggingCornerIndex(idx);
                               }}
@@ -2942,8 +3210,7 @@ export function InteractiveWallVisualizerModal({
                 <button
                   type="button"
                   onClick={() => {
-                    setCameraStopped(false);
-                    setInputMode("camera");
+                    handleEnterImmersiveCamera();
                   }}
                   className={cn(
                     "inline-flex cursor-pointer items-center justify-center gap-2 rounded-full px-4 py-2.5 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-[#9B1C1C]",
@@ -3230,5 +3497,305 @@ export function InteractiveWallVisualizerModal({
     </div>
   );
 
-  return studioShellContent;
+  const cameraFrameScale =
+    cameraViewportSize.width > 0 && cameraViewportSize.height > 0
+      ? Math.min(
+          cameraViewportSize.width / activeMediaDimensions.w,
+          cameraViewportSize.height / activeMediaDimensions.h
+        )
+      : 0;
+  const immersiveFrameStyle: React.CSSProperties = cameraFrameScale > 0
+    ? {
+        width: `${activeMediaDimensions.w * cameraFrameScale}px`,
+        height: `${activeMediaDimensions.h * cameraFrameScale}px`,
+      }
+    : {
+        width: "100vw",
+        height: "auto",
+        maxHeight: "100dvh",
+        aspectRatio: `${activeMediaDimensions.w} / ${activeMediaDimensions.h}`,
+      };
+  const cameraImageReady = Boolean(
+    (frozenFrameDataUrl && frozenFrameImgEl?.naturalWidth) ||
+      (cameraState === "active" && videoNaturalSize?.w)
+  );
+
+  const immersiveCameraOverlay = (
+    <div
+      ref={studioRootRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Wall mapping camera"
+      className="fixed inset-0 z-[2147483000] h-[100dvh] w-screen touch-none overflow-hidden bg-[#0D0C0C] text-white select-none"
+    >
+      <div className="absolute inset-0 overflow-hidden bg-[#0D0C0C]">
+        <div
+          ref={stageRef}
+          onPointerMove={handleStagePointerMove}
+          onPointerUp={handleStagePointerUp}
+          onPointerCancel={handleStagePointerUp}
+          onTouchStart={(event) => {
+            if (event.touches.length < 2) return;
+            const [first, second] = Array.from(event.touches).slice(0, 2);
+            pinchOriginRef.current = {
+              distance: Math.hypot(
+                first.clientX - second.clientX,
+                first.clientY - second.clientY
+              ),
+              zoom: cameraZoom,
+            };
+          }}
+          onTouchMove={handleCameraStageTouchMove}
+          onTouchEnd={() => {
+            pinchOriginRef.current = null;
+          }}
+          onTouchCancel={() => {
+            pinchOriginRef.current = null;
+          }}
+          style={{
+            ...immersiveFrameStyle,
+            aspectRatio: `${activeMediaDimensions.w} / ${activeMediaDimensions.h}`,
+            transform: `translate(-50%, -50%) scale(${cameraZoom})`,
+          }}
+          className="absolute top-1/2 left-1/2 overflow-hidden bg-[#171514] shadow-[0_0_80px_rgba(0,0,0,0.55)]"
+        >
+          <video
+            ref={attachCameraVideo}
+            autoPlay
+            playsInline
+            muted
+            aria-label="Live camera wall view"
+            className={cn(
+              "absolute inset-0 h-full w-full object-contain",
+              (cameraState !== "active" || frozenFrameDataUrl) && "hidden"
+            )}
+          />
+
+          {frozenFrameDataUrl && frozenFrameImgEl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={frozenFrameDataUrl}
+              alt="Captured camera frame for wall mapping"
+              className="absolute inset-0 h-full w-full object-contain"
+            />
+          )}
+
+          <canvas
+            ref={overlayCanvasRef}
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 h-full w-full"
+          />
+
+          <svg
+            viewBox="0 0 100 100"
+            preserveAspectRatio="none"
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 z-10 h-full w-full overflow-visible"
+          >
+            <polygon
+              points={corners.map((corner) => `${corner.x * 100},${corner.y * 100}`).join(" ")}
+              fill="rgba(155, 28, 28, 0.16)"
+              stroke="rgba(255,255,255,0.96)"
+              strokeWidth="0.48"
+              strokeLinejoin="round"
+              vectorEffect="non-scaling-stroke"
+            />
+          </svg>
+
+          {corners.map((corner, index) => {
+            const isSelected = selectedCornerIndex === index;
+            const isDragging = draggingCornerIndex === index;
+            const pinNames = ["Top left", "Top right", "Bottom right", "Bottom left"];
+            return (
+              <button
+                key={cornerLabels[index]}
+                type="button"
+                aria-label={`${pinNames[index]} wall corner pin. Drag to adjust, or use arrow keys.`}
+                aria-pressed={isSelected}
+                aria-keyshortcuts="ArrowUp ArrowDown ArrowLeft ArrowRight"
+                onFocus={() => setSelectedCornerIndex(index)}
+                onPointerDown={(event) => {
+                  event.stopPropagation();
+                  event.currentTarget.setPointerCapture(event.pointerId);
+                  setSelectedCornerIndex(index);
+                  draggingPointerIdRef.current = event.pointerId;
+                  dragSnapshotRef.current = captureSnapshot();
+                  setDraggingCornerIndex(index);
+                  setIsSessionDirty(true);
+                }}
+                style={{ left: `${corner.x * 100}%`, top: `${corner.y * 100}%` }}
+                className={cn(
+                  "absolute z-20 flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 cursor-grab touch-none items-center justify-center rounded-full border-2 bg-[#9B1C1C]/95 text-[10px] font-bold tracking-wide text-white shadow-[0_4px_24px_rgba(0,0,0,0.55)] transition-[background-color,box-shadow,transform] active:cursor-grabbing focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:h-12 sm:w-12",
+                  isDragging
+                    ? "scale-110 border-white ring-4 ring-white/35"
+                    : isSelected
+                      ? "border-white ring-2 ring-white/35"
+                      : "border-white/85 hover:bg-[#7F1616]"
+                )}
+              >
+                <span aria-hidden="true" className="absolute h-2 w-2 rounded-full bg-white" />
+                <span className="absolute top-[calc(100%+4px)] rounded-full bg-black/75 px-2 py-0.5 text-[9px] font-semibold text-white shadow-sm">
+                  {cornerLabels[index]}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-40 bg-gradient-to-b from-black/75 via-black/35 to-transparent px-3 pb-8 sm:px-6">
+        <div
+          className="pointer-events-auto mx-auto flex max-w-6xl items-center justify-between gap-2"
+          style={{ paddingTop: "calc(env(safe-area-inset-top) + 10px)" }}
+        >
+          <button
+            type="button"
+            onClick={handleExitImmersiveCamera}
+            aria-label="Close camera and return to Wall Visualizer Studio"
+            className="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-full border border-white/20 bg-black/35 px-3 text-sm font-medium text-white backdrop-blur-md transition hover:bg-white/15 focus-visible:outline-2 focus-visible:outline-white sm:px-4"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span className="hidden sm:inline">Back</span>
+          </button>
+
+          <div className="pointer-events-none absolute left-1/2 flex -translate-x-1/2 flex-col items-center text-center">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/65 sm:text-[11px]">
+              ATELIER
+            </span>
+            <span className="whitespace-nowrap text-sm font-semibold tracking-wide text-white sm:text-base">
+              Wall Mapping
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {cameraSwitchAvailable && (
+              <button
+                type="button"
+                onClick={handleSwitchCameraFacing}
+                disabled={cameraState === "requesting"}
+                aria-label={`Switch to ${cameraFacingMode === "environment" ? "front" : "rear"} camera`}
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-white/20 bg-black/35 px-3 text-xs font-semibold text-white backdrop-blur-md transition hover:bg-white/15 disabled:opacity-50 sm:px-4 sm:text-sm"
+              >
+                <SwitchCamera className="h-4 w-4" />
+                <span className="hidden sm:inline">Switch Camera</span>
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={handleToggleFullscreen}
+              aria-label={isFullscreenActive ? "Exit browser fullscreen" : "Enter browser fullscreen"}
+              className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-black/35 text-white backdrop-blur-md transition hover:bg-white/15 focus-visible:outline-2 focus-visible:outline-white"
+            >
+              {isFullscreenActive ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {!cameraImageReady && (
+        <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center px-6 pb-24 text-center">
+          <div className="pointer-events-auto max-w-md rounded-2xl border border-white/15 bg-black/70 px-6 py-6 text-white shadow-2xl backdrop-blur-xl">
+            {cameraState === "requesting" || cameraState === "idle" ? (
+              <>
+                <Camera className="mx-auto h-7 w-7 animate-pulse text-[#E5B8B0]" />
+                <p className="mt-3 text-base font-semibold">Starting camera</p>
+                <p className="mt-1 text-sm text-white/70">Allow camera access to map your wall.</p>
+              </>
+            ) : cameraState === "denied" ? (
+              <>
+                <AlertTriangle className="mx-auto h-7 w-7 text-[#E5B8B0]" />
+                <p className="mt-3 text-base font-semibold">Camera unavailable</p>
+                <p className="mt-1 text-sm leading-relaxed text-white/75">
+                  {cameraErrorMsg || "Check camera permission or connection, then try again."}
+                </p>
+                <div className="mt-4 flex flex-wrap justify-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCameraStopped(false);
+                      setCameraRequestVersion((version) => version + 1);
+                    }}
+                    className="min-h-11 rounded-full bg-[#9B1C1C] px-4 text-sm font-semibold text-white transition hover:bg-[#7F1616]"
+                  >
+                    Try again
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleExitImmersiveCamera}
+                    className="min-h-11 rounded-full border border-white/20 px-4 text-sm font-semibold text-white transition hover:bg-white/10"
+                  >
+                    Back to studio
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <Camera className="mx-auto h-7 w-7 text-white/60" />
+                <p className="mt-3 text-base font-semibold">Camera paused</p>
+                <p className="mt-1 text-sm text-white/70">Return to the studio to restart your camera.</p>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div
+        className="pointer-events-none absolute inset-x-0 bottom-0 z-40 bg-gradient-to-t from-black/85 via-black/55 to-transparent px-3 pt-16 sm:px-6"
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)" }}
+      >
+        <div className="pointer-events-auto mx-auto flex max-w-3xl flex-col items-center gap-2">
+          {cameraModeFeedback && (
+            <p role="status" className="rounded-full bg-black/55 px-3 py-1.5 text-center text-xs font-medium text-white/90 backdrop-blur-md">
+              {cameraModeFeedback}
+            </p>
+          )}
+          <div className="flex w-full items-center justify-center gap-2">
+            <button
+              type="button"
+              onClick={handleRestoreDefaultCorners}
+              aria-label="Reset wall corner pins"
+              className="inline-flex min-h-12 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-xl border border-white/20 bg-black/45 px-2 text-[11px] font-semibold text-white shadow-lg backdrop-blur-md transition hover:bg-white/15 focus-visible:outline-2 focus-visible:outline-white sm:gap-2 sm:px-4 sm:text-sm"
+            >
+              <RotateCcw className="h-4 w-4 shrink-0" />
+              <span>Reset Pins</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleDetectCameraWall}
+              disabled={cameraDetectionBusy || !cameraImageReady}
+              aria-label="Automatically detect wall corners"
+              className="inline-flex min-h-12 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-xl border border-white/20 bg-black/45 px-2 text-[11px] font-semibold text-white shadow-lg backdrop-blur-md transition hover:bg-white/15 focus-visible:outline-2 focus-visible:outline-white disabled:opacity-45 sm:gap-2 sm:px-4 sm:text-sm"
+            >
+              <Scan className={cn("h-4 w-4 shrink-0", cameraDetectionBusy && "animate-pulse")} />
+              <span>{cameraDetectionBusy ? "Detecting…" : "Auto Detect"}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setLayers((previous) => ({ ...previous, artworkVisible: true }));
+                setShowBeforeRoomOnly(false);
+                setIsSessionDirty(true);
+                setCameraModeFeedback("Design applied to the mapped wall.");
+              }}
+              disabled={!printableInfo.hasValidPrintableSource || !artworkImageEl}
+              aria-label="Apply selected design to the mapped wall"
+              className="inline-flex min-h-12 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#9B1C1C] px-2 text-[11px] font-semibold text-white shadow-[0_8px_24px_rgba(155,28,28,0.35)] transition hover:bg-[#7F1616] focus-visible:outline-2 focus-visible:outline-white disabled:cursor-not-allowed disabled:opacity-50 sm:gap-2 sm:px-4 sm:text-sm"
+            >
+              <Check className="h-4 w-4 shrink-0" />
+              <span>{artworkImageEl ? "Apply Design" : "Loading Design…"}</span>
+            </button>
+          </div>
+          <button
+            type="button"
+            onClick={handleExitImmersiveCamera}
+            className="min-h-12 w-full max-w-sm rounded-full bg-[#FFFDF9] px-6 text-sm font-bold text-[#351C1C] shadow-[0_8px_28px_rgba(0,0,0,0.35)] transition hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+          >
+            Done · Confirm Wall
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  return immersiveCameraMode ? immersiveCameraOverlay : studioShellContent;
 }

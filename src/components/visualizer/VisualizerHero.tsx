@@ -20,6 +20,7 @@ import {
   Download,
   Image as ImageIcon,
   Layers,
+  Sparkles,
   Target,
 } from "lucide-react";
 
@@ -36,6 +37,7 @@ interface VisualizerHeroProps {
   onComparisonChange: (mode: "before" | "after") => void;
   onLaunchLiveCamera: () => void;
   onLaunchUploadPhoto: () => void;
+  onLaunchAutoFit: () => void;
   onToggleRoomPicker: () => void;
   onChooseSampleRoom: (room: SampleRoomElevation) => void;
   onOpenRoomInStudio: (roomId: string) => void;
@@ -73,6 +75,7 @@ export function VisualizerHero({
   onComparisonChange,
   onLaunchLiveCamera,
   onLaunchUploadPhoto,
+  onLaunchAutoFit,
   onToggleRoomPicker,
   onChooseSampleRoom,
   onOpenRoomInStudio,
@@ -228,8 +231,18 @@ export function VisualizerHero({
             <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
               <button
                 type="button"
+                onClick={onLaunchAutoFit}
+                className="inline-flex cursor-pointer items-center justify-center gap-2.5 rounded-full bg-[#9B1C1C] px-6 py-3.5 text-sm font-semibold text-[#FFFDF9] shadow-[0_12px_28px_rgba(155,28,28,0.24)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#7D1616] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9B1C1C]"
+              >
+                <Sparkles className="h-4 w-4 shrink-0" />
+                <span>Upload Wall &amp; Auto-Fit Design</span>
+                <ArrowRight className="h-4 w-4 shrink-0" />
+              </button>
+
+              <button
+                type="button"
                 onClick={onLaunchLiveCamera}
-                className="inline-flex cursor-pointer items-center justify-center gap-2.5 rounded-full bg-[#9B1C1C] px-6 py-3.5 text-sm font-medium text-[#FFFDF9] shadow-[0_12px_28px_rgba(155,28,28,0.24)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#7D1616] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9B1C1C]"
+                className="inline-flex cursor-pointer items-center justify-center gap-2.5 rounded-full border border-[#DFD0C0] bg-[#FFFDF9] px-6 py-3.5 text-sm font-medium text-[#1A1A1A] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#9B1C1C] hover:text-[#9B1C1C] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9B1C1C]"
               >
                 <Camera className="h-4 w-4 shrink-0" />
                 <span>{primaryCtaLabel}</span>

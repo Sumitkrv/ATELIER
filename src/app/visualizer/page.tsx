@@ -15,6 +15,7 @@ import {
   SAMPLE_ROOM_ELEVATIONS,
   SampleRoomElevation,
 } from "@/components/visualizer/InteractiveWallVisualizerModal";
+import { AutoFitWallStudio } from "@/components/visualizer/AutoFitWallStudio";
 import { HeroPreviewMode } from "@/components/visualizer/LaptopWallPreview";
 import {
   HorizontalSelectedArtworkBar,
@@ -221,6 +222,7 @@ function VisualizerWithCatalogue({ catalogueCategories, catalogueDesigns, visual
   const [studioModalOpen, setStudioModalOpen] = useState<boolean>(
     rawStudioParam === "1" || rawStudioParam === "true"
   );
+  const [autoFitOpen, setAutoFitOpen] = useState<boolean>(false);
   const [userChoseHeroRoom, setUserChoseHeroRoom] = useState<boolean>(false);
   const [studioLaunchMode, setStudioLaunchMode] = useState<"camera" | "photo">(
     rawModeParam === "camera" ? "camera" : rawStudioParam ? "photo" : "camera"
@@ -327,6 +329,14 @@ function VisualizerWithCatalogue({ catalogueCategories, catalogueDesigns, visual
     syncStudioUrlFlag(true);
   }, [activeSampleRoom.id, stagedPayload, syncStudioUrlFlag, userChoseHeroRoom]);
 
+  const handleLaunchAutoFit = useCallback(() => {
+    setStudioModalOpen(false);
+    setArtworkSelectorOpen(false);
+    setAutoFitOpen(true);
+    syncStudioUrlFlag(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [syncStudioUrlFlag]);
+
   const handleToggleRoomPicker = useCallback(() => {
     setHeroMode("room");
     setRoomPickerOpen((prev) => !prev);
@@ -405,7 +415,7 @@ function VisualizerWithCatalogue({ catalogueCategories, catalogueDesigns, visual
           onSelectDesign={handleSelectDesign}
           onClose={handleCloseStudio}
         />
-      ) : (
+      ) : !autoFitOpen ? (
         <>
           <VisualizerHero
             selectedDesign={selectedDesign}
@@ -420,6 +430,7 @@ function VisualizerWithCatalogue({ catalogueCategories, catalogueDesigns, visual
             onComparisonChange={setComparisonMode}
             onLaunchLiveCamera={handleLaunchLiveCamera}
             onLaunchUploadPhoto={handleLaunchUploadPhoto}
+            onLaunchAutoFit={handleLaunchAutoFit}
             onToggleRoomPicker={handleToggleRoomPicker}
             onChooseSampleRoom={handleChooseSampleRoom}
             onOpenRoomInStudio={handleOpenRoomInStudio}
@@ -436,7 +447,16 @@ function VisualizerWithCatalogue({ catalogueCategories, catalogueDesigns, visual
             onSelectDesign={handleSelectDesign}
           />
         </>
-      )}
+      ) : null}
+
+      <AutoFitWallStudio
+        isOpen={autoFitOpen}
+        selectedDesign={selectedDesign}
+        designs={catalogueDesigns}
+        categories={catalogueCategories}
+        onSelectDesign={handleSelectDesign}
+        onClose={() => setAutoFitOpen(false)}
+      />
 
       <SelectedArtworkSelectorModal
         isOpen={artworkSelectorOpen}
